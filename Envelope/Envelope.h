@@ -18,7 +18,7 @@
 #define __ENVELOPE_H__
 
 #include <stdlib.h>
-#include "EnvelopeProgmem.h"
+#include "SsHelpers.h"
 
 class Envelope
 {

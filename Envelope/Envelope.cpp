@@ -77,7 +77,7 @@ char Envelope::getOutput()
 }
 char Envelope::getExpOutput()
 {
-	char out = pgm_read_byte(&(expConvert[abs(output_>>8)]));
+	char out = convertExponential(abs(output_>>8));
 	if(invert_==true)
 	{
 		return -out;
