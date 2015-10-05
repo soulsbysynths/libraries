@@ -19,6 +19,7 @@
 
 #include <avr/pgmspace.h>
 #include <math.h>
+#include <stdlib.h>
 
 static const char EXP_CONVERT[128] PROGMEM = {0,1,1,2,2,3,4,4,5,5,6,7,7,8,9,9,10,11,11,12,13,13,14,15,15,16,17,18,18,19,20,20,21,22,23,23,24,25,26,27,27,28,29,30,31,31,32,33,34,35,36,37,37,38,39,40,41,42,43,44,45,46,47,47,48,49,50,51,52,53,54,55,56,57,58,59,61,62,63,64,65,66,67,68,69,70,72,73,74,75,76,77,79,80,81,82,83,85,86,87,89,90,91,92,94,95,96,98,99,100,102,103,105,106,107,109,110,112,113,115,116,118,119,121,122,124,125,127};
 static const unsigned char COMPRESS_FOUR_BIT_MASK[2] PROGMEM = {0x0F,0xF0};
@@ -30,12 +31,23 @@ char convertExponential(char input)
 {
 	return pgm_read_byte(&(EXP_CONVERT[input]));
 }
-unsigned char shapeExponential(char input, float shape_amt, float multiplier)
+inline
+unsigned char shapeExponential(char input, float shapeAmt, unsigned char multiplier)
 {
+	//zero gain = multiplier
 	float f, g;
 	f = (float)input / 127;
-	g = round(exp(f * shape_amt) * multiplier - 1);
+	g = round(exp(f * shapeAmt) * (float)multiplier - 1);
 	return (unsigned char)g;
+}
+inline
+unsigned char shapeLinear(unsigned char input, unsigned char shapeAmt)
+{
+	//zero gain = 128
+	unsigned int out;
+	out = ((unsigned int)input * shapeAmt) >> 9;
+	out += 128;
+	return (unsigned char)out;
 }
 inline
 unsigned char compressFourBit(unsigned char input, unsigned char newValue, unsigned char pos)
@@ -68,7 +80,7 @@ unsigned char uncompressTwoBit(unsigned char input, unsigned char pos)
 	return out >> shift;
 }
 inline
-char constrainInt(int input)
+char constrainChar(int input)
 {
 	if(input>127)
 	{
@@ -83,7 +95,8 @@ char constrainInt(int input)
 		return (char)input;
 	}
 }
-unsigned char constrainInt(int input)
+inline
+unsigned char constrainUChar(int input)
 {
 	if(input>255)
 	{
@@ -98,28 +111,37 @@ unsigned char constrainInt(int input)
 		return (unsigned char)input;
 	}
 }
+inline
 char cMultcc(char a, char b)
 {
 	return (char)((a*b)>>SCALE_SHIFT);
 }
+inline
 int iMultiic(int a, int b, char c)
 {
 	int tmp = ((a*b)>>SCALE_SHIFT);
 	return ((tmp*c)>>SCALE_SHIFT);
 }
-
-
+inline
 int iMulticc(int a, char b, char c)
 {
 	char tmp = ((b*c)>>SCALE_SHIFT);
 	return ((a*tmp)>>SCALE_SHIFT);
 }
+inline
 int iMultic(int a, char b)
 {
 	return ((a*b)>>SCALE_SHIFT);
 }
+inline
 long map(long x, long in_min, long in_max, long out_min, long out_max)
 {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
+inline
+char randomValue(char min, char max)
+{
+	return (char) (((rand()&0xFF) * ((int)max-(int)min))>>8) + (int)min;
+}
 #endif //__SSHELPERS_H__
+

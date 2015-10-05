@@ -274,7 +274,7 @@ void BiquadFilter::processWavetable(Wavetable& sourceWavetable)
 			{
 				bout = BiquadProcess((float)sourceWavetable.getSample(i));
 			}
-			out = constrainInt((int)bout);
+			out = constrainChar((int)bout);
 			sourceWavetable.setSample(i,out);
 			if (gainAdj_==true)
 			{
@@ -292,7 +292,7 @@ void BiquadFilter::processWavetable(Wavetable& sourceWavetable)
 			{
 				in = (float)sourceWavetable.getSample(i);
 				fout = in * multb;
-				out = constrainInt((int)fout);
+				out = constrainChar((int)fout);
 				sourceWavetable.setSample(i,out);
 			}
 		}

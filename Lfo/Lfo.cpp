@@ -28,14 +28,14 @@ Lfo::~Lfo()
 void Lfo::setDivision(unsigned char newDiv)
 {
 	division_ = newDiv;
-	divMult_ = pgm_read_word(&(lfoMult[division_]));
-	divBs_ = pgm_read_byte(&(lfoBs[division_]));
+	divMult_ = pgm_read_word(&(LFO_MULT[division_]));
+	divBs_ = pgm_read_byte(&(LFO_BS[division_]));
 }
 void Lfo::refresh(unsigned int cycleTick)
 {
 	unsigned char index = ((unsigned long)cycleTick * divMult_) >> divBs_;
-	index &= lfoBitMask;
-	output_ = pgm_read_byte(&(lfoWavetable[table_][index]));
+	index &= LFO_BIT_MASK;
+	output_ = pgm_read_byte(&(LFO_WAVETABLE[table_][index]));
 	if(invert_==true)
 	{
 		output_ *= -1;

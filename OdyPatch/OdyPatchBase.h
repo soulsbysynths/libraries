@@ -1,4 +1,4 @@
-//AtmEngineProgmem.h  Progmem for Audio engine for Atmegatron
+//OdyPatchBase.h  Odytron Patch base class
 //Copyright (C) 2015  Paul Soulsby info@soulsbysynths.com
 //
 //This program is free software: you can redistribute it and/or modify
@@ -14,14 +14,17 @@
 //You should have received a copy of the GNU General Public License
 //along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef ATMENGINEPROGMEM_H_
-#define ATMENGINEPROGMEM_H_
+#ifndef ODYPATCHBASE_H_
+#define ODYPATCHBASE_H_
 
-#include <avr/pgmspace.h>
+class OdyPatchBase
+{
+	public:
+	virtual void patchValueChanged(unsigned char func, unsigned char newValue) = 0;
+	virtual void patchOptionChanged(unsigned char func, bool newOpt) = 0;
+	virtual void patchCtrlChanged(unsigned char anlControl_, unsigned char newValue) = 0;
+};
 
-static const unsigned int ENV_ADR_INC[16] PROGMEM = {32767,4095,1424,682,372,217,133,86,57,38,26,19,13,9,7,5};
-static const int ENV_S_LEVEL[16] PROGMEM = {0,2048,4352,6400,8704,10752,13056,15104,17408,19456,21760,23808,26112,28160,30464,32767};                              
 
-static const unsigned int PORTA_SPEED[16] PROGMEM = {0,5,14,27,46,77,123,195,306,477,740,1145,1768,2728,4207,6484};
 
-#endif /* ATMENGINEPROGMEM_H_ */
+#endif /* ODYPATCHBASE_H_ */

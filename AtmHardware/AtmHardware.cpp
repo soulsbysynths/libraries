@@ -186,7 +186,8 @@ void AtmHardware::refreshLeds()
 	unsigned int output = 0;
 	unsigned int circ = 0;
 	static unsigned int mcpState[3];
-	static bool bankToggle = false;
+	static unsigned char bankToggle = 0;
+	const unsigned char RED_BIAS = 2;
 	for(i=0;i<2;++i)
 	{
 		circ = ledCircular_[i].getState();
@@ -226,8 +227,12 @@ void AtmHardware::refreshLeds()
 	}
 	if(col==LedRgb::YELLOW)
 	{
-		bankToggle = !bankToggle;
-		if(bankToggle==true)
+		bankToggle++;
+		if(bankToggle>RED_BIAS)
+		{
+			bankToggle = 0;
+		}
+		if(bankToggle<RED_BIAS)
 		{
 			bitSet(output,5);
 		}

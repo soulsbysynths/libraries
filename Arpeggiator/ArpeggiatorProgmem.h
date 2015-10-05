@@ -19,12 +19,12 @@
 
 #include <avr/pgmspace.h>
 
-static const unsigned int arpMult[16] PROGMEM = {1,1,1,85,3,1,85,3,1,341,1,341,1,1365,1,1};
-static const unsigned char arpBs[16] PROGMEM = {12,11,10,16,11,9,15,10,8,16,7,15,6,16,5,4};
-static const unsigned char arpBitMask = 15;
-static const unsigned char arpLength = 16;
+static const unsigned int ARP_MULT[16] PROGMEM = {1,1,1,85,3,1,85,3,1,341,1,341,1,1365,1,1};
+static const unsigned char ARP_BS[16] PROGMEM = {12,11,10,16,11,9,15,10,8,16,7,15,6,16,5,4};
+static const unsigned char ARP_BIT_MASK = 15;
+static const unsigned char ARP_LENGTH = 16;
 
-static const char arpTypes[16][16] PROGMEM =
+static const char ARP_TYPES[16][16] PROGMEM =
 {
 	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},                          //THIS ONE SHOULD ALWAYS BE BLANK
 	{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16},                   //up

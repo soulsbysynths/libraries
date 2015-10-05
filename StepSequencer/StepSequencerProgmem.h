@@ -21,10 +21,10 @@
 
 static const unsigned char REST = 128;
 static const unsigned char HOLD = 64;
-static const unsigned int seqMult[16] PROGMEM = {1,1,1,85,3,1,85,3,1,341,1,341,1,1365,1,1};
-static const unsigned char seqBs[16] PROGMEM = {12,11,10,16,11,9,15,10,8,16,7,15,6,16,5,4};
-static const unsigned char seqBitMask = 15;
-static const unsigned char seqLength = 16;
+static const unsigned int SEQ_MULT[16] PROGMEM = {1,1,1,85,3,1,85,3,1,341,1,341,1,1365,1,1};
+static const unsigned char SEQ_BS[16] PROGMEM = {12,11,10,16,11,9,15,10,8,16,7,15,6,16,5,4};
+static const unsigned char SEQ_BIT_MASK = 15;
+static const unsigned char SEQ_LENGTH = 16;
 
 static const char seqPatterns[16][16] PROGMEM =
 {

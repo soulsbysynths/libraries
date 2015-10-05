@@ -20,16 +20,16 @@
 
 #include <avr/pgmspace.h>
 
-static const unsigned int envADR_inc[16] PROGMEM = {32767,4095,1424,682,372,217,133,86,57,38,26,19,13,9,7,5};
-static const int envS_level[16] PROGMEM = {0,2048,4352,6400,8704,10752,13056,15104,17408,19456,21760,23808,26112,28160,30464,32767};
+static const unsigned int ENV_ADR_INC[16] PROGMEM = {32767,4095,1424,682,372,217,133,86,57,38,26,19,13,9,7,5};
+static const int ENV_S_LEVEL[16] PROGMEM = {0,2048,4352,6400,8704,10752,13056,15104,17408,19456,21760,23808,26112,28160,30464,32767};
 
-static const unsigned int porta_speed[16] PROGMEM = {0,5,14,27,46,77,123,195,306,477,740,1145,1768,2728,4207,6484};                            
+static const unsigned int PORTA_SPEED[16] PROGMEM = {0,5,14,27,46,77,123,195,306,477,740,1145,1768,2728,4207,6484};                            
 
-static const unsigned char osc_preset_table[16] PROGMEM = { 0, 4, 9, 1, 2, 3,11,14, 0, 1, 4, 7, 8,12,13,15};  
-static const unsigned char osc_preset_bank[16] PROGMEM =  { 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0};
+static const unsigned char OSC_PRESET_TABLE[16] PROGMEM = { 0, 4, 9, 1, 2, 3,11,14, 0, 1, 4, 7, 8,12,13,15};  
+static const unsigned char OSC_PRESET_BANK[16] PROGMEM =  { 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0};
 
-static const unsigned char envA_preset[16] PROGMEM =  {0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 5, 7, 7, 7,11,15};
-static const unsigned char envDR_preset[16] PROGMEM = {0, 3, 5, 5, 7, 7,11,11, 0, 5, 7, 0, 3, 7, 7,15};
-static const unsigned char envS_preset[16] PROGMEM =  {15,0, 0,15, 0, 7, 0,15, 0, 0, 0, 0, 0, 7, 7, 0};
+static const unsigned char ENV_A_PRESET[16] PROGMEM =  {0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 5, 7, 7, 7,11,15};
+static const unsigned char ENV_DR_PRESET[16] PROGMEM = {0, 3, 5, 5, 7, 7,11,11, 0, 5, 7, 0, 3, 7, 7,15};
+static const unsigned char ENV_S_PRESET[16] PROGMEM =  {15,0, 0,15, 0, 7, 0,15, 0, 0, 0, 0, 0, 7, 7, 0};
 
 #endif /* MINENGINEPROGMEM_H_ */

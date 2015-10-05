@@ -101,7 +101,7 @@ void AtmHardwareTester::poll(unsigned char ticksPassed)
 	hardware_.pollAnlControls(ticksPassed);
 	hardware_.pollMidi();
 
-	if(circTicking_[1]==false)
+	if(circTicking_[1]==false && hardware_.getSwitch(2).getState()==LOW)
 	{
 		for(unsigned char i=0;i<6;++i)
 		{
@@ -134,16 +134,32 @@ void AtmHardwareTester::hardwareAnalogueControlChanged(unsigned char control, un
 
 void AtmHardwareTester::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 {
+	unsigned char i;
 	swTicking_[sw] = false;
 	if(newValue==HIGH)
 	{
 		hardware_.getLedSwitch(sw).setColour(LedRgb::GREEN);
 		playSound(true);
+		if(sw==2)
+		{
+			for(i=0;i<2;++i)
+			{
+				circTicking_[i] = false;
+				hardware_.getLedCircular(i).fill(15);
+			}
+		}
 	}
 	else
 	{
 		hardware_.getLedSwitch(sw).setColour(LedRgb::RED);
 		playSound(false);
+		if(sw==2)
+		{
+			for(i=0;i<2;++i)
+			{
+				hardware_.getLedCircular(i).fill(0);
+			}
+		}
 	}
 }
 void AtmHardwareTester::hardwareSwitchHeld(unsigned char sw)

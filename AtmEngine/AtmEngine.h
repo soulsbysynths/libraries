@@ -159,8 +159,6 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	const MasterClock& getMasterClock() const { return masterClock_; }
 	const AtmPatch* getPatchPtr() const { return  patch_; }
 	AtmPatch* getPatchPtr() { return patch_; }
-	const AtmOscillator* getOscillatorPtr() const { return  oscillator_; }
-	AtmOscillator* getOscillatorPtr() { return oscillator_; }
 	const Midi* getMidiPtr() const { return  midi_; }
 	Midi* getMidiPtr() { return midi_; }
 	void initialize();

@@ -19,11 +19,11 @@
 
 #include <avr/pgmspace.h>
 
-static const unsigned int lfoMult[16] PROGMEM = {1,1,1,5461,3,1,5461,3,1,21845,1,21845,1,21845,2,4};
-static const unsigned char lfoBs[16] PROGMEM = {6,5,4,16,5,3,15,4,2,16,1,15,0,14,0,0};
-static const unsigned char lfoBitMask = 63;
+static const unsigned int LFO_MULT[16] PROGMEM = {1,1,1,5461,3,1,5461,3,1,21845,1,21845,1,21845,2,4};
+static const unsigned char LFO_BS[16] PROGMEM = {6,5,4,16,5,3,15,4,2,16,1,15,0,14,0,0};
+static const unsigned char LFO_BIT_MASK = 63;
 
-static const char lfoWavetable[16][64] PROGMEM =
+static const char LFO_WAVETABLE[16][64] PROGMEM =
 {
 	{
 		0,12,25,37,49,60,71,81,90,98,106,112,117,122,125,126,127,126,125,122,117,112,106,98,90,81,71,60,49,37,25,12,0,-12,-25,-37,-49,-60,-71,-81,-90,-98,-106,-112,-117,-122,-125,-126,-127,-126,-125,-122,-117,-112,-106,-98,-90,-81,-71,-60,-49,-37,-25,-12

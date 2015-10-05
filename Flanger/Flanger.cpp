@@ -87,10 +87,10 @@ void Flanger::processWavetable(Wavetable& sourceWavetable, char envLevel, char l
 		for(i=0;i<sourceWavetable.getWaveLength();++i)
 		{
 			input = (sourceWavetable.getSample(i)) + (wavetable_->getSample(readpos)>>fbBs_);
-			wavetable_->setSample(writepos,constrainInt(input));
+			wavetable_->setSample(writepos,constrainChar(input));
 			
 			output = (sourceWavetable.getSample(i)>>dryBs_) + (wavetable_->getSample(readpos)>>wetBs_);	
-			sourceWavetable.setSample(i,constrainInt(output));	
+			sourceWavetable.setSample(i,constrainChar(output));	
 			writepos++;
 			if(writepos>=waveLength_)
 			{

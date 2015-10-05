@@ -169,8 +169,8 @@ void MinEngine::setBank(unsigned char newBank)
 
 void MinEngine::triggerNote(unsigned char note)
 {
-	//frequency_ = pgm_read_word(&(midiFreqs[note]));
-	portamento_.setInput(pgm_read_word(&(midiFreqs[note])));
+	//frequency_ = pgm_read_word(&(MIDI_FREQS[note]));
+	portamento_.setInput(pgm_read_word(&(MIDI_FREQS[note])));
 	ampEnvelope_.trigger();
 	filtEnvelope_.trigger();
 }
@@ -212,7 +212,7 @@ void MinEngine::midiNoteOnReceived(unsigned char note, unsigned char velocity)
 			#if LEGATO==1
 			if(totNotesOn_>1)
 			{
-				portamento_.setInput(pgm_read_word(&(midiFreqs[note])));
+				portamento_.setInput(pgm_read_word(&(MIDI_FREQS[note])));
 			}
 			else
 			{
@@ -279,11 +279,11 @@ void MinEngine::midiNoteOffReceived(unsigned char note)
 		else if(sequencer_->getPattern()==0)
 		{
 			#if NOTE_PRIORITY == NP_LOW
-			portamento_.setInput(pgm_read_word(&(midiFreqs[noteLowest_])));
+			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteLowest_])));
 			#elif NOTE_PRIORITY == NP_HIGH
-			portamento_.setInput(pgm_read_word(&(midiFreqs[noteHighest_])));
+			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteHighest_])));
 			#elif NOTE_PRIORITY == NP_LAST
-			portamento_.setInput(pgm_read_word(&(midiFreqs[noteLast_])));
+			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteLast_])));
 			#endif
 		}
 	}
@@ -371,23 +371,23 @@ void MinEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 	switch (func)
 	{
 		case FUNC_WAVE:
-		oscillator_->setBank(pgm_read_byte(&(osc_preset_bank[newValue])));
-		oscillator_->setTable(pgm_read_byte(&(osc_preset_table[newValue])));
+		oscillator_->setBank(pgm_read_byte(&(OSC_PRESET_BANK[newValue])));
+		oscillator_->setTable(pgm_read_byte(&(OSC_PRESET_TABLE[newValue])));
 		break;
 		case FUNC_FILT:
 		filter_.setType((BiquadFilter::FiltType) newValue);
 		break;
 		case FUNC_FENV:
-		filtEnvelope_.setAttack(pgm_read_word(&(envADR_inc[pgm_read_byte(&(envA_preset[newValue]))])));
-		filtEnvelope_.setDecay(pgm_read_word(&(envADR_inc[pgm_read_byte(&(envDR_preset[newValue]))])));
-		filtEnvelope_.setSustain(pgm_read_word(&(envS_level[pgm_read_byte(&(envS_preset[newValue]))])));
-		filtEnvelope_.setRelease(pgm_read_word(&(envADR_inc[pgm_read_byte(&(envDR_preset[newValue]))])));
+		filtEnvelope_.setAttack(pgm_read_word(&(ENV_ADR_INC[pgm_read_byte(&(ENV_A_PRESET[newValue]))])));
+		filtEnvelope_.setDecay(pgm_read_word(&(ENV_ADR_INC[pgm_read_byte(&(ENV_DR_PRESET[newValue]))])));
+		filtEnvelope_.setSustain(pgm_read_word(&(ENV_S_LEVEL[pgm_read_byte(&(ENV_S_PRESET[newValue]))])));
+		filtEnvelope_.setRelease(pgm_read_word(&(ENV_ADR_INC[pgm_read_byte(&(ENV_DR_PRESET[newValue]))])));
 		break;
 		case FUNC_AENV:
-		ampEnvelope_.setAttack(pgm_read_word(&(envADR_inc[pgm_read_byte(&(envA_preset[newValue]))])));
-		ampEnvelope_.setDecay(pgm_read_word(&(envADR_inc[pgm_read_byte(&(envDR_preset[newValue]))])));
-		ampEnvelope_.setSustain(pgm_read_word(&(envS_level[pgm_read_byte(&(envS_preset[newValue]))])));
-		ampEnvelope_.setRelease(pgm_read_word(&(envADR_inc[pgm_read_byte(&(envDR_preset[newValue]))])));
+		ampEnvelope_.setAttack(pgm_read_word(&(ENV_ADR_INC[pgm_read_byte(&(ENV_A_PRESET[newValue]))])));
+		ampEnvelope_.setDecay(pgm_read_word(&(ENV_ADR_INC[pgm_read_byte(&(ENV_DR_PRESET[newValue]))])));
+		ampEnvelope_.setSustain(pgm_read_word(&(ENV_S_LEVEL[pgm_read_byte(&(ENV_S_PRESET[newValue]))])));
+		ampEnvelope_.setRelease(pgm_read_word(&(ENV_ADR_INC[pgm_read_byte(&(ENV_DR_PRESET[newValue]))])));
 		break;
 		case FUNC_LFOTYPE:
 		lfo_.setTable(newValue);
@@ -398,12 +398,12 @@ void MinEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		case FUNC_CRUSHPORTA:
 		if(newValue<8)
 		{
-			portamento_.setSpeed(pgm_read_word(&(porta_speed[0])));
+			portamento_.setSpeed(pgm_read_word(&(PORTA_SPEED[0])));
 			wavecrusher_.setType(newValue<<1);
 		}
 		else
 		{
-			portamento_.setSpeed(pgm_read_word(&(porta_speed[((newValue-8)<<1)+1])));
+			portamento_.setSpeed(pgm_read_word(&(PORTA_SPEED[((newValue-8)<<1)+1])));
 			wavecrusher_.setType(0);
 		}
 		break;
