@@ -112,28 +112,6 @@ unsigned char constrainUChar(int input)
 	}
 }
 inline
-char cMultcc(char a, char b)
-{
-	return (char)((a*b)>>SCALE_SHIFT);
-}
-inline
-int iMultiic(int a, int b, char c)
-{
-	int tmp = ((a*b)>>SCALE_SHIFT);
-	return ((tmp*c)>>SCALE_SHIFT);
-}
-inline
-int iMulticc(int a, char b, char c)
-{
-	char tmp = ((b*c)>>SCALE_SHIFT);
-	return ((a*tmp)>>SCALE_SHIFT);
-}
-inline
-int iMultic(int a, char b)
-{
-	return ((a*b)>>SCALE_SHIFT);
-}
-inline
 long map(long x, long in_min, long in_max, long out_min, long out_max)
 {
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;

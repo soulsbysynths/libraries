@@ -14,8 +14,153 @@
 //You should have received a copy of the GNU General Public License
 //along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 #include "Ody.h"
+#include "OdyOscillatorProgmem.h"
+
+#define MICROSECONDS_PER_TIMER2_OVERFLOW 32
+
+static const char RM_MAX[8] PROGMEM = {0,21,34,48,65,83,105,127};
+static const char RM_MIN[8] PROGMEM = {0,-21,-34,-48,-65,-83,-105,-127};
+
+volatile static unsigned char ticksPassed = 0;
+volatile static unsigned char hpfFc = 0;
+volatile static unsigned char hpfFcInc = 255;
+volatile static unsigned char ampMult = 0;
+volatile static unsigned char ampBs = 6;
+volatile static unsigned char oscWave[3];
+volatile static unsigned char oscPulseIndex[2];
+volatile static unsigned char oscLevel[3];
+volatile static unsigned char filtType = 0;
+volatile static int filtC = 0;
+volatile static int filtR = 0;
+volatile static int filtRC = 0;
+
+ISR(TIMER2_OVF_vect) {
+
+	static unsigned char processStage = 0;
+	static unsigned int tickCnt = 0;
+	static int output = 0;
+	static int hpfLpfOutput = 0;
+	static int filtBuf[2];
+	static unsigned char lastFiltType = 0;
+	unsigned char index[2];
+	const char SCALE = 7;
+	const unsigned SQ_PULSE_INDEX = 127;
+	
+	tickCnt += MICROSECONDS_PER_TIMER2_OVERFLOW;
+
+	if (tickCnt >= 1000)
+	{
+		tickCnt -= 1000;
+		ticksPassed++;
+	}
+
+	if (processStage==0)
+	{
+		hpfLpfOutput = ((output * hpfFc) + (hpfLpfOutput * hpfFcInc))>>8;
+		output -= hpfLpfOutput;
+
+		output = (output * ampMult) >> ampBs;
+		
+		if(output>127)
+		{
+			OCR2B = 254;
+		}
+		else if(output<-127)
+		{
+			OCR2B = 0;
+		}
+		else
+		{
+			OCR2B = output + 127;
+		}
+		
+		index[0] = OdyAudio::getWtIndex(0);
+		index[1] = OdyAudio::getWtIndex(1);
+		if(oscWave[0]==0)
+		{
+			output = (char)pgm_read_byte(&(SAW_WAVE[oscLevel[0]][index[0]]));
+		}
+		else
+		{
+			if(index[0] > SQ_PULSE_INDEX)
+			{
+				output = (char)pgm_read_byte(&(SQUARE_WAVE_BOTTOM[oscLevel[0]][index[0]-SQ_PULSE_INDEX]));//-oscPulseIndex[0]]));//osc 0 only square for now
+			}
+			else
+			{
+				output = (char)pgm_read_byte(&(SQUARE_WAVE_TOP[oscLevel[0]][index[0]]));
+			}
+			
+		}
+		if(oscWave[1]==0)
+		{
+			output += (char)pgm_read_byte(&(SAW_WAVE[oscLevel[1]][index[1]]));
+		}
+		else
+		{
+			if(index[1] > oscPulseIndex[1])
+			{
+				output += (char)pgm_read_byte(&(SQUARE_WAVE_BOTTOM[oscLevel[1]][index[1]-oscPulseIndex[1]]));
+			}
+			else
+			{
+				output += (char)pgm_read_byte(&(SQUARE_WAVE_TOP[oscLevel[1]][index[1]]));
+			}
+		}
+		if(oscWave[2]==0)
+		{
+			//output_ += (char)noise_.getOutput();
+		}
+		else
+		{
+			if ((index[0] > oscPulseIndex[0]) ^ (index[1] > oscPulseIndex[1]))
+			{
+				output += (char)pgm_read_byte(&(RM_MAX[oscLevel[2]]));
+			}
+			else
+			{
+				output += (char)pgm_read_byte(&(RM_MIN[oscLevel[2]]));
+			}
+		}
+		output >>= 2; //should be /3 not /4 (for 3 oscs), but extra headroom good for filtering
+	}
+	else
+	{
+		if(filtType!=lastFiltType)
+		{
+			lastFiltType = filtType;
+			filtBuf[0] = 0;
+			filtBuf[1] = 0;
+		}
+		switch (filtType)
+		{
+			case 0:
+			if (filtBuf[1] > 256)
+			{
+				output -= (filtR*256)>>SCALE;
+			}
+			else
+			{
+				output -= (filtBuf[1]*filtR)>>SCALE;
+			}
+			filtBuf[0] += ((output*filtC)-(filtBuf[0]*filtC))>>SCALE;
+			filtBuf[1] += ((filtBuf[0]*filtC)-(filtBuf[1]*filtC))>>SCALE;
+			break;
+			case 1:
+			//sample >>= simpBS_;
+			filtBuf[0] -= (filtBuf[0]*filtRC - filtBuf[1]*filtC + output*filtC)>>SCALE;
+			filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;
+			break;
+			case 2:
+			filtBuf[0] += (output*filtC - filtBuf[0]*filtC + filtBuf[0]*filtRC - filtRC*filtBuf[1])>>SCALE;
+			filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;
+			break;
+		}
+		output = filtBuf[1];
+	}
+	processStage = 1 - processStage;
+}
 
 // default constructor
 Ody::Ody()  : engine_(OdyEngine::getInstance()), hardware_(AtmHardware::getInstance())
@@ -53,33 +198,36 @@ void Ody::initialize()
 	}
 }
 
-void Ody::poll(unsigned char ticksPassed)
+void Ody::poll()
 {
-	hardware_.pollMidi();
-	hardware_.pollAnlControls(ticksPassed);
-	hardware_.pollSwitches(ticksPassed);
-	hardware_.pollRotEncoders(ticksPassed);
-	hardware_.refreshFlash(ticksPassed);
-	hardware_.refreshLeds();
-	engine_.poll(ticksPassed);
-}
-
-void Ody::processSample()
-{
-	static int mix_out = 0;
-	static unsigned char filt_out = 0;
-	static unsigned char stage = 0;
-
-	if (stage==0)
+	unsigned char ticks = ticksPassed;
+	if(ticks>0)
 	{
-		mix_out = engine_.getMixerOutput();
+		hardware_.pollMidi();
+		hardware_.pollAnlControls(ticks);
+		hardware_.pollSwitches(ticks);
+		hardware_.pollRotEncoders(ticks);
+		hardware_.refreshFlash(ticks);
+		hardware_.refreshLeds();
+		engine_.poll(ticks);
+		ticksPassed -= ticks;
 	}
-	else
+
+	hpfFc = engine_.getHPF().getFc();
+	hpfFcInc = 255 - hpfFc;
+	ampMult = engine_.getAmp().getOutput();
+	for(unsigned char i=0;i<2;++i)
 	{
-		filt_out = engine_.filterOutput(mix_out);
+		oscWave[i] = (unsigned char)engine_.getOsc(i).getWaveform();
+		oscLevel[i] = engine_.getOsc(i).getLevel();
+		oscPulseIndex[i] = engine_.getOsc(i).getPulseIndex();
 	}
-	OCR2B = filt_out;
-	stage = 1 - stage;
+	oscWave[2] = (unsigned char)engine_.getFxSource();
+	oscLevel[2] = engine_.getFxLevel();
+	filtType = (unsigned char)engine_.getFilter().getType();
+	filtC = engine_.getFilter().getCscaled();
+	filtR = engine_.getFilter().getRscaled();
+	filtRC = engine_.getFilter().getRCscaled();
 }
 
 //***********engine events*********************
@@ -99,12 +247,12 @@ void Ody::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
 				hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW);
 				break;
 				case 1:
-				hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::RED);
+				hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW); //red
 				break;
 				case 2:
-				hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::GREEN);
+				hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW);  //green
 				break;
-			}  	
+			}
 		}
 		else
 		{
@@ -129,7 +277,7 @@ void Ody::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
 			else
 			{
 				hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::YELLOW);
-			}		
+			}
 		}
 	}
 
@@ -229,15 +377,15 @@ void Ody::hardwareSwitchHeld(unsigned char sw)
 	}
 	//if(sw==AtmHardware::BANK)
 	//{
-		//if(engine_.getBank()==LOW)
-		//{
-			//hardware_.getLedSwitch(AtmHardware::BANK).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::YELLOW,true);
-		//}
-		//else
-		//{
-			//hardware_.getLedSwitch(AtmHardware::BANK).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::GREEN,LedRgb::YELLOW,true);
-		//}
-		//engine_.getPatchPtr()->easterEgg(engine_.getMasterClock().getOutput());
+	//if(engine_.getBank()==LOW)
+	//{
+	//hardware_.getLedSwitch(AtmHardware::BANK).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::YELLOW,true);
+	//}
+	//else
+	//{
+	//hardware_.getLedSwitch(AtmHardware::BANK).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::GREEN,LedRgb::YELLOW,true);
+	//}
+	//engine_.getPatchPtr()->easterEgg(engine_.getMasterClock().getOutput());
 	//}
 }
 void Ody::hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise)
@@ -293,3 +441,4 @@ void Ody::hardwareMidiError(unsigned char errorType)
 	hardware_.getLedSwitch(AtmHardware::VALUE).setColour((LedRgb::LedRgbColour)(3-(unsigned char)hardware_.getLedSwitch(AtmHardware::VALUE).getColour()));
 	hardware_.getLedCircular(AtmHardware::VALUE).fill(errorType);
 }
+

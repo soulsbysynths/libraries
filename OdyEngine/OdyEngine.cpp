@@ -162,49 +162,6 @@ void OdyEngine::releaseNote()
 	arEnvelope_.release();
 }
 
-int OdyEngine::getMixerOutput()
-{
-	int out = oscillator_[0].getOutput(audio_.getWtIndex(0)) + oscillator_[1].getOutput(audio_.getWtIndex(1));
-	//int out = oscillator_[1].getOutput(audio_.getWtIndex(1));
-	
-	if(fxSource_==FX_NOISE)
-	{
-		out += (char)noise_.getOutput();
-	}
-	else
-	{
-		if ((audio_.getWtIndex(0) > oscillator_[0].getPulseIndex()) ^ (audio_.getWtIndex(1) > oscillator_[1].getPulseIndex()))
-		{
-			out += (char)pgm_read_byte(&(RM_MAX[rmLevel_]));
-		}
-		else
-		{
-			out += (char)pgm_read_byte(&(RM_MIN[rmLevel_]));
-		}
-	}
-	return out >> 2; //should be /3 not /4 (for 3 oscs), but extra headroom good for filtering
-}
-
-unsigned char OdyEngine::filterOutput(int sample)
-{
-	int out = filter_.processSample(sample);
-	out = hpf_.processSample(out);
-	//int out = hpf_.processSample(sample);
-	out = amplifier_.processSample(out);
-	if(out>127)
-	{
-		return 254;
-	}
-	else if(out<-127)
-	{
-		return 1;
-	}
-	else
-	{
-		return out + 127;
-	}
-}
-
 //***********************MIDI events********************************************
 void OdyEngine::midiNoteOnReceived(unsigned char note, unsigned char velocity)
 {
@@ -400,12 +357,13 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		break;
 		case FUNC_OSC1PW:
 		oscillator_[1].setPulseWidth(127+(newValue<<3));
+		//oscillator_[1].setPulseWidth(31+(newValue<<1));
 		break;
 		case FUNC_OSC1PWM:
 		oscillator_[1].setPwmAmout(newValue<<4);
 		break;
 		case FUNC_OSCLEVELFX:
-		rmLevel_ = newValue>>1;
+		fxLevel_ = newValue>>1;
 		noise_.setLevel(newValue>>1);
 		break;
 		case FUNC_OSCLEVEL0:
@@ -468,7 +426,7 @@ void OdyEngine::patchOptionChanged(unsigned char func, bool newOpt)
 		pitch_[1].setFmBSource((OdyPitch::PitchFmBSource)newOpt);
 		break;		
 		case FUNC_OSC1PW:
-		syncOn_ = newOpt;
+		audio_.setWaveSync(newOpt);
 		break;
 		case FUNC_OSC1PWM:
 		oscillator_[1].setPwmSource((OdyOscillator::PwmSource)newOpt);

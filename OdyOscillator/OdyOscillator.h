@@ -28,11 +28,12 @@ public:
 protected:
 private:
 	OscWave waveform_ = SAW;
-	unsigned char pulseWidth_ = 127;
+	unsigned char pulseWidth_ = 127;  //31;
 	unsigned char pwmAmount_ = 0;
 	PwmSource pwmSource_ = LFO;
-	static const unsigned char PWM_MAX = 246;
-	unsigned char pulseIndex_ = 127;
+	static const unsigned char PWM_MAX = 246;  // 61;
+	static const unsigned char PWM_MIN = 9;
+	unsigned char pulseIndex_ = 127;  //31;
 	unsigned char level_ = 7;  //output level 0-7
 //functions
 public:

@@ -40,6 +40,7 @@ public:
 	unsigned char getClip(){return clip_;}
 	void setAmSource(AmpAmSource newSource){amSource_ = newSource;}
 	AmpAmSource getAmSource(){return amSource_;}
+	char getOutput(){return amp_;}
 protected:
 private:
 	OdyAmplifier( const OdyAmplifier &c );

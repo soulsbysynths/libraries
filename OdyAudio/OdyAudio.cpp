@@ -8,7 +8,7 @@
 
 #include "OdyAudio.h"
 
-static volatile unsigned int ocr0a = 142;
+static volatile unsigned char ocr0a = 142;
 static volatile unsigned char timer0_prescale = 0x0B; // B00001011;
 static volatile unsigned int ocr1a = 1136;
 static volatile unsigned char wtIndexJump[2] = {1,1};
@@ -37,6 +37,8 @@ void OdyAudio::initialize()
 	bitClear(TCCR2A,WGM21);  //Update OCRx at bottom
 	bitClear(TCCR2B,WGM22);  //Top = 0xFF
 
+	
+
 	//Set non-inverting PWM on OC2B pin
 	bitClear(TCCR2A,COM2B0);
 	bitSet(TCCR2A,COM2B1);
@@ -49,7 +51,7 @@ void OdyAudio::initialize()
 	bitSet(TCCR2B,CS20);
 	bitClear(TCCR2B,CS21);
 	bitClear(TCCR2B,CS22);
-	
+
 	bitSet(TIMSK2,TOIE2);
 	
 	// Set Timer 1 to update sample on interrupt
@@ -112,7 +114,7 @@ void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 			}
 		}
 		wtIndexJump[oscNum] = 1 << scale;
-		ocr = F_CPU/(sampleFreq_[oscNum] >> scale);
+		ocr = (F_CPU<<scale)/sampleFreq_[oscNum];
 		if(oscNum==1)
 		{
 			ocr1a = ocr;                  
@@ -148,14 +150,25 @@ unsigned char OdyAudio::getWtIndex(unsigned char oscNum)
 	return wtIndex[oscNum];
 }
 
+void OdyAudio::setWaveSync(bool newSync)
+{
+	waveSync = newSync;
+}
+bool OdyAudio::getWaveSync()
+{
+	return waveSync;
+}
+
 //Interrupt loop.  Sets PWM output (i.e. generates the audio)
-ISR(TIMER1_COMPA_vect) {
+ISR(TIMER1_COMPA_vect) 
+{
 	OCR1A = ocr1a;
 	wtIndex[1] += wtIndexJump[1];
 }
 
 //Interrupt loop.  Sets PWM output (i.e. generates the audio)
-ISR(TIMER0_COMPA_vect) {
+ISR(TIMER0_COMPA_vect) 
+{
 	static unsigned char lastIndex = 0;
 	TCCR0B = timer0_prescale;			//master_prescale;
 	OCR0A = ocr0a;                      //sets pitch

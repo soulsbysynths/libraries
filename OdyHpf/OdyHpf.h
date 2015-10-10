@@ -17,9 +17,7 @@ public:
 protected:
 private:
 	unsigned char fc_ = 0;
-	unsigned char invFc_ = 255;
 	int lpf_ = 0;
-	
 //functions
 public:
 	OdyHpf();

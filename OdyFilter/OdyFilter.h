@@ -45,14 +45,14 @@ private:
 	unsigned char kbrdAmount_ = 0;  //0-15
 	FiltFmASource fmASource_ = S_AND_H;
 	FiltFmBSource fmBSource_ = ADSR;
-	char calcFc_ = 25;
-	char calcQ_ = 127;
-	//int icalcQ_ = 127;
-	int simpRCScaled = 0;
-	int simpC = 0;
-	char mozziF = 0;
-	int mozziFb = 0;
-	int mozziFFbScaled = 0;
+	char karlCut_ = 25;
+	char karlRes_ = 127;
+	int simpRCScaled_ = 0;
+	int simpC_ = 0;
+	unsigned char simpBS_ = 0;
+	char mozziF_ = 0;
+	int mozziFb_ = 0;
+	int mozziFFbScaled_ = 0;
 	int buf1_,buf0_;
 //functions
 public:
@@ -76,6 +76,9 @@ public:
 	FiltFmBSource getFmBSource(){return fmBSource_;}	
 	void refresh(unsigned char kbrd, char fmA, char fmB);
 	int processSample(int sample);	
+	int getCscaled();
+	int getRscaled();
+	int getRCscaled();
 protected:
 private:
 	OdyFilter( const OdyFilter &c );

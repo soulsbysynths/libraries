@@ -26,13 +26,15 @@ char OdyOscillator::getOutput(unsigned char index)
 	}
 	else
 	{
-		if(index > pulseIndex_) //this is flipped:  minus portion of wave, then positive, because pw is back to front on arp
+		if(index > pulseIndex_) 
 		{
-			return pgm_read_byte(&(SQUARE_MIN[level_]));
+			return pgm_read_byte(&(SQUARE_WAVE_BOTTOM[level_][index-pulseIndex_]));
+			//return pgm_read_byte(&(SQUARE_MIN[level_]));
 		} 
 		else
 		{
-			return pgm_read_byte(&(SQUARE_MAX[level_]));
+			return pgm_read_byte(&(SQUARE_WAVE_TOP[level_][index]));
+			//return pgm_read_byte(&(SQUARE_MAX[level_]));
 		}
 	}	
 }
@@ -40,29 +42,30 @@ char OdyOscillator::getOutput(unsigned char index)
 void OdyOscillator::refresh(char envOutput, char lfoOutput)
 {
 	int curIndex, offset;
-	char modsrc;
+	int modsrc;
 	
 	curIndex = pulseWidth_;
 	if(pwmAmount_>0)
 	{
 		if(pwmSource_==LFO)
 		{
-			modsrc = lfoOutput;
+			modsrc = (int)lfoOutput;
 		}
 		else
 		{
-			modsrc = envOutput;
-		}		
-		offset = ((int)modsrc * pwmAmount_) >> 8;
+			modsrc = (int)envOutput;
+		}
+		//modsrc >>= 2;		
+		offset = (modsrc * pwmAmount_) >> 8;
 		curIndex += offset;
 	}
 	if(curIndex>PWM_MAX)
 	{
 		pulseIndex_ = PWM_MAX;
 	}
-	else if (curIndex < 0)
+	else if (curIndex < PWM_MIN)
 	{
-		pulseIndex_ = 0;
+		pulseIndex_ = PWM_MIN;
 	}
 	else
 	{

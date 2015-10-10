@@ -528,10 +528,7 @@ void AtmEngine::midiSysexWrite(unsigned char data)
 {
 	base_->engineMidiTransmit(data);
 }
-void AtmEngine::midiChannelChanged(unsigned char channel)
-{
-	base_->engineFunctionChanged(0,channel,false);
-}
+
 void AtmEngine::midiPitchBendReceived(char bend)
 {
 	pitchBend_ = bend;

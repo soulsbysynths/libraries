@@ -95,7 +95,7 @@ public:
 		FX_NOISE,
 		FX_RINGMOD
 	};
-	static const unsigned int WAVE_LENGTH = 256;
+	static const unsigned int WAVE_LENGTH = 256;//64;
 protected:
 private:
 	static const unsigned char SYSEX_PROD_ID = 0;
@@ -103,7 +103,7 @@ private:
 	
 	
 	FxSource fxSource_ = FX_NOISE;
-	unsigned char rmLevel_ = 7;
+	unsigned char fxLevel_ = 7;
 	
 	//MasterClock masterClock_;
 	Midi* midi_;
@@ -127,8 +127,7 @@ private:
 	bool noteOn_[128] = {false};
 	unsigned char noteLowest_ = 127;
 	unsigned char noteHighest_ = 0;
-	bool syncOn_ = false;
-	
+
 	//functions
 	public:
 	void construct(OdyEngineBase* base);
@@ -138,13 +137,19 @@ private:
 	Midi* getMidiPtr() { return midi_; }
 	OdyFilter& getFilter() { return filter_; }
 	const OdyFilter& getFilter() const { return filter_; }
+	OdyHpf& getHPF() { return hpf_; }
+	const OdyHpf& getHPF() const { return hpf_; }
+	OdyAmplifier& getAmp() { return amplifier_; }
+	const OdyAmplifier& getAmp() const { return amplifier_; }
+	OdyOscillator& getOsc(unsigned char oscNum) { return oscillator_[oscNum]; }
+	const OdyOscillator& getOsc(unsigned char oscNum) const { return oscillator_[oscNum]; }
 	void initialize();
 	void poll(unsigned char ticksPassed);
 	void setFunction(OdyEngine::Func new_func);
 	OdyEngine::Func getFunction(){return function_;}
 	void setBank(unsigned char newBank);
-	int getMixerOutput();
-	unsigned char filterOutput(int sample);
+	FxSource getFxSource(){return fxSource_;}
+	unsigned char getFxLevel(){return fxLevel_;}
 	void patchValueChanged(unsigned char func, unsigned char newValue);
 	void patchOptionChanged(unsigned char func, bool new_opt);
 	void patchCtrlChanged(unsigned char anlControl_, unsigned char newValue);

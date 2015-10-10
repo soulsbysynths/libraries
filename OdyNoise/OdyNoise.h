@@ -21,7 +21,7 @@ private:
 	unsigned char level_ = 0;  //0-7 for ody
 	bool pink_ = false;
 	char wavetable_[256];
-	unsigned char readIndex_ = 0;
+	volatile unsigned char readIndex_ = 0;
 	unsigned char readIndexInc_ = 0;
 	unsigned char writeIndex_ = 0;
 //functions

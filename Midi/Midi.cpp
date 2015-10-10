@@ -44,7 +44,6 @@ void Midi::setChannel(unsigned char new_channel)
 	{
 		channel_ = new_channel;
 	}
-	base_->midiChannelChanged(channel_);
 }
 void Midi::reset()
 {

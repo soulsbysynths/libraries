@@ -98,6 +98,7 @@ class AtmHardware
 	static const unsigned int HOLD_EVENT_TICKS = 2000;
 	static const unsigned char SYSEX_PRODUCT = 0;
 	static const unsigned int MIDI_CHANNEL_ADDRESS = 1023;
+	
 	enum MidiError : unsigned char
 	{
 		MIDIERR_NONE,
@@ -116,6 +117,9 @@ class AtmHardware
 	LedRgb ledSwitch_[3];
 	Led ledMidi_;
 	bool midiChannelSelectMode_ = false;
+	static const unsigned char MIDI_THRU_ON = 0x80;
+	unsigned char midiThru_ = 0;
+	unsigned char midiChannel_ = 0;
 	//functions
 	public:
 	static AtmHardware& getInstance()
@@ -137,8 +141,7 @@ class AtmHardware
 	Led& getLedMidi() { return ledMidi_; }
 	const Led& getLedMidi() const { return ledMidi_; }
 	bool getMidiChannelSelectMode() {return midiChannelSelectMode_;}
-	unsigned char readMidiChannel();
-	void writeMidiChannel(unsigned char newChannel);
+	unsigned char getMidiChannel(){return midiChannel_;}
 	void refreshLeds();
 	bool refreshFlash(unsigned char ticksPassed);
 	void pollAnlControls(unsigned char ticksPassed);
@@ -154,6 +157,7 @@ class AtmHardware
 	void writeByte(unsigned char address, unsigned char reg, unsigned char value);        // Typically only used internally, but allows the user to write any register if needed, so it's public
 	void beginSpi();
 	void writeSpi(unsigned char cData);
+	void writeMidiSettings();
 	AtmHardware() {}
 	AtmHardware(AtmHardwareBase* base);
 	~AtmHardware();

@@ -22,6 +22,7 @@
 #include "AtmHardwareBase.h"
 #include "OdyEngine.h"
 #include "AtmHardware.h"
+#include "OdyOscillatorProgmem.h"
 
 class Ody : public AtmHardwareBase, OdyEngineBase 
 {
@@ -39,8 +40,7 @@ public:
 	Ody();
 	~Ody();
 	void initialize();
-	void poll(unsigned char ticksPassed);
-	void processSample();
+	void poll();
 	void hardwareSwitchChanged(unsigned char sw, unsigned char newValue);
 	void hardwareSwitchHeld(unsigned char sw);
 	void hardwareAnalogueControlChanged(unsigned char control, unsigned char newValue);

@@ -179,7 +179,6 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	void midiSysexDataReceived(unsigned char index, unsigned char data);
 	void midiSysexStopReceived(void);
 	void midiSysexWrite(unsigned char data);
-	void midiChannelChanged(unsigned char channel);
 	void midiPitchBendReceived(char bend);
 	void refreshSysex();
 	void writeSysexPatch(unsigned char patchNum);

@@ -38,7 +38,9 @@ public:
 	~OdyAudio();
 	void setSampleFreq(unsigned char oscNum, unsigned long newSf);
 	unsigned long getSampleFreq(unsigned char oscNum){return sampleFreq_[oscNum];}
-	unsigned char getWtIndex(unsigned char oscNum);
+	static unsigned char getWtIndex(unsigned char oscNum);
+	static void setWaveSync(bool newSync);
+	static bool getWaveSync();
 	void initialize();
 protected:
 private:
