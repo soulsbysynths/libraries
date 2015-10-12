@@ -17,7 +17,7 @@
 #include "Ody.h"
 #include "OdyOscillatorProgmem.h"
 
-#define MICROSECONDS_PER_TIMER2_OVERFLOW 32
+#define MICROSECONDS_PER_TIMER2_OVERFLOW 64//32
 
 static const char RM_MAX[8] PROGMEM = {0,21,34,48,65,83,105,127};
 static const char RM_MIN[8] PROGMEM = {0,-21,-34,-48,-65,-83,-105,-127};
@@ -43,40 +43,17 @@ ISR(TIMER2_OVF_vect) {
 	static int hpfLpfOutput = 0;
 	static int filtBuf[2];
 	static unsigned char lastFiltType = 0;
-	unsigned char index[2];
+	static unsigned char index[2];
 	const char SCALE = 7;
 	const unsigned SQ_PULSE_INDEX = 127;
 	
-	tickCnt += MICROSECONDS_PER_TIMER2_OVERFLOW;
 
-	if (tickCnt >= 1000)
+
+	switch  (processStage&0x03)
 	{
-		tickCnt -= 1000;
-		ticksPassed++;
-	}
+		case 0x00:
 
-	if (processStage==0)
-	{
-		hpfLpfOutput = ((output * hpfFc) + (hpfLpfOutput * hpfFcInc))>>8;
-		output -= hpfLpfOutput;
 
-		output = (output * ampMult) >> ampBs;
-		
-		if(output>127)
-		{
-			OCR2B = 254;
-		}
-		else if(output<-127)
-		{
-			OCR2B = 0;
-		}
-		else
-		{
-			OCR2B = output + 127;
-		}
-		
-		index[0] = OdyAudio::getWtIndex(0);
-		index[1] = OdyAudio::getWtIndex(1);
 		if(oscWave[0]==0)
 		{
 			output = (char)pgm_read_byte(&(SAW_WAVE[oscLevel[0]][index[0]]));
@@ -108,6 +85,10 @@ ISR(TIMER2_OVF_vect) {
 				output += (char)pgm_read_byte(&(SQUARE_WAVE_TOP[oscLevel[1]][index[1]]));
 			}
 		}
+		break;
+
+		case 0x01:
+
 		if(oscWave[2]==0)
 		{
 			//output_ += (char)noise_.getOutput();
@@ -123,16 +104,16 @@ ISR(TIMER2_OVF_vect) {
 				output += (char)pgm_read_byte(&(RM_MIN[oscLevel[2]]));
 			}
 		}
-		output >>= 2; //should be /3 not /4 (for 3 oscs), but extra headroom good for filtering
-	}
-	else
-	{
+		output >>= 1; //should be /3 not /4 (for 3 oscs), but extra headroom good for filtering
 		if(filtType!=lastFiltType)
 		{
 			lastFiltType = filtType;
 			filtBuf[0] = 0;
 			filtBuf[1] = 0;
 		}
+
+		break;
+		case 0x02:
 		switch (filtType)
 		{
 			case 0:
@@ -157,9 +138,142 @@ ISR(TIMER2_OVF_vect) {
 			filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;
 			break;
 		}
-		output = filtBuf[1];
+		
+		break;
+		case 0x03:
+		hpfLpfOutput = ((filtBuf[1] * hpfFc) + (hpfLpfOutput * hpfFcInc))>>8;
+		output = filtBuf[1] - hpfLpfOutput;
+		
+		output = (output * ampMult) >> ampBs;
+		if(output>127)
+		{
+			OCR2B = 254;
+		}
+		else if(output<-127)
+		{
+			OCR2B = 0;
+		}
+		else
+		{
+			OCR2B = output + 127;
+		}
+		tickCnt += MICROSECONDS_PER_TIMER2_OVERFLOW;
+
+		if (tickCnt >= 1000)
+		{
+			tickCnt -= 1000;
+			ticksPassed++;
+		}
+		index[0] = OdyAudio::getWtIndex(0);
+		index[1] = OdyAudio::getWtIndex(1);
+		break;
 	}
-	processStage = 1 - processStage;
+	processStage++;
+	//if (processStage==0)
+	//{
+	//hpfLpfOutput = ((output * hpfFc) + (hpfLpfOutput * hpfFcInc))>>8;
+	//output -= hpfLpfOutput;
+	//
+	//output = (output * ampMult) >> ampBs;
+	//
+	//if(output>127)
+	//{
+	//OCR2B = 254;
+	//}
+	//else if(output<-127)
+	//{
+	//OCR2B = 0;
+	//}
+	//else
+	//{
+	//OCR2B = output + 127;
+	//}
+	//
+	//index[0] = OdyAudio::getWtIndex(0);
+	//index[1] = OdyAudio::getWtIndex(1);
+	//if(oscWave[0]==0)
+	//{
+	//output = (char)pgm_read_byte(&(SAW_WAVE[oscLevel[0]][index[0]]));
+	//}
+	//else
+	//{
+	//if(index[0] > SQ_PULSE_INDEX)
+	//{
+	//output = (char)pgm_read_byte(&(SQUARE_WAVE_BOTTOM[oscLevel[0]][index[0]-SQ_PULSE_INDEX]));//-oscPulseIndex[0]]));//osc 0 only square for now
+	//}
+	//else
+	//{
+	//output = (char)pgm_read_byte(&(SQUARE_WAVE_TOP[oscLevel[0]][index[0]]));
+	//}
+	//
+	//}
+	//if(oscWave[1]==0)
+	//{
+	//output += (char)pgm_read_byte(&(SAW_WAVE[oscLevel[1]][index[1]]));
+	//}
+	//else
+	//{
+	//if(index[1] > oscPulseIndex[1])
+	//{
+	//output += (char)pgm_read_byte(&(SQUARE_WAVE_BOTTOM[oscLevel[1]][index[1]-oscPulseIndex[1]]));
+	//}
+	//else
+	//{
+	//output += (char)pgm_read_byte(&(SQUARE_WAVE_TOP[oscLevel[1]][index[1]]));
+	//}
+	//}
+	//if(oscWave[2]==0)
+	//{
+	////output_ += (char)noise_.getOutput();
+	//}
+	//else
+	//{
+	//if ((index[0] > oscPulseIndex[0]) ^ (index[1] > oscPulseIndex[1]))
+	//{
+	//output += (char)pgm_read_byte(&(RM_MAX[oscLevel[2]]));
+	//}
+	//else
+	//{
+	//output += (char)pgm_read_byte(&(RM_MIN[oscLevel[2]]));
+	//}
+	//}
+	//output >>= 2; //should be /3 not /4 (for 3 oscs), but extra headroom good for filtering
+	//}
+	//else
+	//{
+	//if(filtType!=lastFiltType)
+	//{
+	//lastFiltType = filtType;
+	//filtBuf[0] = 0;
+	//filtBuf[1] = 0;
+	//}
+	//switch (filtType)
+	//{
+	//case 0:
+	//if (filtBuf[1] > 256)
+	//{
+	//output -= (filtR*256)>>SCALE;
+	//}
+	//else
+	//{
+	//output -= (filtBuf[1]*filtR)>>SCALE;
+	//}
+	//filtBuf[0] += ((output*filtC)-(filtBuf[0]*filtC))>>SCALE;
+	//filtBuf[1] += ((filtBuf[0]*filtC)-(filtBuf[1]*filtC))>>SCALE;
+	//break;
+	//case 1:
+	////sample >>= simpBS_;
+	//filtBuf[0] -= (filtBuf[0]*filtRC - filtBuf[1]*filtC + output*filtC)>>SCALE;
+	//filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;
+	//break;
+	//case 2:
+	//filtBuf[0] += (output*filtC - filtBuf[0]*filtC + filtBuf[0]*filtRC - filtRC*filtBuf[1])>>SCALE;
+	//filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;
+	//break;
+	//}
+	//output = filtBuf[1];
+	//}
+	//processStage = 1 - processStage;
 }
 
 // default constructor
@@ -176,21 +290,15 @@ Ody::~Ody()
 
 void Ody::initialize()
 {
-	engine_.initialize();
+	
 	hardware_.getRotEncoder(AtmHardware::FUNCTION).setContinuous(true);
 	hardware_.getRotEncoder(AtmHardware::VALUE).setContinuous(false);
 	hardware_.beginMidi(MIDI_UBRR);
-	engine_.getMidiPtr()->setChannel(hardware_.readMidiChannel());
-	if(hardware_.getMidiChannelSelectMode()==true)
+	
+	if(hardware_.getMidiChannelSelectMode()==false)
 	{
-		hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::YELLOW);
-		hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::OFF);
-		hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::OFF);
-		hardware_.getLedCircular(AtmHardware::VALUE).setState(0);
-		hardware_.getRotEncoder(AtmHardware::FUNCTION).setValue((char)engine_.getMidiPtr()->getChannel());
-	}
-	else
-	{
+		engine_.initialize();
+		engine_.getMidiPtr()->setChannel(hardware_.getMidiChannel());
 		for(unsigned char i=0;i<2;++i)
 		{
 			hardware_.getLedSwitch(i).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::YELLOW,LedRgb::RED,true);
@@ -233,73 +341,59 @@ void Ody::poll()
 //***********engine events*********************
 void Ody::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
 {
-	if(hardware_.getMidiChannelSelectMode()==true)
+
+	if(func==OdyEngine::FUNC_FILTTYPE)
 	{
-		hardware_.getLedCircular(AtmHardware::FUNCTION).select(val);
+		switch (val)
+		{
+			case 0:
+			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW);
+			break;
+			case 1:
+			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW); //red
+			break;
+			case 2:
+			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW);  //green
+			break;
+		}
 	}
 	else
 	{
-		if(func==OdyEngine::FUNC_FILTTYPE)
+		hardware_.getRotEncoder(AtmHardware::VALUE).setValue((char)val);
+		hardware_.getLedCircular(AtmHardware::VALUE).fill(val);
+		if(func==OdyEngine::FUNC_ENVA2)
 		{
-			switch (val)
-			{
-				case 0:
-				hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW);
-				break;
-				case 1:
-				hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW); //red
-				break;
-				case 2:
-				hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW);  //green
-				break;
-			}
+			hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)OdyEngine::FUNC_ENVA);
+		}
+		else if(func==OdyEngine::FUNC_ENVR2)
+		{
+			hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)OdyEngine::FUNC_ENVR);
 		}
 		else
 		{
-			hardware_.getRotEncoder(AtmHardware::VALUE).setValue((char)val);
-			hardware_.getLedCircular(AtmHardware::VALUE).fill(val);
-			if(func==OdyEngine::FUNC_ENVA2)
-			{
-				hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)OdyEngine::FUNC_ENVA);
-			}
-			else if(func==OdyEngine::FUNC_ENVR2)
-			{
-				hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)OdyEngine::FUNC_ENVR);
-			}
-			else
-			{
-				hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)func);
-			}
-			if(opt==true)
-			{
-				hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::RED);
-			}
-			else
-			{
-				hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::YELLOW);
-			}
+			hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)func);
+		}
+		if(opt==true)
+		{
+			hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::RED);
+		}
+		else
+		{
+			hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::YELLOW);
 		}
 	}
-
 }
 
 //**************************hardware events************************************
 void Ody::hardwareAnalogueControlChanged(unsigned char control, unsigned char newValue)
 {
-	if(hardware_.getMidiChannelSelectMode()==true)
-	{
-		return;
-	}
 	engine_.getPatchPtr()->setCtrlValue(control,newValue);
 }
 
 void Ody::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 {
 	bool opt;
-	if(hardware_.getMidiChannelSelectMode()==true)
-	{
-		return;
-	}
+
 	if(sw==AtmHardware::FUNCTION)
 	{
 		if(engine_.getFunction()==OdyEngine::FUNC_PORTAMENTO)
@@ -367,10 +461,6 @@ void Ody::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 }
 void Ody::hardwareSwitchHeld(unsigned char sw)
 {
-	if(hardware_.getMidiChannelSelectMode()==true)
-	{
-		return;
-	}
 	if(sw==AtmHardware::FUNCTION && engine_.getFunction()==OdyEngine::FUNC_PORTAMENTO)
 	{
 		hardware_.getLedSwitch(AtmHardware::FUNCTION).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::YELLOW,true);
@@ -390,46 +480,39 @@ void Ody::hardwareSwitchHeld(unsigned char sw)
 }
 void Ody::hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise)
 {
-	if(hardware_.getMidiChannelSelectMode()==true)
-	{
-		if(rotary==AtmHardware::FUNCTION)
-		{
-			hardware_.writeMidiChannel(newValue);
-			engine_.getMidiPtr()->setChannel(newValue);
-		}
-	}
-	else
-	{
-		if(rotary==AtmHardware::FUNCTION)
-		{
-			engine_.setFunction((OdyEngine::Func)newValue);
-		}
 
-		if(rotary==AtmHardware::VALUE)
+	if(rotary==AtmHardware::FUNCTION)
+	{
+		engine_.setFunction((OdyEngine::Func)newValue);
+	}
+
+	if(rotary==AtmHardware::VALUE)
+	{
+		if(hardware_.getSwitch(AtmHardware::VALUE).getState()==HIGH)
 		{
-			if(hardware_.getSwitch(AtmHardware::VALUE).getState()==HIGH)
+			if(testNote_<127 && testNote_>0)
 			{
-				if(testNote_<127 && testNote_>0)
+				engine_.midiNoteOffReceived(testNote_);
+				if(clockwise==true)
 				{
-					engine_.midiNoteOffReceived(testNote_);
-					if(clockwise==true)
-					{
-						testNote_++;
-					}
-					else
-					{
-						testNote_--;
-					}
-					engine_.midiNoteOnReceived(testNote_,127);
+					testNote_++;
 				}
-			}
-			else
-			{
-				engine_.getPatchPtr()->setFunctionValue(engine_.getFunction(),newValue);
+				else
+				{
+					testNote_--;
+				}
+				engine_.midiNoteOnReceived(testNote_,127);
 			}
 		}
+		else
+		{
+			engine_.getPatchPtr()->setFunctionValue(engine_.getFunction(),newValue);
+		}
 	}
-
+}
+void Ody::hardwareMidiChannelChanged(unsigned char channel)
+{
+	engine_.getMidiPtr()->setChannel(channel);
 }
 void Ody::hardwareMidiReceived(unsigned char data)
 {

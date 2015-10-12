@@ -27,6 +27,18 @@ OdyAudio::~OdyAudio()
 
 void OdyAudio::initialize()
 {
+	
+	  ////Fast PWM mode
+	  //sbi(TCCR2A,WGM20);  //TOV flag set on max
+	  //sbi(TCCR2A,WGM21);  //Update OCRx at bottom
+	  //cbi(TCCR2B,WGM22);  //Top = 0xFF
+	  //
+	  ////Set non-inverting PWM on OC2B pin
+	  //cbi(TCCR2A,COM2B0);
+	  //sbi(TCCR2A,COM2B1);
+	  ////set normal operation on OC2A pin
+	  //cbi(TCCR2A,COM2A0);
+	  //cbi(TCCR2A,COM2A1);
 	cli();      //pause interrupts
 	//use internal clock
 	bitClear(ASSR,EXCLK);    //disable external clock
@@ -34,7 +46,7 @@ void OdyAudio::initialize()
 
 	//Fast PWM mode
 	bitSet(TCCR2A,WGM20);  //TOV flag set on max
-	bitClear(TCCR2A,WGM21);  //Update OCRx at bottom
+	bitSet(TCCR2A,WGM21);  //Update OCRx at bottom
 	bitClear(TCCR2B,WGM22);  //Top = 0xFF
 
 	
@@ -94,14 +106,14 @@ void OdyAudio::initialize()
 }
 void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 {
-	const unsigned char SCALE_OFFSET = 15;
+	const unsigned char SCALE_OFFSET = 13;
 	unsigned long ocr, testSf;
 	unsigned char scale = 0;
 	unsigned char i;
 	if (newSf!=sampleFreq_[oscNum])
 	{              
 		sampleFreq_[oscNum] = newSf;     
-		for(i=0;i<7;i++)
+		for(i=0;i<8;i++)
 		{
 			testSf = (unsigned long)1<<(SCALE_OFFSET+i);
 			if(sampleFreq_[oscNum]>testSf)

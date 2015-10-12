@@ -335,7 +335,7 @@ void AtmHardware::pollRotEncoders(unsigned char ticksPassed)
 			else if(midiChannelSelectMode_==true && i==FUNCTION)
 			{
 				midiChannel_ = rotEncoder_[i].getValue();
-				base_->hardMidiChannelChanged(midiChannel_);
+				base_->hardwareMidiChannelChanged(midiChannel_);
 				ledCircular_[FUNCTION].select(midiChannel_);
 				writeMidiSettings();
 			}

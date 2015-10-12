@@ -274,7 +274,7 @@ void Atm::hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newVa
 	}
 
 }
-void Atm::hardMidiChannelChanged(unsigned char channel)
+void Atm::hardwareMidiChannelChanged(unsigned char channel)
 {
 	engine_.getMidiPtr()->setChannel(channel);
 }

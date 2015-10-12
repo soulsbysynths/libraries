@@ -45,6 +45,7 @@ public:
 	void hardwareSwitchHeld(unsigned char sw);
 	void hardwareAnalogueControlChanged(unsigned char control, unsigned char newValue);
 	void hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise);
+	void hardwareMidiChannelChanged(unsigned char channel);
 	void hardwareMidiReceived(unsigned char data);
 	void hardwareMidiError(unsigned char errorType);
 	void engineFunctionChanged(unsigned char func, unsigned char val, bool opt);
