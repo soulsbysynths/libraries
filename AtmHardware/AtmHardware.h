@@ -121,6 +121,7 @@ class AtmHardware
 	unsigned char midiThru_ = 0;
 	unsigned char midiChannel_ = 0;
 	//functions
+	
 	public:
 	static AtmHardware& getInstance()
 	{

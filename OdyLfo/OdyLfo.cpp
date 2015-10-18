@@ -44,7 +44,7 @@ char OdyLfo::getExpOutput(LfoWave wave)
 		return -pgm_read_byte(&(EXP_CONVERT[-tmp]));
 	}
 	else{
-		return pgm_read_byte(&(EXP_CONVERT[tmp]));
+		return pgm_read_byte(&(EXP_CONVERT[(unsigned char)tmp]));
 	}	
 }
 void OdyLfo::refresh(unsigned char ticksPassed)

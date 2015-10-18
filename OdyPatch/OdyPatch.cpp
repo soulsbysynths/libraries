@@ -74,7 +74,7 @@ void OdyPatch::writePatch(unsigned char patchNum)
 {
 	unsigned int startAddr = (unsigned int)PATCH_SIZE * patchNum;
 	unsigned int addr = 0;
-	unsigned char i,j;
+	unsigned char i;
 	unsigned char data[PATCH_SIZE];
 	for(i=0;i<10;++i)
 	{

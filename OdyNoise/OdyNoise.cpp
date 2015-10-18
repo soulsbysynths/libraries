@@ -7,7 +7,9 @@
 
 
 #include "OdyNoise.h"
-
+static volatile char wavetable[256];
+static volatile unsigned char readIndex = 0;
+static volatile unsigned char readIndexInc = 0;
 // default constructor
 OdyNoise::OdyNoise()
 {
@@ -20,8 +22,8 @@ OdyNoise::~OdyNoise()
 
 char OdyNoise::getOutput()
 {
-	readIndex_ += pgm_read_byte(&(PRIME_NUMBERS[readIndexInc_]));
-	return wavetable_[readIndex_];
+	readIndex += pgm_read_byte(&(PRIME_NUMBERS[readIndexInc]));
+	return wavetable[readIndex];
 }
 
 void OdyNoise::refresh()
@@ -33,14 +35,14 @@ void OdyNoise::refresh()
 	if(pink_==true){
 		noise = filterPink(noise);
 	}
-	wavetable_[writeIndex_] = noise;
+	wavetable[writeIndex_] = noise;
 	writeIndex_++;
 	
-	if(readIndexInc_>=PRIME_SIZE-1){
-		readIndexInc_=0;
+	if(readIndexInc>=PRIME_SIZE-1){
+		readIndexInc=0;
 	}
 	else{
-		readIndexInc_++;
+		readIndexInc++;
 	}
 }
 

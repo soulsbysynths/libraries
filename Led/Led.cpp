@@ -57,15 +57,11 @@ void Led::flashStop()
 }
 bool Led::refreshFlash(unsigned char tick_inc)
 {
-	bool flashing = false;
-	unsigned char onticks = 0;
-	unsigned char offticks = 0;
 	if(flashCnt_>0)
 	{
-		flashing = true;
 		flashTick_ += tick_inc;
-		onticks = getFlashOnticks();
-		offticks = getFlashOffTicks();
+		unsigned char onticks = getFlashOnticks();
+		unsigned char offticks = getFlashOffTicks();
 		if((led_==true && flashTick_>=onticks) || (led_==false && flashTick_>=offticks))
 		{
 			if(led_==true)

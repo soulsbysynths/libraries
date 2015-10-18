@@ -49,7 +49,6 @@ private:
 	char karlRes_ = 127;
 	int simpRCScaled_ = 0;
 	int simpC_ = 0;
-	unsigned char simpBS_ = 0;
 	char mozziF_ = 0;
 	int mozziFb_ = 0;
 	int mozziFFbScaled_ = 0;

@@ -46,15 +46,16 @@ void OdyFilter::refresh(unsigned char kbrd, char fmA, char fmB)
 		break;
 		case SIMPLE:
 		simpC_ = map(tmpFc,0,255,5,122); //0.5 - 122
-		//simpR = map(q_,0,255,45,3);
-		//simpBS_ = map(q_,0,255,0,3);
 		simpR = map(q_,0,255,45,map(tmpFc,0,255,20,2)); //45 - 0.2
-		simpRCScaled_ = (simpR*simpC_)>>SCALE;		
+		simpRCScaled_ = (simpR*simpC_)>>SCALE;	
+		//simpC_ = map(tmpFc,0,255,1,61); //0.25 - 61
+		//simpR = map(q_,0,255,23,1); //23 - 0.09
+		//simpRCScaled_ = (simpR*simpC_)>>6;	
 		break;
 		case MOZZI:
 		mozziF_ = tmpFc>>1;
-		mozziFb_ =  (q_>>1) + ((int)(q_>>1) * (127 - mozziF_))>>SCALE;
-		mozziFFbScaled_ = (mozziFb_ * tmpFc)>>SCALE;
+		mozziFb_ =  q_>>1;// + (((int)(q_>>1) * (127 - mozziF_))>>SCALE);
+		mozziFFbScaled_ = (mozziFb_*mozziF_)>>SCALE;
 		break;
 	}
 }
@@ -118,7 +119,6 @@ int OdyFilter::processSample(int sample)
 		buf1_ += ((buf0_*karlCut_)-(buf1_*karlCut_))>>SCALE;
 		break;
 		case SIMPLE:
-		//sample >>= simpBS_;
 		buf0_ -= (buf0_*simpRCScaled_ - buf1_*simpC_ + sample*simpC_)>>SCALE;
 		buf1_ -= (buf1_*simpRCScaled_ + buf0_*simpC_)>>SCALE;
 		break;

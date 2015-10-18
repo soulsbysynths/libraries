@@ -106,17 +106,25 @@ void OdyAudio::initialize()
 }
 void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 {
-	const unsigned char SCALE_OFFSET = 13;
 	unsigned long ocr, testSf;
 	unsigned char scale = 0;
 	unsigned char i;
 	if (newSf!=sampleFreq_[oscNum])
 	{              
+		//if(oscNum==0)
+		//{
+		//	testSf = 3520;
+		//}
+		//else
+		//{
+			testSf = 7040;  //half of the base freq for jumping waveform
+		//}
+		
 		sampleFreq_[oscNum] = newSf;     
-		for(i=0;i<8;i++)
+		for(i=0;i<7;i++)
 		{
-			testSf = (unsigned long)1<<(SCALE_OFFSET+i);
-			if(sampleFreq_[oscNum]>testSf)
+			testSf *= 2;
+			if(sampleFreq_[oscNum]>=testSf)
 			{
 				scale = i+1;
 			}
@@ -127,7 +135,7 @@ void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 		}
 		wtIndexJump[oscNum] = 1 << scale;
 		ocr = (F_CPU<<scale)/sampleFreq_[oscNum];
-		if(oscNum==1)
+		if(oscNum==0)
 		{
 			ocr1a = ocr;                  
 		}
@@ -175,18 +183,16 @@ bool OdyAudio::getWaveSync()
 ISR(TIMER1_COMPA_vect) 
 {
 	OCR1A = ocr1a;
-	wtIndex[1] += wtIndexJump[1];
+	if(waveSync==true && (wtIndex[1]+wtIndexJump[1])<wtIndex[1]){
+		wtIndex[0] = 0;
+	}
+	wtIndex[0] += wtIndexJump[0];
 }
 
 //Interrupt loop.  Sets PWM output (i.e. generates the audio)
 ISR(TIMER0_COMPA_vect) 
 {
-	static unsigned char lastIndex = 0;
 	TCCR0B = timer0_prescale;			//master_prescale;
 	OCR0A = ocr0a;                      //sets pitch
-	lastIndex = wtIndex[0];
-	wtIndex[0] += wtIndexJump[0];
-	if(waveSync==true && wtIndex[0]<lastIndex){
-		wtIndex[1] = 0;
-	}
+	wtIndex[1] += wtIndexJump[1];
 }

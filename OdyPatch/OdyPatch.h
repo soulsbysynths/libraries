@@ -26,8 +26,6 @@
 #ifndef bitWrite
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
 #endif
-#define HIGH 0x1
-#define LOW  0x0
 
 class OdyPatch
 {

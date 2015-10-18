@@ -17,14 +17,19 @@
 #include "Ody.h"
 #include "OdyOscillatorProgmem.h"
 
-#define MICROSECONDS_PER_TIMER2_OVERFLOW 64//32
+#define MICROSECONDS_PER_TIMER2_OVERFLOW 256//64//32
+#define min(a) ((a < 127) ? a : 127)
+#define max(a) ((a < -127) ? -127 : a)
+#define clip(a) min(max(a))
 
-static const char RM_MAX[8] PROGMEM = {0,21,34,48,65,83,105,127};
-static const char RM_MIN[8] PROGMEM = {0,-21,-34,-48,-65,-83,-105,-127};
-
+static const char RM_LEVEL[8] PROGMEM = {0,21,34,48,65,83,105,127};
+static const char SCALE = 7;
+static const unsigned char SQ_PULSE_INDEX = 127;
+static const char OUTPUT_MIN = -127;
+static const char OUTPUT_MAX = 127;
 volatile static unsigned char ticksPassed = 0;
-volatile static unsigned char hpfFc = 0;
-volatile static unsigned char hpfFcInc = 255;
+volatile static char hpfFc = 0;
+volatile static char hpfFcInc = 127;
 volatile static unsigned char ampMult = 0;
 volatile static unsigned char ampBs = 6;
 volatile static unsigned char oscWave[3];
@@ -42,18 +47,18 @@ ISR(TIMER2_OVF_vect) {
 	static int output = 0;
 	static int hpfLpfOutput = 0;
 	static int filtBuf[2];
-	static unsigned char lastFiltType = 0;
+	//static unsigned char lastFiltType = 0;
 	static unsigned char index[2];
 	const char SCALE = 7;
-	const unsigned SQ_PULSE_INDEX = 127;
+	const unsigned char SQ_PULSE_INDEX = 127;
 	
 
 
 	switch  (processStage&0x03)
 	{
 		case 0x00:
-
-
+		index[0] = OdyAudio::getWtIndex(0);
+		index[1] = OdyAudio::getWtIndex(1);
 		if(oscWave[0]==0)
 		{
 			output = (char)pgm_read_byte(&(SAW_WAVE[oscLevel[0]][index[0]]));
@@ -62,11 +67,11 @@ ISR(TIMER2_OVF_vect) {
 		{
 			if(index[0] > SQ_PULSE_INDEX)
 			{
-				output = (char)pgm_read_byte(&(SQUARE_WAVE_BOTTOM[oscLevel[0]][index[0]-SQ_PULSE_INDEX]));//-oscPulseIndex[0]]));//osc 0 only square for now
+				output = -(char)pgm_read_byte(&(SQUARE_WAVE[oscLevel[0]][index[0]-SQ_PULSE_INDEX]));//-oscPulseIndex[0]]));//osc 0 only square for now
 			}
 			else
 			{
-				output = (char)pgm_read_byte(&(SQUARE_WAVE_TOP[oscLevel[0]][index[0]]));
+				output = (char)pgm_read_byte(&(SQUARE_WAVE[oscLevel[0]][index[0]]));
 			}
 			
 		}
@@ -78,11 +83,11 @@ ISR(TIMER2_OVF_vect) {
 		{
 			if(index[1] > oscPulseIndex[1])
 			{
-				output += (char)pgm_read_byte(&(SQUARE_WAVE_BOTTOM[oscLevel[1]][index[1]-oscPulseIndex[1]]));
+				output -= (char)pgm_read_byte(&(SQUARE_WAVE[oscLevel[1]][index[1]-oscPulseIndex[1]]));
 			}
 			else
 			{
-				output += (char)pgm_read_byte(&(SQUARE_WAVE_TOP[oscLevel[1]][index[1]]));
+				output += (char)pgm_read_byte(&(SQUARE_WAVE[oscLevel[1]][index[1]]));
 			}
 		}
 		break;
@@ -91,72 +96,84 @@ ISR(TIMER2_OVF_vect) {
 
 		if(oscWave[2]==0)
 		{
-			//output_ += (char)noise_.getOutput();
+			output += OdyNoise::getOutput();
 		}
 		else
 		{
 			if ((index[0] > oscPulseIndex[0]) ^ (index[1] > oscPulseIndex[1]))
 			{
-				output += (char)pgm_read_byte(&(RM_MAX[oscLevel[2]]));
+				output += (char)pgm_read_byte(&(RM_LEVEL[oscLevel[2]]));
 			}
 			else
 			{
-				output += (char)pgm_read_byte(&(RM_MIN[oscLevel[2]]));
+				output -= (char)pgm_read_byte(&(RM_LEVEL[oscLevel[2]]));
 			}
 		}
-		output >>= 1; //should be /3 not /4 (for 3 oscs), but extra headroom good for filtering
-		if(filtType!=lastFiltType)
-		{
-			lastFiltType = filtType;
-			filtBuf[0] = 0;
-			filtBuf[1] = 0;
-		}
-
+		
+		output = clip(output>>1);
+		//output >>= 1;
+		//if(output>255)
+		//{
+			//output = OUTPUT_MAX;
+		//}
+		//else if(output<-OUTPUT_MIN)
+		//{
+			//output = -127;
+		//}
+		//else
+		//{
+			//output >>= 1; //should be /3 not /4 (for 3 oscs), but extra headroom good for filtering
+		//}
+		
+		//if(filtType!=lastFiltType)
+		//{
+			//lastFiltType = filtType;
+			//filtBuf[0] = 0;
+			//filtBuf[1] = 0;
+		//}
 		break;
 		case 0x02:
 		switch (filtType)
 		{
 			case 0:
-			if (filtBuf[1] > 256)
-			{
-				output -= (filtR*256)>>SCALE;
-			}
-			else
-			{
-				output -= (filtBuf[1]*filtR)>>SCALE;
-			}
-			filtBuf[0] += ((output*filtC)-(filtBuf[0]*filtC))>>SCALE;
-			filtBuf[1] += ((filtBuf[0]*filtC)-(filtBuf[1]*filtC))>>SCALE;
+			output -= (filtBuf[1]*filtR)>>SCALE;
+			filtBuf[0] += (output*filtC - filtBuf[0]*filtC)>>SCALE;
+			filtBuf[1] += (filtBuf[0]*filtC  - filtBuf[1]*filtC)>>SCALE;
 			break;
 			case 1:
-			//sample >>= simpBS_;
 			filtBuf[0] -= (filtBuf[0]*filtRC - filtBuf[1]*filtC + output*filtC)>>SCALE;
 			filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;
 			break;
 			case 2:
-			filtBuf[0] += (output*filtC - filtBuf[0]*filtC + filtBuf[0]*filtRC - filtRC*filtBuf[1])>>SCALE;
+			filtBuf[0] += (output*filtC - filtBuf[0]*filtC + filtBuf[0]*filtRC - filtBuf[1]*filtRC)>>SCALE;  //filtRC is prescaled here
 			filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;
 			break;
 		}
-		
 		break;
 		case 0x03:
-		hpfLpfOutput = ((filtBuf[1] * hpfFc) + (hpfLpfOutput * hpfFcInc))>>8;
-		output = filtBuf[1] - hpfLpfOutput;
+		filtBuf[1] = clip(filtBuf[1]);
+		hpfLpfOutput = ((filtBuf[1] * hpfFc) + (hpfLpfOutput * hpfFcInc))>>SCALE;
+		//output = filtBuf[1] - hpfLpfOutput;
+
+		//hpfLpfOutput = ((output * hpfFc) + (hpfLpfOutput * hpfFcInc))>>SCALE;
+		//output = output - hpfLpfOutput;		
+		output = clip(((filtBuf[1] - hpfLpfOutput) * ampMult) >> SCALE);//ampBs;
+		OCR2B = output + 127;
+
+		//output = (output * ampMult) >> SCALE;//ampBs;
+		//if(output>127)
+		//{
+			//OCR2B = 254;
+		//}
+		//else if(output<-127)
+		//{
+			//OCR2B = 0;
+		//}
+		//else
+		//{
+			//OCR2B = output + 127;
+		//}
 		
-		output = (output * ampMult) >> ampBs;
-		if(output>127)
-		{
-			OCR2B = 254;
-		}
-		else if(output<-127)
-		{
-			OCR2B = 0;
-		}
-		else
-		{
-			OCR2B = output + 127;
-		}
 		tickCnt += MICROSECONDS_PER_TIMER2_OVERFLOW;
 
 		if (tickCnt >= 1000)
@@ -164,116 +181,10 @@ ISR(TIMER2_OVF_vect) {
 			tickCnt -= 1000;
 			ticksPassed++;
 		}
-		index[0] = OdyAudio::getWtIndex(0);
-		index[1] = OdyAudio::getWtIndex(1);
+
 		break;
 	}
 	processStage++;
-	//if (processStage==0)
-	//{
-	//hpfLpfOutput = ((output * hpfFc) + (hpfLpfOutput * hpfFcInc))>>8;
-	//output -= hpfLpfOutput;
-	//
-	//output = (output * ampMult) >> ampBs;
-	//
-	//if(output>127)
-	//{
-	//OCR2B = 254;
-	//}
-	//else if(output<-127)
-	//{
-	//OCR2B = 0;
-	//}
-	//else
-	//{
-	//OCR2B = output + 127;
-	//}
-	//
-	//index[0] = OdyAudio::getWtIndex(0);
-	//index[1] = OdyAudio::getWtIndex(1);
-	//if(oscWave[0]==0)
-	//{
-	//output = (char)pgm_read_byte(&(SAW_WAVE[oscLevel[0]][index[0]]));
-	//}
-	//else
-	//{
-	//if(index[0] > SQ_PULSE_INDEX)
-	//{
-	//output = (char)pgm_read_byte(&(SQUARE_WAVE_BOTTOM[oscLevel[0]][index[0]-SQ_PULSE_INDEX]));//-oscPulseIndex[0]]));//osc 0 only square for now
-	//}
-	//else
-	//{
-	//output = (char)pgm_read_byte(&(SQUARE_WAVE_TOP[oscLevel[0]][index[0]]));
-	//}
-	//
-	//}
-	//if(oscWave[1]==0)
-	//{
-	//output += (char)pgm_read_byte(&(SAW_WAVE[oscLevel[1]][index[1]]));
-	//}
-	//else
-	//{
-	//if(index[1] > oscPulseIndex[1])
-	//{
-	//output += (char)pgm_read_byte(&(SQUARE_WAVE_BOTTOM[oscLevel[1]][index[1]-oscPulseIndex[1]]));
-	//}
-	//else
-	//{
-	//output += (char)pgm_read_byte(&(SQUARE_WAVE_TOP[oscLevel[1]][index[1]]));
-	//}
-	//}
-	//if(oscWave[2]==0)
-	//{
-	////output_ += (char)noise_.getOutput();
-	//}
-	//else
-	//{
-	//if ((index[0] > oscPulseIndex[0]) ^ (index[1] > oscPulseIndex[1]))
-	//{
-	//output += (char)pgm_read_byte(&(RM_MAX[oscLevel[2]]));
-	//}
-	//else
-	//{
-	//output += (char)pgm_read_byte(&(RM_MIN[oscLevel[2]]));
-	//}
-	//}
-	//output >>= 2; //should be /3 not /4 (for 3 oscs), but extra headroom good for filtering
-	//}
-	//else
-	//{
-	//if(filtType!=lastFiltType)
-	//{
-	//lastFiltType = filtType;
-	//filtBuf[0] = 0;
-	//filtBuf[1] = 0;
-	//}
-	//switch (filtType)
-	//{
-	//case 0:
-	//if (filtBuf[1] > 256)
-	//{
-	//output -= (filtR*256)>>SCALE;
-	//}
-	//else
-	//{
-	//output -= (filtBuf[1]*filtR)>>SCALE;
-	//}
-	//filtBuf[0] += ((output*filtC)-(filtBuf[0]*filtC))>>SCALE;
-	//filtBuf[1] += ((filtBuf[0]*filtC)-(filtBuf[1]*filtC))>>SCALE;
-	//break;
-	//case 1:
-	////sample >>= simpBS_;
-	//filtBuf[0] -= (filtBuf[0]*filtRC - filtBuf[1]*filtC + output*filtC)>>SCALE;
-	//filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;
-	//break;
-	//case 2:
-	//filtBuf[0] += (output*filtC - filtBuf[0]*filtC + filtBuf[0]*filtRC - filtRC*filtBuf[1])>>SCALE;
-	//filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;
-	//break;
-	//}
-	//output = filtBuf[1];
-	//}
-	//processStage = 1 - processStage;
 }
 
 // default constructor
@@ -321,8 +232,8 @@ void Ody::poll()
 		ticksPassed -= ticks;
 	}
 
-	hpfFc = engine_.getHPF().getFc();
-	hpfFcInc = 255 - hpfFc;
+	hpfFc = engine_.getHPF().getFc()>>1;
+	hpfFcInc = 127 - hpfFc;
 	ampMult = engine_.getAmp().getOutput();
 	for(unsigned char i=0;i<2;++i)
 	{
@@ -412,11 +323,9 @@ void Ody::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 				}
 				else
 				{
-					switch(engine_.getFunction())
+					if(engine_.getFunction()==OdyEngine::FUNC_PORTAMENTO)
 					{
-						case OdyEngine::FUNC_PORTAMENTO:
 						engine_.getPatchPtr()->readPatch(0);
-						break;
 					}
 				}
 			}

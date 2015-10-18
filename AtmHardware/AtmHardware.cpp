@@ -49,7 +49,6 @@ AtmHardware::AtmHardware(AtmHardwareBase* base)
 // default destructor
 AtmHardware::~AtmHardware()
 {
-	unsigned char i;
 	if(base_!=NULL)
 	{
 		delete base_;

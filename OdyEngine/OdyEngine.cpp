@@ -137,7 +137,6 @@ void OdyEngine::poll(unsigned char ticksPassed)
 
 void OdyEngine::setFunction(OdyEngine::Func newFunc)
 {
-	bool col;
 	function_ = newFunc;
 	base_->engineFunctionChanged((unsigned char)function_,patch_->getFunctionValue(function_),patch_->getOptionValue(function_));
 }
@@ -408,7 +407,6 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 
 void OdyEngine::patchOptionChanged(unsigned char func, bool newOpt)
 {
-	unsigned char i;
 	switch (func)
 	{
 		case FUNC_PORTAMENTO:

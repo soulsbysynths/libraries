@@ -28,12 +28,12 @@ char OdyOscillator::getOutput(unsigned char index)
 	{
 		if(index > pulseIndex_) 
 		{
-			return pgm_read_byte(&(SQUARE_WAVE_BOTTOM[level_][index-pulseIndex_]));
+			return -(char)pgm_read_byte(&(SQUARE_WAVE[level_][index-pulseIndex_]));
 			//return pgm_read_byte(&(SQUARE_MIN[level_]));
 		} 
 		else
 		{
-			return pgm_read_byte(&(SQUARE_WAVE_TOP[level_][index]));
+			return (char)pgm_read_byte(&(SQUARE_WAVE[level_][index]));
 			//return pgm_read_byte(&(SQUARE_MAX[level_]));
 		}
 	}	
