@@ -20,12 +20,13 @@ OdyLfo::~OdyLfo()
 void OdyLfo::setFreq(unsigned char newFreq)
 {
 	freq_ = newFreq;
-	msPerCycle_ = 8000 / freq_;  //coz freq is << 3 (i.e. *8).
+	msPerCycle_ = 8000 / (unsigned int)freq_;  //coz freq is << 3 (i.e. *8).
+	ms_ = ((unsigned long)msPerCycle_ * index_) >> 6; //reposition index to same point in cycle		
 }
 char OdyLfo::getOutput(LfoWave wave)
 {
 	if(wave!=S_AND_H){
-		return pgm_read_byte(&(LFO_WAVETABLE[(unsigned char)wave][index_]));
+		return (char)pgm_read_byte(&(LFO_WAVETABLE[(unsigned char)wave][index_]));
 	}
 	else{
 		return sAndH_;
@@ -40,17 +41,12 @@ char OdyLfo::getExpOutput(LfoWave wave)
 	else{
 		tmp =  sAndH_;
 	}
-	if(tmp<0){
-		return -pgm_read_byte(&(EXP_CONVERT[-tmp]));
-	}
-	else{
-		return pgm_read_byte(&(EXP_CONVERT[(unsigned char)tmp]));
-	}	
+	return convertExponentialBipolar(tmp); 
 }
 void OdyLfo::refresh(unsigned char ticksPassed)
 {
 	ms_ += ticksPassed;
-	if(ms_>msPerCycle_)
+	while(ms_>=msPerCycle_)
 	{
 		ms_ -= msPerCycle_;
 	}

@@ -17,7 +17,7 @@
 #include "Ody.h"
 #include "OdyOscillatorProgmem.h"
 
-#define MICROSECONDS_PER_TIMER2_OVERFLOW 256//64//32
+#define MICROSECONDS_PER_TIMER2_OVERFLOW 64
 #define min(a) ((a < 127) ? a : 127)
 #define max(a) ((a < -127) ? -127 : a)
 #define clip(a) min(max(a))
@@ -25,13 +25,11 @@
 static const char RM_LEVEL[8] PROGMEM = {0,21,34,48,65,83,105,127};
 static const char SCALE = 7;
 static const unsigned char SQ_PULSE_INDEX = 127;
-static const char OUTPUT_MIN = -127;
-static const char OUTPUT_MAX = 127;
 volatile static unsigned char ticksPassed = 0;
 volatile static char hpfFc = 0;
 volatile static char hpfFcInc = 127;
 volatile static unsigned char ampMult = 0;
-volatile static unsigned char ampBs = 6;
+volatile static unsigned char ampBs = 7;
 volatile static unsigned char oscWave[3];
 volatile static unsigned char oscPulseIndex[2];
 volatile static unsigned char oscLevel[3];
@@ -47,12 +45,7 @@ ISR(TIMER2_OVF_vect) {
 	static int output = 0;
 	static int hpfLpfOutput = 0;
 	static int filtBuf[2];
-	//static unsigned char lastFiltType = 0;
 	static unsigned char index[2];
-	const char SCALE = 7;
-	const unsigned char SQ_PULSE_INDEX = 127;
-	
-
 
 	switch  (processStage&0x03)
 	{
@@ -111,71 +104,34 @@ ISR(TIMER2_OVF_vect) {
 		}
 		
 		output = clip(output>>1);
-		//output >>= 1;
-		//if(output>255)
-		//{
-			//output = OUTPUT_MAX;
-		//}
-		//else if(output<-OUTPUT_MIN)
-		//{
-			//output = -127;
-		//}
-		//else
-		//{
-			//output >>= 1; //should be /3 not /4 (for 3 oscs), but extra headroom good for filtering
-		//}
-		
-		//if(filtType!=lastFiltType)
-		//{
-			//lastFiltType = filtType;
-			//filtBuf[0] = 0;
-			//filtBuf[1] = 0;
-		//}
 		break;
 		case 0x02:
 		switch (filtType)
 		{
-			case 0:
+			case OdyFilter::OFF:
+			filtBuf[1] = output;
+			case OdyFilter::KARLSEN:
 			output -= (filtBuf[1]*filtR)>>SCALE;
 			filtBuf[0] += (output*filtC - filtBuf[0]*filtC)>>SCALE;
 			filtBuf[1] += (filtBuf[0]*filtC  - filtBuf[1]*filtC)>>SCALE;
 			break;
-			case 1:
-			filtBuf[0] -= (filtBuf[0]*filtRC - filtBuf[1]*filtC + output*filtC)>>SCALE;
-			filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;
-			break;
-			case 2:
+			case OdyFilter::MOZZI:
 			filtBuf[0] += (output*filtC - filtBuf[0]*filtC + filtBuf[0]*filtRC - filtBuf[1]*filtRC)>>SCALE;  //filtRC is prescaled here
 			filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;
+			break;
+			case OdyFilter::SIMPLE:
+			filtBuf[0] -= (filtBuf[0]*filtRC - filtBuf[1]*filtC + output*filtC)>>SCALE;
+			filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;
 			break;
 		}
 		break;
 		case 0x03:
 		filtBuf[1] = clip(filtBuf[1]);
 		hpfLpfOutput = ((filtBuf[1] * hpfFc) + (hpfLpfOutput * hpfFcInc))>>SCALE;
-		//output = filtBuf[1] - hpfLpfOutput;
-
-		//hpfLpfOutput = ((output * hpfFc) + (hpfLpfOutput * hpfFcInc))>>SCALE;
-		//output = output - hpfLpfOutput;		
-		output = clip(((filtBuf[1] - hpfLpfOutput) * ampMult) >> SCALE);//ampBs;
+		output = clip(((filtBuf[1] - hpfLpfOutput) * ampMult) >> SCALE);
 		OCR2B = output + 127;
 
-		//output = (output * ampMult) >> SCALE;//ampBs;
-		//if(output>127)
-		//{
-			//OCR2B = 254;
-		//}
-		//else if(output<-127)
-		//{
-			//OCR2B = 0;
-		//}
-		//else
-		//{
-			//OCR2B = output + 127;
-		//}
-		
 		tickCnt += MICROSECONDS_PER_TIMER2_OVERFLOW;
-
 		if (tickCnt >= 1000)
 		{
 			tickCnt -= 1000;
@@ -257,13 +213,16 @@ void Ody::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
 	{
 		switch (val)
 		{
-			case 0:
-			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW);
+			case OdyFilter::OFF:
+			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::OFF);
 			break;
-			case 1:
-			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW); //red
+			case OdyFilter::KARLSEN:
+			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::RED);
 			break;
-			case 2:
+			case OdyFilter::MOZZI:
+			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::GREEN); //red
+			break;
+			case OdyFilter::SIMPLE:
 			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW);  //green
 			break;
 		}
@@ -360,7 +319,7 @@ void Ody::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 		{
 			unsigned char filt = (unsigned char)engine_.getFilter().getType();
 			filt++;
-			if(filt>2)
+			if(filt>3)
 			{
 				filt = 0;
 			}

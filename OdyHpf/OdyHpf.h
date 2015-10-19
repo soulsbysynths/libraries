@@ -17,14 +17,12 @@ public:
 protected:
 private:
 	unsigned char fc_ = 0;
-	int lpf_ = 0;
 //functions
 public:
 	OdyHpf();
 	~OdyHpf();
-	void setFc(unsigned char newFc);
+	void setFc(unsigned char newFc){fc_ = newFc;}
 	unsigned char getFc(){return fc_;}	
-	int processSample(int sample);
 protected:
 private:
 	OdyHpf( const OdyHpf &c );

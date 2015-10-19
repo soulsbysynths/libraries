@@ -111,20 +111,20 @@ void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 	unsigned char i;
 	if (newSf!=sampleFreq_[oscNum])
 	{              
-		//if(oscNum==0)
-		//{
-		//	testSf = 3520;
-		//}
-		//else
-		//{
-			testSf = 7040;  //half of the base freq for jumping waveform
-		//}
+		if(oscNum==0)
+		{
+			testSf = 4978;//4978;
+		}
+		else
+		{
+			testSf = 7458;//7040;  //half of the base freq for jumping waveform
+		}
 		
 		sampleFreq_[oscNum] = newSf;     
 		for(i=0;i<7;i++)
 		{
 			testSf *= 2;
-			if(sampleFreq_[oscNum]>=testSf)
+			if(sampleFreq_[oscNum]>testSf)
 			{
 				scale = i+1;
 			}

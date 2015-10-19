@@ -24,8 +24,7 @@ protected:
 private:
 	unsigned char amp_ = 0;
 	unsigned char level_ = 0;  //0-127 if you ever want to implement this
-	unsigned char clip_ = 1;
-	unsigned char bs_ = 6;
+	unsigned char clip_ = 7;
 	unsigned char amAmount_ = 16;  //0-15 if you ever want to implement this
 	AmpAmSource amSource_ = AR;
 //functions
@@ -33,7 +32,6 @@ public:
 	OdyAmplifier();
 	~OdyAmplifier();
 	void refresh(char am);
-	int processSample(int sample);
 	void setLevel(unsigned char newLevel){level_ = newLevel;}
 	unsigned char getLevel(){return level_;}
 	void setClip(unsigned char newCip);

@@ -78,16 +78,16 @@ void OdyEngine::poll(unsigned char ticksPassed)
 	
 	for(i=0;i<2;++i)
 	{
-		oscillator_[1].refresh(adsrEnvelope_.getExpOutput(),lfo_.getExpOutput(OdyLfo::SINE));
+		oscillator_[1].refresh(adsrEnvelope_.getOutput(),lfo_.getOutput(OdyLfo::SINE));
 	}
 	
 	if(filter_.getFmASource()==OdyFilter::S_AND_H)
 	{
-		filtA = lfo_.getExpOutput(OdyLfo::S_AND_H);
+		filtA = lfo_.getOutput(OdyLfo::S_AND_H);
 	}
 	else
 	{
-		filtA = lfo_.getExpOutput(OdyLfo::SINE);
+		filtA = lfo_.getOutput(OdyLfo::SINE);
 	}
 	if(filter_.getFmBSource()==OdyFilter::ADSR)
 	{
@@ -321,7 +321,7 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		}
 		else
 		{
-			pitch_[0].setFmAAmount(pgm_read_byte(&(EXP_CONVERT[newValue<<3])));
+			pitch_[0].setFmAAmount(newValue<<4);
 		}
 		break;
 		case FUNC_OSC0FMB:
@@ -331,7 +331,7 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		}
 		else
 		{
-			pitch_[0].setFmBAmount(pgm_read_byte(&(EXP_CONVERT[newValue<<3])));
+			pitch_[0].setFmBAmount(newValue<<4);
 		}		
 		break;
 		case FUNC_OSC1FMA:
@@ -341,7 +341,7 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		}
 		else
 		{
-			pitch_[1].setFmAAmount(pgm_read_byte(&(EXP_CONVERT[newValue<<3])));
+			pitch_[1].setFmAAmount(newValue<<4);
 		}
 		break;
 		case FUNC_OSC1FMB:
@@ -351,7 +351,7 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		}
 		else
 		{
-			pitch_[1].setFmBAmount(pgm_read_byte(&(EXP_CONVERT[newValue<<3])));
+			pitch_[1].setFmBAmount(newValue<<4);
 		}
 		break;
 		case FUNC_OSC1PW:
@@ -513,7 +513,7 @@ void OdyEngine::patchCtrlChanged(unsigned char anlControl_, unsigned char newVal
 		pitch_[1].setOffset(pgm_read_byte(&(PITCH_OFFSET[(newValue>>1)+128])));
 		break;
 		case CTRL_LFO:
-		lfo_.setFreq((unsigned char)map(newValue,0,255,2,160));
+		lfo_.setFreq(pgm_read_byte(&(LFO_EXP_KNOB[(newValue>>1)])));
 		break;
 		case  CTRL_FC:
 		filter_.setFc(newValue);
@@ -523,6 +523,7 @@ void OdyEngine::patchCtrlChanged(unsigned char anlControl_, unsigned char newVal
 		break;
 		case  CTRL_HPF:
 		hpf_.setFc(newValue);
+		break;
 	}
 }
 

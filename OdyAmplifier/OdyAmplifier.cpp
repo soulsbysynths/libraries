@@ -21,12 +21,11 @@ OdyAmplifier::~OdyAmplifier()
 void OdyAmplifier::setClip(unsigned char newClip)
 {
 	clip_ = newClip;
-	bs_ = 7 - newClip;
 }
 void OdyAmplifier::refresh(char am)
 {
 	int tmpAmp = 0;
-	tmpAmp = (am * amAmount_) >> 4;
+	tmpAmp = ((int)am * amAmount_) >> 4;
 	tmpAmp += level_;
 	amp_ = constrainChar(tmpAmp);
 	if(amp_<0)
@@ -34,7 +33,4 @@ void OdyAmplifier::refresh(char am)
 		amp_ = 0;
 	}
 }
-int OdyAmplifier::processSample(int sample)
-{
-	return (sample * amp_) >> bs_;
-}
+//All processing now done in Ody.cpp

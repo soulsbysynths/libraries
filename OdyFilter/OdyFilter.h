@@ -18,9 +18,10 @@ class OdyFilter
 public:
 	enum FiltType : unsigned char
 	{
+		OFF,
 		KARLSEN,
-		SIMPLE,
-		MOZZI
+		MOZZI,
+		SIMPLE
 	};
 	enum FiltFmASource : unsigned char
 	{
@@ -34,8 +35,8 @@ public:
 	};
 protected:
 private:
-	static const unsigned int TWOPI_SCALED = 804;
-	static const unsigned int SF = 31372;
+	static const unsigned int TWOPI_SCALED = 804;  //2 * pi * 128
+	static const unsigned int SF = 15625; //F_CPU / 256 / 4
 	static const unsigned char SCALE = 7;
 	unsigned char fc_ = 255;
 	unsigned char q_;
@@ -52,7 +53,6 @@ private:
 	char mozziF_ = 0;
 	int mozziFb_ = 0;
 	int mozziFFbScaled_ = 0;
-	int buf1_,buf0_;
 //functions
 public:
 	OdyFilter();
@@ -61,7 +61,7 @@ public:
 	unsigned char getFc(){return fc_;}
 	void setQ(unsigned char newQ){q_ = newQ;}
 	unsigned char getQ(){return q_;}
-	void setType(FiltType newType);
+	void setType(FiltType newType){type_ = newType;}
 	FiltType getType(){return type_;}
 	void setKybrdAmount(unsigned char newAmt){kbrdAmount_ = newAmt;}
 	unsigned char getKybrdAmount(){return kbrdAmount_;}
@@ -74,7 +74,6 @@ public:
 	void setFmBSource(FiltFmBSource arEnv){fmBSource_ = arEnv;}
 	FiltFmBSource getFmBSource(){return fmBSource_;}	
 	void refresh(unsigned char kbrd, char fmA, char fmB);
-	int processSample(int sample);	
 	int getCscaled();
 	int getRscaled();
 	int getRCscaled();

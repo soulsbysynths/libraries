@@ -17,12 +17,7 @@ OdyFilter::OdyFilter()
 OdyFilter::~OdyFilter()
 {
 } //~OdyFilter
-void OdyFilter::setType(FiltType newType)
-{
-	type_ = newType;
-	buf0_ = 0;
-	buf1_ = 0;
-}
+
 void OdyFilter::refresh(unsigned char kbrd, char fmA, char fmB)
 {
 	unsigned long lcut;
@@ -34,28 +29,24 @@ void OdyFilter::refresh(unsigned char kbrd, char fmA, char fmB)
 	tmpFc = (int)constrainUChar(tmpFc);
 	switch (type_)
 	{
+		case OFF:
+		break;
 		case KARLSEN:
-		lcut = (TWOPI_SCALED * ((unsigned long)tmpFc<<4)) / SF;
-		if(lcut>127){
-			karlCut_ = 127;
-		}
-		else{
-			karlCut_ = (char)lcut;
-		}
-		karlRes_ = q_ >> 1;
+		karlCut_ = (char)((((unsigned long)tmpFc*7)*TWOPI_SCALED) / SF);
+		karlRes_ = q_>>1;
+		break;
+		case MOZZI:
+		mozziF_ = tmpFc>>1;
+		mozziFb_ =  q_>>1;
+		mozziFFbScaled_ = (mozziFb_*mozziF_)>>SCALE;
 		break;
 		case SIMPLE:
 		simpC_ = map(tmpFc,0,255,5,122); //0.5 - 122
 		simpR = map(q_,0,255,45,map(tmpFc,0,255,20,2)); //45 - 0.2
-		simpRCScaled_ = (simpR*simpC_)>>SCALE;	
+		simpRCScaled_ = (simpR*simpC_)>>SCALE;
 		//simpC_ = map(tmpFc,0,255,1,61); //0.25 - 61
 		//simpR = map(q_,0,255,23,1); //23 - 0.09
-		//simpRCScaled_ = (simpR*simpC_)>>6;	
-		break;
-		case MOZZI:
-		mozziF_ = tmpFc>>1;
-		mozziFb_ =  q_>>1;// + (((int)(q_>>1) * (127 - mozziF_))>>SCALE);
-		mozziFFbScaled_ = (mozziFb_*mozziF_)>>SCALE;
+		//simpRCScaled_ = (simpR*simpC_)>>6;
 		break;
 	}
 }
@@ -63,14 +54,16 @@ int OdyFilter::getCscaled()
 {
 	switch (type_)
 	{
+		case OFF:
+		return 0;
 		case KARLSEN:
 		return (int)karlCut_;
 		break;
-		case SIMPLE:
-		return simpC_;
-		break;
 		case MOZZI:
 		return (int)mozziF_;
+		break;
+		case SIMPLE:
+		return simpC_;
 		break;
 	}	
 }
@@ -78,13 +71,16 @@ int OdyFilter::getRscaled()
 {
 	switch (type_)
 	{
+		case OFF:
+		return 0;
 		case KARLSEN:
 		return (int)karlRes_;
 		break;
-		case SIMPLE:
-		break;
 		case MOZZI:
 		return mozziFb_;
+		break;
+		case SIMPLE:
+		return 0;
 		break;
 	}	
 }
@@ -92,40 +88,18 @@ int OdyFilter::	getRCscaled()
 {
 	switch (type_)
 	{
+		case  OFF:
+		return 0;
 		case KARLSEN:
-		break;
-		case SIMPLE:
-		return simpRCScaled_;
+		return 0;
 		break;
 		case MOZZI:
 		return mozziFFbScaled_;
 		break;
+		case SIMPLE:
+		return simpRCScaled_;
+		break;
 	}	
 }
-int OdyFilter::processSample(int sample)
-{
-	switch (type_)
-	{
-		case KARLSEN:
-		if (buf1_ > 256)
-		{
-			sample -= (256*karlRes_)>>SCALE;
-		}
-		else
-		{
-			sample -= (buf1_*karlRes_)>>SCALE;
-		}
-		buf0_ += ((sample*karlCut_)-(buf0_*karlCut_))>>SCALE;
-		buf1_ += ((buf0_*karlCut_)-(buf1_*karlCut_))>>SCALE;
-		break;
-		case SIMPLE:
-		buf0_ -= (buf0_*simpRCScaled_ - buf1_*simpC_ + sample*simpC_)>>SCALE;
-		buf1_ -= (buf1_*simpRCScaled_ + buf0_*simpC_)>>SCALE;
-		break;
-		case MOZZI:
-		buf0_ += (sample*mozziF_ - buf0_*mozziF_ + mozziFFbScaled_*buf0_ - mozziFFbScaled_*buf1_)>>SCALE;
-		buf1_ += (buf0_*mozziF_ - buf1_*mozziF_)>>SCALE;
-		break;
-	}
-	return buf1_;
-}
+
+//All processing now done in Ody.cpp
