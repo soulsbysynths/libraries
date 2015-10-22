@@ -51,7 +51,6 @@ public:
 	};
 	enum Func : unsigned char
 	{
-		FUNC_PORTAMENTO,
 		FUNC_OSC0FMA,
 		FUNC_OSC0FMB,
 		FUNC_OSC1FMA,
@@ -67,8 +66,10 @@ public:
 		FUNC_ENVS,
 		FUNC_ENVD,
 		FUNC_ENVA,
+		FUNC_PORTAMENTO,
 		FUNC_ENVR2,
 		FUNC_ENVA2,
+		FUNC_MEM,
 		FUNC_FILTTYPE
 	};
 	enum MidiCC : unsigned char
@@ -110,7 +111,7 @@ private:
 	OdyPatch* patch_;
 	OdyOscillator oscillator_[2];
 	OdyNoise noise_;
-	Func function_ = FUNC_PORTAMENTO;
+	Func function_ = FUNC_OSC0FMA;
 	OdyEngineBase* base_ = NULL;
 	OdyAudio audio_;
 	Envelope adsrEnvelope_;

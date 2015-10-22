@@ -160,10 +160,9 @@ void AtmHardware::construct(AtmHardwareBase* base)
 	}
 }
 
-bool AtmHardware::refreshFlash(unsigned char ticksPassed)
+void AtmHardware::refreshFlash(unsigned char ticksPassed)
 {
 	unsigned char i;
-	bool flashing = false;
 	static unsigned char tickMult = 0;
 	unsigned char tickInc = 0;
 
@@ -177,26 +176,15 @@ bool AtmHardware::refreshFlash(unsigned char ticksPassed)
 	
 	for(i=0;i<2;++i)
 	{
-		if(ledCircular_[i].refreshFlash(tickInc)==true)
-		{
-			flashing = true;
-		}
+		ledCircular_[i].refreshFlash(tickInc);
 	}
 
 	for(i=0;i<3;++i)
 	{
-		if(ledSwitch_[i].refreshFlash(tickInc)==true)
-		{
-			flashing = true;
-		}
+		ledSwitch_[i].refreshFlash(tickInc);
 	}
 	
-	if(ledMidi_.refreshFlash(tickInc)==true)
-	{
-		flashing = true;
-	}
-	
-	return flashing;
+	ledMidi_.refreshFlash(tickInc);
 }
 void AtmHardware::refreshLeds()
 {

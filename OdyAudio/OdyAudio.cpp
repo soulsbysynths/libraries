@@ -183,10 +183,13 @@ bool OdyAudio::getWaveSync()
 ISR(TIMER1_COMPA_vect) 
 {
 	OCR1A = ocr1a;
-	if(waveSync==true && (wtIndex[1]+wtIndexJump[1])<wtIndex[1]){
-		wtIndex[0] = 0;
-	}
+	unsigned char lastIndex = wtIndex[0];
 	wtIndex[0] += wtIndexJump[0];
+	if(waveSync==true && wtIndex[0]<lastIndex)
+	{
+		wtIndex[1] = 0;
+	}
+	
 }
 
 //Interrupt loop.  Sets PWM output (i.e. generates the audio)

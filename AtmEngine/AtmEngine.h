@@ -111,6 +111,8 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	private:
 	static const unsigned char SYSEX_PROD_ID = 0;
 	static const unsigned int MIDI_TICKSPERCYCLE = 1536;
+	static const unsigned char HIGH = 1;
+	static const unsigned char LOW = 0;
 	#define NP_CLASSIC 0
 	#define NP_LOW 1
 	#define NP_HIGH 2

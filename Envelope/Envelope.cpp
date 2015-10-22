@@ -77,7 +77,16 @@ char Envelope::getOutput()
 }
 char Envelope::getExpOutput()
 {
-	char out = convertExponential(abs(output_>>8));
+	char out;
+	if(state_==ATTACKING)
+	{
+		out = convertInvExponential(abs(output_>>8));
+	}
+	else
+	{
+		out = convertExponential(abs(output_>>8));
+	}
+	 
 	if(invert_==true)
 	{
 		return -out;

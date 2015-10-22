@@ -53,7 +53,7 @@ public:
 	void setState(unsigned int leds){led_c_ = leds;}
 	void flash(unsigned char segment, unsigned char flashes, unsigned char onTicks, unsigned char offTicks, bool startOn);
 	void flashStop(unsigned char segment);
-	bool refreshFlash(unsigned char tick_inc);
+	void refreshFlash(unsigned char tick_inc);
 protected:
 private:
 	LedCircular( const LedCircular &c );

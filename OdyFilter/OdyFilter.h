@@ -19,9 +19,9 @@ public:
 	enum FiltType : unsigned char
 	{
 		OFF,
-		KARLSEN,
 		MOZZI,
-		SIMPLE
+		SIMPLE,
+		KARLSEN  //karlsen nearly same as mozzi, so we'll abandon this
 	};
 	enum FiltFmASource : unsigned char
 	{
@@ -40,19 +40,14 @@ private:
 	static const unsigned char SCALE = 7;
 	unsigned char fc_ = 255;
 	unsigned char q_;
-	FiltType type_ = KARLSEN;
+	FiltType type_ = OFF;
 	unsigned char fmAAmount_ = 0;  //0-15
 	unsigned char fmBAmount_ = 0;  //0-15
 	unsigned char kbrdAmount_ = 0;  //0-15
 	FiltFmASource fmASource_ = S_AND_H;
 	FiltFmBSource fmBSource_ = ADSR;
-	char karlCut_ = 25;
-	char karlRes_ = 127;
-	int simpRCScaled_ = 0;
-	int simpC_ = 0;
-	char mozziF_ = 0;
-	int mozziFb_ = 0;
-	int mozziFFbScaled_ = 0;
+	char c_ = 0;
+	char rcScaled_ = 0;
 //functions
 public:
 	OdyFilter();
@@ -74,9 +69,8 @@ public:
 	void setFmBSource(FiltFmBSource arEnv){fmBSource_ = arEnv;}
 	FiltFmBSource getFmBSource(){return fmBSource_;}	
 	void refresh(unsigned char kbrd, char fmA, char fmB);
-	int getCscaled();
-	int getRscaled();
-	int getRCscaled();
+	char getCscaled(){return c_;}
+	char getRCscaled(){return rcScaled_;}
 protected:
 private:
 	OdyFilter( const OdyFilter &c );

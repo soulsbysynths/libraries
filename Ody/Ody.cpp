@@ -34,9 +34,8 @@ volatile static unsigned char oscWave[3];
 volatile static unsigned char oscPulseIndex[2];
 volatile static unsigned char oscLevel[3];
 volatile static unsigned char filtType = 0;
-volatile static int filtC = 0;
-volatile static int filtR = 0;
-volatile static int filtRC = 0;
+volatile static char filtC = 0;
+volatile static char filtRC = 0;
 
 ISR(TIMER2_OVF_vect) {
 
@@ -106,30 +105,30 @@ ISR(TIMER2_OVF_vect) {
 		output = clip(output>>1);
 		break;
 		case 0x02:
-		switch (filtType)
+		if(filtType==OdyFilter::MOZZI)
 		{
-			case OdyFilter::OFF:
-			filtBuf[1] = output;
-			case OdyFilter::KARLSEN:
-			output -= (filtBuf[1]*filtR)>>SCALE;
-			filtBuf[0] += (output*filtC - filtBuf[0]*filtC)>>SCALE;
-			filtBuf[1] += (filtBuf[0]*filtC  - filtBuf[1]*filtC)>>SCALE;
-			break;
-			case OdyFilter::MOZZI:
 			filtBuf[0] += (output*filtC - filtBuf[0]*filtC + filtBuf[0]*filtRC - filtBuf[1]*filtRC)>>SCALE;  //filtRC is prescaled here
-			filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;
-			break;
-			case OdyFilter::SIMPLE:
-			filtBuf[0] -= (filtBuf[0]*filtRC - filtBuf[1]*filtC + output*filtC)>>SCALE;
-			filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;
-			break;
+			filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;		
 		}
+		else if(filtType==OdyFilter::SIMPLE)
+		{
+			filtBuf[0] -= (filtBuf[0]*filtRC - filtBuf[1]*filtC + output*filtC)>>SCALE;
+			filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;			
+		}
+		else
+		{
+			filtBuf[1] = output;
+		}
+		//case OdyFilter::KARLSEN:  //karlsen nearly same as mozzi, so abandoned it.
+		//filtBuf[0] += (output*filtC - filtBuf[1]*filtRC - filtBuf[0]*filtC)>>SCALE;
+		//filtBuf[1] += (filtBuf[0]*filtC  - filtBuf[1]*filtC)>>SCALE;
+		//break;
 		break;
 		case 0x03:
 		filtBuf[1] = clip(filtBuf[1]);
 		hpfLpfOutput = ((filtBuf[1] * hpfFc) + (hpfLpfOutput * hpfFcInc))>>SCALE;
 		output = clip(((filtBuf[1] - hpfLpfOutput) * ampMult) >> SCALE);
-		OCR2B = output + 127;
+		OCR2B = (unsigned char)(output + 127);
 
 		tickCnt += MICROSECONDS_PER_TIMER2_OVERFLOW;
 		if (tickCnt >= 1000)
@@ -201,7 +200,6 @@ void Ody::poll()
 	oscLevel[2] = engine_.getFxLevel();
 	filtType = (unsigned char)engine_.getFilter().getType();
 	filtC = engine_.getFilter().getCscaled();
-	filtR = engine_.getFilter().getRscaled();
 	filtRC = engine_.getFilter().getRCscaled();
 }
 
@@ -216,33 +214,39 @@ void Ody::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
 			case OdyFilter::OFF:
 			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::OFF);
 			break;
-			case OdyFilter::KARLSEN:
-			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::RED);
-			break;
 			case OdyFilter::MOZZI:
-			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::GREEN); //red
+			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW); //red
 			break;
 			case OdyFilter::SIMPLE:
-			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW);  //green
+			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::RED);  //green
 			break;
 		}
 	}
 	else
 	{
 		hardware_.getRotEncoder(AtmHardware::VALUE).setValue((char)val);
-		hardware_.getLedCircular(AtmHardware::VALUE).fill(val);
+		
 		if(func==OdyEngine::FUNC_ENVA2)
 		{
 			hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)OdyEngine::FUNC_ENVA);
+			hardware_.getLedCircular(AtmHardware::VALUE).fill(val);
 		}
 		else if(func==OdyEngine::FUNC_ENVR2)
 		{
 			hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)OdyEngine::FUNC_ENVR);
+			hardware_.getLedCircular(AtmHardware::VALUE).fill(val);
+		}
+		else if(func==OdyEngine::FUNC_MEM)
+		{
+			hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)OdyEngine::FUNC_PORTAMENTO);
+			hardware_.getLedCircular(AtmHardware::VALUE).select(val);
 		}
 		else
 		{
 			hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)func);
+			hardware_.getLedCircular(AtmHardware::VALUE).fill(val);
 		}
+		
 		if(opt==true)
 		{
 			hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::RED);
@@ -264,52 +268,49 @@ void Ody::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 {
 	bool opt;
 
-	if(sw==AtmHardware::FUNCTION)
+
+	if(sw==AtmHardware::FUNCTION && newValue==HIGH)
 	{
-		if(engine_.getFunction()==OdyEngine::FUNC_PORTAMENTO)
+		opt = !engine_.getPatchPtr()->getOptionValue(engine_.getFunction());
+		engine_.getPatchPtr()->setOptionValue(engine_.getFunction(),opt);  //the LEDs are set by engine call back
+	}
+
+	if(sw==AtmHardware::VALUE)
+	{
+		if(engine_.getFunction()==OdyEngine::FUNC_MEM)
 		{
 			if(newValue==HIGH)
 			{
-				hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::RED);
+				hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::RED);
 			}
 			else
 			{
-				hardware_.getLedSwitch(AtmHardware::FUNCTION).flashStop();
-				hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::RED);
+				hardware_.getLedSwitch(AtmHardware::VALUE).flashStop();
+				hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::YELLOW);
 				if(hardware_.getSwitch(sw).getHoldTime()>AtmHardware::HOLD_EVENT_TICKS)
 				{
-					engine_.getPatchPtr()->writePatch(0);
+					engine_.getPatchPtr()->writePatch(engine_.getPatchPtr()->getFunctionValue(OdyEngine::FUNC_MEM));
 				}
 				else
 				{
-					if(engine_.getFunction()==OdyEngine::FUNC_PORTAMENTO)
-					{
-						engine_.getPatchPtr()->readPatch(0);
-					}
+					engine_.getPatchPtr()->readPatch(engine_.getPatchPtr()->getFunctionValue(OdyEngine::FUNC_MEM));
 				}
 			}
 		}
-		else if(newValue==HIGH)
-		{
-			opt = !engine_.getPatchPtr()->getOptionValue(engine_.getFunction());
-			engine_.getPatchPtr()->setOptionValue(engine_.getFunction(),opt);  //the LEDs are set by engine call back
-		}
-	}
-
-	
-	if(sw==AtmHardware::VALUE)
-	{
-		if(newValue==HIGH)
-		{
-			hardware_.getRotEncoder(AtmHardware::VALUE).setUpdateVal(false);
-			hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::RED);
-			engine_.midiNoteOnReceived(testNote_,127);
-		}
 		else
 		{
-			hardware_.getRotEncoder(AtmHardware::VALUE).setUpdateVal(true);
-			hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::YELLOW);
-			engine_.midiNoteOffReceived(testNote_);
+			if(newValue==HIGH)
+			{
+				hardware_.getRotEncoder(AtmHardware::VALUE).setUpdateVal(false);
+				hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::RED);
+				engine_.midiNoteOnReceived(testNote_,127);
+			}
+			else
+			{
+				hardware_.getRotEncoder(AtmHardware::VALUE).setUpdateVal(true);
+				hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::YELLOW);
+				engine_.midiNoteOffReceived(testNote_);
+			}			
 		}
 	}
 	
@@ -319,7 +320,7 @@ void Ody::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 		{
 			unsigned char filt = (unsigned char)engine_.getFilter().getType();
 			filt++;
-			if(filt>3)
+			if(filt>2)
 			{
 				filt = 0;
 			}
@@ -329,9 +330,9 @@ void Ody::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 }
 void Ody::hardwareSwitchHeld(unsigned char sw)
 {
-	if(sw==AtmHardware::FUNCTION && engine_.getFunction()==OdyEngine::FUNC_PORTAMENTO)
+	if(sw==AtmHardware::VALUE && engine_.getFunction()==OdyEngine::FUNC_MEM)
 	{
-		hardware_.getLedSwitch(AtmHardware::FUNCTION).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::YELLOW,true);
+		hardware_.getLedSwitch(AtmHardware::VALUE).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::YELLOW,true);
 	}
 	//if(sw==AtmHardware::BANK)
 	//{

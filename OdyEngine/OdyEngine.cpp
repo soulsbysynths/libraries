@@ -51,17 +51,14 @@ void OdyEngine::initialize()
 	{
 		patchCtrlChanged(i,patch_->getCtrlValue(i));
 	}
-	for(i=0;i<19;++i)
+	for(i=0;i<20;++i)
 	{
 		patchValueChanged(i,patch_->getFunctionValue(i));
-	}
-	for(i=0;i<16;++i)
-	{
 		patchOptionChanged(i,patch_->getOptionValue(i));
 	}
 	
-	setFunction(FUNC_PORTAMENTO);
-	arEnvelope_.setSustain(32767);
+	setFunction(FUNC_OSC0FMA);
+	arEnvelope_.setSustain(32767);  //it's only an AR env, so force these to full
 	arEnvelope_.setDecay(32767);
 }
 
@@ -137,7 +134,22 @@ void OdyEngine::poll(unsigned char ticksPassed)
 
 void OdyEngine::setFunction(OdyEngine::Func newFunc)
 {
-	function_ = newFunc;
+	if(newFunc==FUNC_ENVA && patch_->getOptionValue(FUNC_ENVA)==true)
+	{
+		function_ = FUNC_ENVA2;
+	}
+	else if(newFunc==FUNC_ENVR && patch_->getOptionValue(FUNC_ENVR)==true)
+	{
+		function_ = FUNC_ENVR2;
+	}
+	else if(newFunc==FUNC_PORTAMENTO && patch_->getOptionValue(FUNC_PORTAMENTO)==true)
+	{
+		function_ = FUNC_MEM;
+	}
+	else
+	{
+		function_ = newFunc;
+	}
 	base_->engineFunctionChanged((unsigned char)function_,patch_->getFunctionValue(function_),patch_->getOptionValue(function_));
 }
 
@@ -310,10 +322,6 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 {
 	switch (func)
 	{
-		case FUNC_PORTAMENTO:
-		portamento_[0].setSpeed(pgm_read_word(&(PORTA_SPEED[newValue])));
-		portamento_[1].setSpeed(pgm_read_word(&(PORTA_SPEED[newValue])));
-		break;
 		case FUNC_OSC0FMA:
 		if(newValue==15)
 		{
@@ -389,11 +397,17 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		case FUNC_ENVA:
 		adsrEnvelope_.setAttack(pgm_read_word(&(ENV_A_INC[newValue])));
 		break;
+		case FUNC_PORTAMENTO:
+		portamento_[0].setSpeed(pgm_read_word(&(PORTA_SPEED[newValue])));
+		portamento_[1].setSpeed(pgm_read_word(&(PORTA_SPEED[newValue])));
+		break;
 		case FUNC_ENVR2:
 		arEnvelope_.setRelease(pgm_read_word(&(ENV_R_INC[newValue])));
 		break;
 		case FUNC_ENVA2:
 		arEnvelope_.setAttack(pgm_read_word(&(ENV_A_INC[newValue])));
+		break;
+		case FUNC_MEM:
 		break;
 		case FUNC_FILTTYPE:
 		filter_.setType((OdyFilter::FiltType)newValue);
@@ -409,8 +423,6 @@ void OdyEngine::patchOptionChanged(unsigned char func, bool newOpt)
 {
 	switch (func)
 	{
-		case FUNC_PORTAMENTO:
-		break;
 		case FUNC_OSC0FMA:
 		pitch_[0].setFmASource((OdyPitch::PitchFmASource)newOpt);
 		break;
@@ -445,22 +457,10 @@ void OdyEngine::patchOptionChanged(unsigned char func, bool newOpt)
 		filter_.setFmBSource((OdyFilter::FiltFmBSource)newOpt);
 		break;
 		case FUNC_ENVR:
-		case FUNC_ENVR2:
-		if(patch_->getOptionValue(FUNC_ENVR)!=newOpt)
-		{
-			patch_->setOptionValue(FUNC_ENVR,newOpt);
-		}
-		if(patch_->getOptionValue(FUNC_ENVR2)!=newOpt)
-		{
-			patch_->setOptionValue(FUNC_ENVR2,newOpt);
-		}
 		if(newOpt==true)
 		{
+			patch_->setOptionValue(FUNC_ENVR2,true);
 			setFunction(FUNC_ENVR2);
-		}
-		else
-		{
-			setFunction(FUNC_ENVR);
 		}
 		break;
 		case FUNC_ENVS:
@@ -477,22 +477,38 @@ void OdyEngine::patchOptionChanged(unsigned char func, bool newOpt)
 		amplifier_.setAmSource((OdyAmplifier::AmpAmSource)newOpt);
 		break;
 		case FUNC_ENVA:
-		case FUNC_ENVA2:
-		if(patch_->getOptionValue(FUNC_ENVA)!=newOpt)
-		{
-			patch_->setOptionValue(FUNC_ENVA,newOpt);
-		}
-		if(patch_->getOptionValue(FUNC_ENVA2)!=newOpt)
-		{
-			patch_->setOptionValue(FUNC_ENVA2,newOpt);
-		}
 		if(newOpt==true)
 		{
+			patch_->setOptionValue(FUNC_ENVA2,true);
 			setFunction(FUNC_ENVA2);
 		}
-		else
+		break;
+		case FUNC_PORTAMENTO:
+		if(newOpt==true)
 		{
+			patch_->setOptionValue(FUNC_MEM,true);
+			setFunction(FUNC_MEM);
+		}
+		break;
+		case FUNC_ENVR2:
+		if(newOpt==false)
+		{
+			patch_->setOptionValue(FUNC_ENVR,false);
+			setFunction(FUNC_ENVR);
+		}
+		break;
+		case FUNC_ENVA2:
+		if(newOpt==false)
+		{
+			patch_->setOptionValue(FUNC_ENVA,false);
 			setFunction(FUNC_ENVA);
+		}
+		break;
+		case FUNC_MEM:
+		if(newOpt==false)
+		{
+			patch_->setOptionValue(FUNC_PORTAMENTO,false);
+			setFunction(FUNC_PORTAMENTO);
 		}
 		break;
 	}

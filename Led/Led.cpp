@@ -55,7 +55,7 @@ void Led::flashStop()
 	flashCnt_ = 0;
 	setState(false);
 }
-bool Led::refreshFlash(unsigned char tick_inc)
+void Led::refreshFlash(unsigned char tick_inc)
 {
 	if(flashCnt_>0)
 	{

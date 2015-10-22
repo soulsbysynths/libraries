@@ -144,7 +144,7 @@ class AtmHardware
 	bool getMidiChannelSelectMode() {return midiChannelSelectMode_;}
 	unsigned char getMidiChannel(){return midiChannel_;}
 	void refreshLeds();
-	bool refreshFlash(unsigned char ticksPassed);
+	void refreshFlash(unsigned char ticksPassed);
 	void pollAnlControls(unsigned char ticksPassed);
 	void pollSwitches(unsigned char ticksPassed);
 	void pollRotEncoders(unsigned char ticksPassed);
