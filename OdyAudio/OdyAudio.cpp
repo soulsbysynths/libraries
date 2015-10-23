@@ -93,8 +93,8 @@ void OdyAudio::initialize()
 
 	//prescaler
 	bitClear(TCCR0B,CS00);
-	bitSet(TCCR0B,CS01);
-	bitClear(TCCR0B,CS02);
+	bitClear(TCCR0B,CS01);
+	bitSet(TCCR0B,CS02);
 
 	// Set the compare register (OCR1A) initial value
 	OCR0A = ocr0a;       //initialise with A=440hz.
@@ -106,61 +106,90 @@ void OdyAudio::initialize()
 }
 void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 {
-	unsigned long ocr, testSf;
-	unsigned char scale = 0;
+
+	unsigned int ocr;
 	unsigned char i;
+
 	if (newSf!=sampleFreq_[oscNum])
-	{              
-		if(oscNum==0)
-		{
-			testSf = 4978;//4978;
-		}
-		else
-		{
-			testSf = 7458;//7040;  //half of the base freq for jumping waveform
-		}
-		
+	{         
+
 		sampleFreq_[oscNum] = newSf;     
-		for(i=0;i<7;i++)
+
+		for(i=0;i<8;++i)
 		{
-			testSf *= 2;
-			if(sampleFreq_[oscNum]>testSf)
+			ocr = (F_CPU<<i)/sampleFreq_[oscNum];
+			if(ocr>1280)
 			{
-				scale = i+1;
-			}
-			else
-			{
+				wtIndexJump[oscNum] = 1 << i;
 				break;
 			}
 		}
-		wtIndexJump[oscNum] = 1 << scale;
-		ocr = (F_CPU<<scale)/sampleFreq_[oscNum];
+	
 		if(oscNum==0)
 		{
 			ocr1a = ocr;                  
 		}
 		else
 		{
-			if (ocr>16383)
+			for(i=0;i<9;++i)
 			{
-				ocr0a = ocr >> 8;
-				timer0_prescale = 0x0C; //B00001100;
+				if(ocr<256)
+				{
+					ocr0a = (unsigned char)ocr;
+					switch(i)
+					{
+						case 0:
+						timer0_prescale = 1;
+						break;
+						case 1:
+						timer0_prescale = 1;
+						wtIndexJump[oscNum] >>= 1;
+						break;
+						case 2:
+						timer0_prescale = 1;
+						wtIndexJump[oscNum] >>= 2;
+						break;
+						case 3:
+						timer0_prescale = 2;
+						break;
+						case 4:
+						timer0_prescale = 2;
+						wtIndexJump[oscNum] >>= 1;
+						break;
+						case 5:
+						timer0_prescale = 2;
+						wtIndexJump[oscNum] >>= 2;
+						break;
+						case 6:
+						timer0_prescale = 3;
+						break;
+						case 7:
+						timer0_prescale = 3;
+						wtIndexJump[oscNum] >>= 1;
+						break;
+						case 8:
+						timer0_prescale = 3;
+						wtIndexJump[oscNum] >>= 2;
+						break;
+					}
+					//timer0_prescale = i;
+					break;
+				}
+				else
+				{
+					ocr >>= 1;
+					
+					//if(i<3)
+					//{
+						//ocr >>= 3;
+					//}
+					//else
+					//{
+						//ocr >>= 2;
+					//}
+				}
 			}
-			else if (ocr>2047)
-			{
-				ocr0a = ocr >> 6;
-				timer0_prescale = 0x0B; //B00001011;
-			}
-			else if (ocr>255)
-			{
-				ocr0a = ocr >> 3;
-				timer0_prescale = 0x0A; //B00001010;
-			}
-			else
-			{
-				ocr0a = ocr;
-				timer0_prescale = 0x09; //B00001001;
-			}
+			
 		}
 	}
 }
@@ -189,7 +218,6 @@ ISR(TIMER1_COMPA_vect)
 	{
 		wtIndex[1] = 0;
 	}
-	
 }
 
 //Interrupt loop.  Sets PWM output (i.e. generates the audio)

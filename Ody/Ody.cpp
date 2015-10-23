@@ -18,6 +18,7 @@
 #include "OdyOscillatorProgmem.h"
 
 #define MICROSECONDS_PER_TIMER2_OVERFLOW 64
+#define MICROSECONDS_PER_MILLSECOND 1000
 #define min(a) ((a < 127) ? a : 127)
 #define max(a) ((a < -127) ? -127 : a)
 #define clip(a) min(max(a))
@@ -46,9 +47,11 @@ ISR(TIMER2_OVF_vect) {
 	static int filtBuf[2];
 	static unsigned char index[2];
 
-	switch  (processStage&0x03)
+	processStage++;
+	processStage &= 0x03;
+	//processStage = 1 - processStage;
+	if(processStage==0)
 	{
-		case 0x00:
 		index[0] = OdyAudio::getWtIndex(0);
 		index[1] = OdyAudio::getWtIndex(1);
 		if(oscWave[0]==0)
@@ -82,10 +85,9 @@ ISR(TIMER2_OVF_vect) {
 				output += (char)pgm_read_byte(&(SQUARE_WAVE[oscLevel[1]][index[1]]));
 			}
 		}
-		break;
-
-		case 0x01:
-
+	}
+	else if(processStage==1)
+	{
 		if(oscWave[2]==0)
 		{
 			output += OdyNoise::getOutput();
@@ -103,43 +105,133 @@ ISR(TIMER2_OVF_vect) {
 		}
 		
 		output = clip(output>>1);
-		break;
-		case 0x02:
+	}
+	else if(processStage==2)
+	//else
+	{
 		if(filtType==OdyFilter::MOZZI)
 		{
 			filtBuf[0] += (output*filtC - filtBuf[0]*filtC + filtBuf[0]*filtRC - filtBuf[1]*filtRC)>>SCALE;  //filtRC is prescaled here
-			filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;		
+			filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;
 		}
 		else if(filtType==OdyFilter::SIMPLE)
 		{
 			filtBuf[0] -= (filtBuf[0]*filtRC - filtBuf[1]*filtC + output*filtC)>>SCALE;
-			filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;			
+			filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;
 		}
 		else
 		{
 			filtBuf[1] = output;
 		}
-		//case OdyFilter::KARLSEN:  //karlsen nearly same as mozzi, so abandoned it.
-		//filtBuf[0] += (output*filtC - filtBuf[1]*filtRC - filtBuf[0]*filtC)>>SCALE;
-		//filtBuf[1] += (filtBuf[0]*filtC  - filtBuf[1]*filtC)>>SCALE;
-		//break;
-		break;
-		case 0x03:
+	}
+	else
+	{
 		filtBuf[1] = clip(filtBuf[1]);
 		hpfLpfOutput = ((filtBuf[1] * hpfFc) + (hpfLpfOutput * hpfFcInc))>>SCALE;
 		output = clip(((filtBuf[1] - hpfLpfOutput) * ampMult) >> SCALE);
 		OCR2B = (unsigned char)(output + 127);
 
 		tickCnt += MICROSECONDS_PER_TIMER2_OVERFLOW;
-		if (tickCnt >= 1000)
+		if (tickCnt >= MICROSECONDS_PER_MILLSECOND)
 		{
-			tickCnt -= 1000;
+			tickCnt -= MICROSECONDS_PER_MILLSECOND;
 			ticksPassed++;
 		}
-
-		break;
 	}
-	processStage++;
+	//switch  (processStage)
+	//{
+	//case 0x00:
+	//index[0] = OdyAudio::getWtIndex(0);
+	//index[1] = OdyAudio::getWtIndex(1);
+	//if(oscWave[0]==0)
+	//{
+	//output = (char)pgm_read_byte(&(SAW_WAVE[oscLevel[0]][index[0]]));
+	//}
+	//else
+	//{
+	//if(index[0] > SQ_PULSE_INDEX)
+	//{
+	//output = -(char)pgm_read_byte(&(SQUARE_WAVE[oscLevel[0]][index[0]-SQ_PULSE_INDEX]));//-oscPulseIndex[0]]));//osc 0 only square for now
+	//}
+	//else
+	//{
+	//output = (char)pgm_read_byte(&(SQUARE_WAVE[oscLevel[0]][index[0]]));
+	//}
+	//
+	//}
+	//if(oscWave[1]==0)
+	//{
+	//output += (char)pgm_read_byte(&(SAW_WAVE[oscLevel[1]][index[1]]));
+	//}
+	//else
+	//{
+	//if(index[1] > oscPulseIndex[1])
+	//{
+	//output -= (char)pgm_read_byte(&(SQUARE_WAVE[oscLevel[1]][index[1]-oscPulseIndex[1]]));
+	//}
+	//else
+	//{
+	//output += (char)pgm_read_byte(&(SQUARE_WAVE[oscLevel[1]][index[1]]));
+	//}
+	//}
+	//break;
+	//
+	//case 0x01:
+	//
+	//if(oscWave[2]==0)
+	//{
+	//output += OdyNoise::getOutput();
+	//}
+	//else
+	//{
+	//if ((index[0] > oscPulseIndex[0]) ^ (index[1] > oscPulseIndex[1]))
+	//{
+	//output += (char)pgm_read_byte(&(RM_LEVEL[oscLevel[2]]));
+	//}
+	//else
+	//{
+	//output -= (char)pgm_read_byte(&(RM_LEVEL[oscLevel[2]]));
+	//}
+	//}
+	//
+	//output = clip(output>>1);
+	//break;
+	//case 0x02:
+	//if(filtType==OdyFilter::MOZZI)
+	//{
+	//filtBuf[0] += (output*filtC - filtBuf[0]*filtC + filtBuf[0]*filtRC - filtBuf[1]*filtRC)>>SCALE;  //filtRC is prescaled here
+	//filtBuf[1] += (filtBuf[0]*filtC - filtBuf[1]*filtC)>>SCALE;
+	//}
+	//else if(filtType==OdyFilter::SIMPLE)
+	//{
+	//filtBuf[0] -= (filtBuf[0]*filtRC - filtBuf[1]*filtC + output*filtC)>>SCALE;
+	//filtBuf[1] -= (filtBuf[1]*filtRC + filtBuf[0]*filtC)>>SCALE;
+	//}
+	//else
+	//{
+	//filtBuf[1] = output;
+	//}
+	////case OdyFilter::KARLSEN:  //karlsen nearly same as mozzi, so abandoned it.
+	////filtBuf[0] += (output*filtC - filtBuf[1]*filtRC - filtBuf[0]*filtC)>>SCALE;
+	////filtBuf[1] += (filtBuf[0]*filtC  - filtBuf[1]*filtC)>>SCALE;
+	////break;
+	//break;
+	//case 0x03:
+	//filtBuf[1] = clip(filtBuf[1]);
+	//hpfLpfOutput = ((filtBuf[1] * hpfFc) + (hpfLpfOutput * hpfFcInc))>>SCALE;
+	//output = clip(((filtBuf[1] - hpfLpfOutput) * ampMult) >> SCALE);
+	//OCR2B = (unsigned char)(output + 127);
+	//
+	//tickCnt += MICROSECONDS_PER_TIMER2_OVERFLOW;
+	//if (tickCnt >= 1000)
+	//{
+	//tickCnt -= 1000;
+	//ticksPassed++;
+	//}
+	//
+	//break;
+	//}
+	
 }
 
 // default constructor
@@ -310,7 +402,7 @@ void Ody::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 				hardware_.getRotEncoder(AtmHardware::VALUE).setUpdateVal(true);
 				hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::YELLOW);
 				engine_.midiNoteOffReceived(testNote_);
-			}			
+			}
 		}
 	}
 	
