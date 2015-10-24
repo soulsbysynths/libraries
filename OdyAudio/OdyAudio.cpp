@@ -11,10 +11,10 @@
 static volatile unsigned char ocr0a = 142;
 static volatile unsigned char timer0_prescale = 0x0B; // B00001011;
 static volatile unsigned int ocr1a = 1136;
-static volatile unsigned char wtIndexJump[2] = {1,1};
+static volatile unsigned char wtIndexJumpBuffer[2] = {1,1};
 static volatile unsigned char wtIndex[2] = {0};
 static volatile bool waveSync = false;
-
+static volatile bool updateOcr[2] = {false};
 // default constructor
 OdyAudio::OdyAudio()
 {
@@ -28,17 +28,6 @@ OdyAudio::~OdyAudio()
 void OdyAudio::initialize()
 {
 	
-	  ////Fast PWM mode
-	  //sbi(TCCR2A,WGM20);  //TOV flag set on max
-	  //sbi(TCCR2A,WGM21);  //Update OCRx at bottom
-	  //cbi(TCCR2B,WGM22);  //Top = 0xFF
-	  //
-	  ////Set non-inverting PWM on OC2B pin
-	  //cbi(TCCR2A,COM2B0);
-	  //sbi(TCCR2A,COM2B1);
-	  ////set normal operation on OC2A pin
-	  //cbi(TCCR2A,COM2A0);
-	  //cbi(TCCR2A,COM2A1);
 	cli();      //pause interrupts
 	//use internal clock
 	bitClear(ASSR,EXCLK);    //disable external clock
@@ -120,14 +109,15 @@ void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 			ocr = (F_CPU<<i)/sampleFreq_[oscNum];
 			if(ocr>1280)
 			{
-				wtIndexJump[oscNum] = 1 << i;
+				wtIndexJumpBuffer[oscNum] = 1 << i;
 				break;
 			}
 		}
 	
 		if(oscNum==0)
 		{
-			ocr1a = ocr;                  
+			ocr1a = ocr;
+			updateOcr[0] = true;                  
 		}
 		else
 		{
@@ -135,7 +125,6 @@ void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 			{
 				if(ocr<256)
 				{
-					ocr0a = (unsigned char)ocr;
 					switch(i)
 					{
 						case 0:
@@ -143,50 +132,41 @@ void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 						break;
 						case 1:
 						timer0_prescale = 1;
-						wtIndexJump[oscNum] >>= 1;
+						wtIndexJumpBuffer[oscNum] >>= 1;
 						break;
 						case 2:
 						timer0_prescale = 1;
-						wtIndexJump[oscNum] >>= 2;
+						wtIndexJumpBuffer[oscNum] >>= 2;
 						break;
 						case 3:
 						timer0_prescale = 2;
 						break;
 						case 4:
 						timer0_prescale = 2;
-						wtIndexJump[oscNum] >>= 1;
+						wtIndexJumpBuffer[oscNum] >>= 1;
 						break;
 						case 5:
 						timer0_prescale = 2;
-						wtIndexJump[oscNum] >>= 2;
+						wtIndexJumpBuffer[oscNum] >>= 2;
 						break;
 						case 6:
 						timer0_prescale = 3;
 						break;
 						case 7:
 						timer0_prescale = 3;
-						wtIndexJump[oscNum] >>= 1;
+						wtIndexJumpBuffer[oscNum] >>= 1;
 						break;
 						case 8:
-						timer0_prescale = 3;
-						wtIndexJump[oscNum] >>= 2;
+						timer0_prescale = 4;
 						break;
 					}
-					//timer0_prescale = i;
+					ocr0a = (unsigned char)ocr;
+					updateOcr[1] = true;
 					break;
 				}
 				else
 				{
 					ocr >>= 1;
-					
-					//if(i<3)
-					//{
-						//ocr >>= 3;
-					//}
-					//else
-					//{
-						//ocr >>= 2;
-					//}
 				}
 			}
 			
@@ -208,22 +188,34 @@ bool OdyAudio::getWaveSync()
 	return waveSync;
 }
 
-//Interrupt loop.  Sets PWM output (i.e. generates the audio)
+
 ISR(TIMER1_COMPA_vect) 
 {
-	OCR1A = ocr1a;
+	static unsigned char jump = 0;
+	if(updateOcr[0]==true)
+	{
+		OCR1A = ocr1a;
+		jump = wtIndexJumpBuffer[0];
+		updateOcr[0] = false;
+	}
 	unsigned char lastIndex = wtIndex[0];
-	wtIndex[0] += wtIndexJump[0];
+	wtIndex[0] += jump;
 	if(waveSync==true && wtIndex[0]<lastIndex)
 	{
 		wtIndex[1] = 0;
 	}
 }
 
-//Interrupt loop.  Sets PWM output (i.e. generates the audio)
+
 ISR(TIMER0_COMPA_vect) 
 {
-	TCCR0B = timer0_prescale;			//master_prescale;
-	OCR0A = ocr0a;                      //sets pitch
-	wtIndex[1] += wtIndexJump[1];
+	static unsigned char jump = 0;
+	if(updateOcr[1]==true)
+	{	
+		TCCR0B = timer0_prescale;			
+		jump = wtIndexJumpBuffer[1];
+		OCR0A = ocr0a;
+		updateOcr[1] = false;
+	}                    
+	wtIndex[1] += jump;
 }
