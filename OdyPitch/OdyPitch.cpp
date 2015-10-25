@@ -41,9 +41,9 @@ void OdyPitch::refresh(char pbend, char fmA, char fmB)
 		f = f * offset_ >> 7;  //offset is pre-shaped (128 = x0)
 	}
 
-	if(f>2047)
+	if(f>4095)
 	{
-		output_ = 2047;
+		output_ = 4095;
 	}
 	else
 	{
