@@ -57,3 +57,7 @@ void OdyLfo::refresh(unsigned char ticksPassed)
 	}
 	index_ = newIndex;
 }
+void OdyLfo::reset()
+{
+	ms_ = 0;
+}

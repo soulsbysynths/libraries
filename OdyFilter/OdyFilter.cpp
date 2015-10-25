@@ -24,8 +24,12 @@ void OdyFilter::refresh(unsigned char kbrd, char fmA, char fmB)
 	int r;
 	int tmpFc = (int)fc_;
 	tmpFc += ((int)fmAAmount_ * fmA) >> 4;
-	tmpFc += ((int)fmBAmount_ * fmB) >> 4;
-	tmpFc += ((int)kbrdAmount_ * ((int)kbrd - 64)) >> 3;  //allow for neg offset too
+	tmpFc += ((int)fmBAmount_ * fmB) >> 3;
+	if(kbrd>0)
+	{
+		kbrd_ = kbrd;
+	}
+	tmpFc += ((int)kbrdAmount_ * ((int)kbrd_ - 64)) >> 3;  //allow for neg offset too
 	tmpFc = (int)constrainUChar(tmpFc);
 	switch (type_)
 	{

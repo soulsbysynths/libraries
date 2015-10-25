@@ -74,21 +74,14 @@ public:
 	};
 	enum MidiCC : unsigned char
 	{
-		CC_PITCHLFO = 1,
+		CC_MODWHEEL = 1,
 		CC_PORTAMENTO = 5,
-		CC_FILTERENV = 16,
-		CC_DISTORTION = 17,
 		CC_FILTCUTOFF = 74,
-		CC_AMPENVR = 72,
-		CC_AMPENVA = 73,
+		CC_ENVR = 72,
+		CC_ENVA = 73,
 		CC_FILTRES = 71,
-		CC_AMPENVD = 75,
-		CC_LFOCLOCKDIV = 79,
-		CC_PWM = 91,
-		CC_AMPLFO = 92,
-		CC_FILTLFO = 93,
-		CC_PITCHENV = 94,
-		CC_FLANGE = 95,
+		CC_ENVD = 75,
+		CC_LFOSPEED = 79,
 		CC_ALLNOTESOFF = 123
 	};
 	enum FxSource : unsigned char

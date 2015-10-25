@@ -100,9 +100,9 @@ void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 	unsigned char i;
 
 	if (newSf!=sampleFreq_[oscNum])
-	{         
+	{
 
-		sampleFreq_[oscNum] = newSf;     
+		sampleFreq_[oscNum] = newSf;
 
 		for(i=0;i<8;++i)
 		{
@@ -113,11 +113,11 @@ void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 				break;
 			}
 		}
-	
+		
 		if(oscNum==0)
 		{
 			ocr1a = ocr;
-			updateOcr[0] = true;                  
+			updateOcr[0] = true;
 		}
 		else
 		{
@@ -188,8 +188,7 @@ bool OdyAudio::getWaveSync()
 	return waveSync;
 }
 
-
-ISR(TIMER1_COMPA_vect) 
+ISR(TIMER1_COMPA_vect)
 {
 	static unsigned char jump = 0;
 	if(updateOcr[0]==true)
@@ -207,15 +206,16 @@ ISR(TIMER1_COMPA_vect)
 }
 
 
-ISR(TIMER0_COMPA_vect) 
+ISR(TIMER0_COMPA_vect)
 {
 	static unsigned char jump = 0;
 	if(updateOcr[1]==true)
-	{	
-		TCCR0B = timer0_prescale;			
+	{
+		TCCR0B = timer0_prescale;
 		jump = wtIndexJumpBuffer[1];
 		OCR0A = ocr0a;
 		updateOcr[1] = false;
-	}                    
+	}
 	wtIndex[1] += jump;
 }
+

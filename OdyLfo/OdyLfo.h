@@ -38,6 +38,7 @@ public:
 	char getOutput(LfoWave wave);
 	char getExpOutput(LfoWave wave);
 	void refresh(unsigned char ticksPassed);
+	void reset();
 protected:
 private:
 	OdyLfo( const OdyLfo &c );

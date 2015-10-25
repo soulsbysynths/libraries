@@ -65,7 +65,7 @@ void OdyEngine::initialize()
 void OdyEngine::poll(unsigned char ticksPassed)
 {
 	unsigned char i;
-	int fmA,fmB;
+	char fmA,fmB;
 	char filtA, filtB,am;
 	
 	noise_.refresh();
@@ -103,21 +103,21 @@ void OdyEngine::poll(unsigned char ticksPassed)
 		pitch_[i].setInput(portamento_[i].getOutput());
 		if(pitch_[i].getFmASource()==OdyPitch::SINE)
 		{
-			fmA = (int)lfo_.getOutput(OdyLfo::SINE)+127;
+			fmA = lfo_.getOutput(OdyLfo::SINE);
 		}
 		else
 		{
-			fmA = (int)lfo_.getOutput(OdyLfo::SQUARE)+127;
+			fmA = lfo_.getOutput(OdyLfo::SQUARE);
 		}
 		if(pitch_[i].getFmBSource()==OdyPitch::S_AND_H)
 		{
-			fmB = (int)lfo_.getOutput(OdyLfo::S_AND_H)+127;
+			fmB = lfo_.getOutput(OdyLfo::S_AND_H);
 		}
 		else
 		{
-			fmB = (int)adsrEnvelope_.getExpOutput()<<1;
+			fmB = adsrEnvelope_.getExpOutput();
 		}
-		pitch_[i].refresh(pitchBend_,(unsigned char)fmA,(unsigned char)fmB);
+		pitch_[i].refresh(pitchBend_,fmA,fmB);
 		audio_.setSampleFreq(i,(unsigned long)pitch_[i].getOutput()*WAVE_LENGTH);	
 	}
 	
@@ -166,6 +166,7 @@ void OdyEngine::triggerNote(unsigned char note)
 	}
 	adsrEnvelope_.trigger();
 	arEnvelope_.trigger();
+	lfo_.reset();
 }
 void OdyEngine::releaseNote()
 {
@@ -255,57 +256,19 @@ void OdyEngine::midiNoteOffReceived(unsigned char note)
 
 void OdyEngine::midiControlChangeReceived(unsigned char anlControl_, unsigned char val)
 {
-	//switch ((MidiCC)anlControl_)
-	//{
-		//case CC_PITCHLFO:
-		//patch_->setCtrlValue(HIGH,CTRL_LFO,val>>1);
-		//break;
-		//case CC_PORTAMENTO:
-		//patch_->setFunctionValue(FUNC_PORTA,val>>3);
-		//break;
-		//case CC_FILTERENV:
-		//patch_->setCtrlValue(LOW,CTRL_ENV,val<<1);
-		//break;
-		//case CC_DISTORTION:
-		//patch_->setCtrlValue(LOW,CTRL_FX,val<<1);
-		//break;
-		//case CC_FILTCUTOFF:
-		//patch_->setCtrlValue(LOW,CTRL_FILT,val<<1);
-		//break;
-		//case CC_AMPENVR:
-		//patch_->setFunctionValue(FUNC_AENVR,val>>3);
-		//break;
-		//case CC_AMPENVA:
-		//patch_->setFunctionValue(FUNC_AENVA,val>>3);
-		//break;
-		//case CC_FILTRES:
-		//patch_->setCtrlValue(LOW,CTRL_Q,val<<1);
-		//break;
-		//case CC_AMPENVD:
-		//patch_->setFunctionValue(FUNC_AENVD,val>>3);
-		//break;
-		//case CC_LFOCLOCKDIV:
-		//patch_->setFunctionValue(FUNC_LFOSPEED,val>>3);
-		//break;
-		//case CC_PWM:
-		//patch_->setCtrlValue(HIGH,CTRL_FX,val<<1);
-		//break;
-		//case CC_AMPLFO:
-		//patch_->setCtrlValue(LOW,CTRL_AMP,val<<1);
-		//break;
-		//case CC_FILTLFO:
-		//patch_->setCtrlValue(LOW,CTRL_LFO,val<<1);
-		//break;
-		//case CC_PITCHENV:
-		//patch_->setCtrlValue(HIGH,CTRL_ENV,val<<1);
-		//break;
-		//case CC_FLANGE:
-		//patch_->setCtrlValue(HIGH,CTRL_FX,val<<1);
-		//break;
-		//case CC_ALLNOTESOFF:
-		//midi_->reset();
-		//break;
-	//}
+	switch ((MidiCC)anlControl_)
+	{
+		case CC_MODWHEEL:
+		patch_->setFunctionValue(FUNC_OSC0FMA,val>>3);
+		patch_->setFunctionValue(FUNC_OSC1FMA,val>>3);
+		break;
+		case CC_PORTAMENTO:
+		patch_->setFunctionValue(FUNC_PORTAMENTO,val>>3);
+		break;
+		case CC_ALLNOTESOFF:
+		midi_->reset();
+		break;
+	}
 }
 
 void OdyEngine::midiChannelChanged(unsigned char channel)
@@ -323,44 +286,16 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 	switch (func)
 	{
 		case FUNC_OSC0FMA:
-		if(newValue==15)
-		{
-			pitch_[0].setFmAAmount(255);
-		}
-		else
-		{
-			pitch_[0].setFmAAmount(newValue<<4);
-		}
+		pitch_[0].setFmAAmount(newValue);
 		break;
 		case FUNC_OSC0FMB:
-		if(newValue==15)
-		{
-			pitch_[0].setFmBAmount(255);
-		}
-		else
-		{
-			pitch_[0].setFmBAmount(newValue<<4);
-		}		
+		pitch_[0].setFmBAmount(newValue);		
 		break;
 		case FUNC_OSC1FMA:
-		if(newValue==15)
-		{
-			pitch_[1].setFmAAmount(255);
-		}
-		else
-		{
-			pitch_[1].setFmAAmount(newValue<<4);
-		}
+		pitch_[1].setFmAAmount(newValue);
 		break;
 		case FUNC_OSC1FMB:
-		if(newValue==15)
-		{
-			pitch_[1].setFmBAmount(255);
-		}
-		else
-		{
-			pitch_[1].setFmBAmount(newValue<<4);
-		}
+		pitch_[1].setFmBAmount(newValue);
 		break;
 		case FUNC_OSC1PW:
 		oscillator_[1].setPulseWidth(127+(newValue<<3));

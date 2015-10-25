@@ -44,6 +44,7 @@ private:
 	unsigned char fmAAmount_ = 0;  //0-15
 	unsigned char fmBAmount_ = 0;  //0-15
 	unsigned char kbrdAmount_ = 0;  //0-15
+	unsigned char kbrd_ = 0;
 	FiltFmASource fmASource_ = S_AND_H;
 	FiltFmBSource fmBSource_ = ADSR;
 	char c_ = 0;
