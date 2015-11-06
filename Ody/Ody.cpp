@@ -158,7 +158,8 @@ void Ody::initialize()
 void Ody::poll()
 {
 	unsigned char ticks = ticksPassed;
-	if(ticks>0)
+
+	if(ticks>0 || hardware_.getMidiChannelSelectMode()==true)
 	{
 		hardware_.pollMidi();
 		hardware_.pollAnlControls(ticks);
@@ -166,24 +167,31 @@ void Ody::poll()
 		hardware_.pollRotEncoders(ticks);
 		hardware_.refreshFlash(ticks);
 		hardware_.refreshLeds();
-		engine_.poll(ticks);
+		if(hardware_.getMidiChannelSelectMode()==false)
+		{
+			engine_.poll(ticks);
+		}
 		ticksPassed -= ticks;
 	}
 
-	hpfFc = engine_.getHPF().getFc()>>1;
-	hpfFcInc = 127 - hpfFc;
-	ampMult = engine_.getAmp().getOutput();
-	for(unsigned char i=0;i<2;++i)
+	if(hardware_.getMidiChannelSelectMode()==false)
 	{
-		oscWave[i] = (unsigned char)engine_.getOsc(i).getWaveform();
-		oscLevel[i] = engine_.getOsc(i).getLevel();
-		oscPulseIndex[i] = engine_.getOsc(i).getPulseIndex();
+		hpfFc = engine_.getHPF().getFc()>>1;
+		hpfFcInc = 127 - hpfFc;
+		ampMult = engine_.getAmp().getOutput();
+		for(unsigned char i=0;i<2;++i)
+		{
+			oscWave[i] = (unsigned char)engine_.getOsc(i).getWaveform();
+			oscLevel[i] = engine_.getOsc(i).getLevel();
+			oscPulseIndex[i] = engine_.getOsc(i).getPulseIndex();
+		}
+		oscWave[2] = (unsigned char)engine_.getFxSource();
+		oscLevel[2] = engine_.getFxLevel();
+		filtType = (unsigned char)engine_.getFilter().getType();
+		filtC = engine_.getFilter().getCscaled();
+		filtRC = engine_.getFilter().getRCscaled();	
 	}
-	oscWave[2] = (unsigned char)engine_.getFxSource();
-	oscLevel[2] = engine_.getFxLevel();
-	filtType = (unsigned char)engine_.getFilter().getType();
-	filtC = engine_.getFilter().getCscaled();
-	filtRC = engine_.getFilter().getRCscaled();
+
 }
 
 //***********engine events*********************

@@ -32,7 +32,7 @@ Switch::~Switch()
 bool Switch::hasHeld(unsigned char ticksPassed)
 {
 	bool held = false;
-	if(state_==HIGH)
+	if(state_==S_HIGH)
 	{
 		holdTime_ += ticksPassed;
 		if(holdTime_>=holdEventTicks_ && holdEventFired_==false)
@@ -56,13 +56,13 @@ bool Switch::hasChanged(unsigned char ticksPassed)
 	{
 		if(state_!=stateLast_)
 		{
-			if(state_==HIGH && stateLast_==LOW)
+			if(state_==S_HIGH && stateLast_==S_LOW)
 			{
 				holdTime_ = 0;
 				holdEventFired_ = false;
 				changed = true;
 			}
-			else if(state_==LOW && stateLast_==HIGH)
+			else if(state_==S_LOW && stateLast_==S_HIGH)
 			{
 				changed = true;
 			}

@@ -47,11 +47,11 @@ public:
 	};
 protected:
 private:
-	static const float MAX_ENV_LFO = 1.386294361119891;
-	static const unsigned char MULT_ENV_LFO = 64;
-	static const unsigned char BS_ENV_LFO = 6;
-	static const float MIN_Q = 0.5;
-	static const float MULT_Q = 0.076470588235294;
+	const float MAX_ENV_LFO = 1.386294361119891;
+	const unsigned char MULT_ENV_LFO = 64;
+	const unsigned char BS_ENV_LFO = 6;
+	const float MIN_Q = 0.5;
+	const float MULT_Q = 0.076470588235294;
 	unsigned char fc_ = 120;
 	unsigned char q_;
 	FiltType type_ = FILT_LPF;

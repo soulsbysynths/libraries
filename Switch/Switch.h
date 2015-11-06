@@ -26,11 +26,11 @@ class Switch
 public:
 protected:
 private:
-	static const unsigned char HIGH = 1;
-	static const unsigned char LOW = 0;
-	unsigned char state_ = LOW;
+	static const unsigned char S_HIGH = 1;
+	static const unsigned char S_LOW = 0;
+	unsigned char state_ = S_LOW;
 	unsigned char ticks_ = 0;
-	unsigned char stateLast_ = LOW;
+	unsigned char stateLast_ = S_LOW;
 	unsigned int holdTime_ = 0;
 	bool holdEventFired_ = false;
 	unsigned char debounceTicks_ = 100;
