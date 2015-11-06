@@ -118,7 +118,7 @@ void OdyEngine::poll(unsigned char ticksPassed)
 			fmB = adsrEnvelope_.getExpOutput();
 		}
 		pitch_[i].refresh(pitchBend_,fmA,fmB);
-		audio_.setSampleFreq(i,(unsigned long)pitch_[i].getOutput()*WAVE_LENGTH);	
+		audio_.setSampleFreq(i,(unsigned long)pitch_[i].getOutput()*(WAVE_LENGTH>>2));  //Finally scale freqs back down again (/4)	
 	}
 	
 	if(amplifier_.getAmSource()==OdyAmplifier::AR)

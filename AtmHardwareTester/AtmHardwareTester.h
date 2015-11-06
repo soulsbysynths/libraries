@@ -54,6 +54,7 @@ public:
 	void hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise);
 	void hardwareMidiReceived(unsigned char data);
 	void hardwareMidiError(unsigned char errorType){}
+	void hardwareMidiChannelChanged(unsigned char channel){}
 protected:
 private:
 	AtmHardwareTester( const AtmHardwareTester &c );

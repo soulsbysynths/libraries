@@ -93,6 +93,7 @@ void OdyAudio::initialize()
 
 	sei();    //start interrupts
 }
+
 void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 {
 
@@ -116,7 +117,7 @@ void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 		
 		if(oscNum==0)
 		{
-			ocr1a = ocr;
+			ocr1a = ocr-1;
 			updateOcr[0] = true;
 		}
 		else
@@ -160,7 +161,7 @@ void OdyAudio::setSampleFreq(unsigned char oscNum, unsigned long newSf)
 						timer0_prescale = 4;
 						break;
 					}
-					ocr0a = (unsigned char)ocr;
+					ocr0a = (unsigned char)ocr-1;
 					updateOcr[1] = true;
 					break;
 				}
