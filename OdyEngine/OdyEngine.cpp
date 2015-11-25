@@ -60,6 +60,8 @@ void OdyEngine::initialize()
 	setFunction(FUNC_OSC0FMA);
 	arEnvelope_.setSustain(32767);  //it's only an AR env, so force these to full
 	arEnvelope_.setDecay(32767);
+	portamento_[0].setProportional(true);
+	portamento_[1].setProportional(true);
 }
 
 void OdyEngine::poll(unsigned char ticksPassed)
@@ -261,9 +263,48 @@ void OdyEngine::midiControlChangeReceived(unsigned char anlControl_, unsigned ch
 		case CC_MODWHEEL:
 		patch_->setFunctionValue(FUNC_OSC0FMA,val>>3);
 		patch_->setFunctionValue(FUNC_OSC1FMA,val>>3);
-		break;
+		break;	
 		case CC_PORTAMENTO:
 		patch_->setFunctionValue(FUNC_PORTAMENTO,val>>3);
+		break;
+		case CC_FILTRES:
+		patch_->setCtrlValue(CTRL_Q,val<<1);
+		break;
+		case CC_ENVR:
+		patch_->setFunctionValue(FUNC_ENVR,val>>3);
+		break;
+		case CC_ENVA:
+		patch_->setFunctionValue(FUNC_ENVA,val>>3);
+		break;
+		case CC_FILTCUTOFF:
+		patch_->setCtrlValue(CTRL_FC,val<<1);
+		break;
+		case CC_ENVD:
+		patch_->setFunctionValue(FUNC_ENVD,val>>3);
+		break;
+		case CC_LFOSPEED:
+		patch_->setCtrlValue(CTRL_LFO,val<<1);
+		break;
+		case CC_FILTLFO:
+		patch_->setFunctionValue(FUNC_FILTFMA,val>>3);
+		break;
+		case CC_FILTENV:
+		patch_->setFunctionValue(FUNC_FILTFMB,val>>3);
+		break;
+		case CC_OSC1PITCH:
+		patch_->setCtrlValue(CTRL_VCO1,val<<1);
+		break;
+		case CC_OSC2PITCH:
+		patch_->setCtrlValue(CTRL_VCO2,val<<1);
+		break;
+		case CC_HPF:
+		patch_->setCtrlValue(CTRL_HPF,val<<1);
+		break;
+		case CC_OSC1FMB:
+		patch_->setFunctionValue(FUNC_OSC0FMB,val<<1);
+		break;
+		case CC_OSC2FMB:
+		patch_->setFunctionValue(FUNC_OSC1FMB,val<<1);
 		break;
 		case CC_ALLNOTESOFF:
 		midi_->reset();

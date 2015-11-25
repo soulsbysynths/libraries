@@ -76,12 +76,19 @@ public:
 	{
 		CC_MODWHEEL = 1,
 		CC_PORTAMENTO = 5,
-		CC_FILTCUTOFF = 74,
+		CC_FILTRES = 71,
 		CC_ENVR = 72,
 		CC_ENVA = 73,
-		CC_FILTRES = 71,
+		CC_FILTCUTOFF = 74,
 		CC_ENVD = 75,
-		CC_LFOSPEED = 79,
+		CC_LFOSPEED = 76,
+		CC_FILTLFO = 77,
+		CC_FILTENV = 78,
+		CC_OSC1PITCH = 79,
+		CC_OSC2PITCH = 80,
+		CC_HPF = 81,
+		CC_OSC1FMB = 82,
+		CC_OSC2FMB = 83,
 		CC_ALLNOTESOFF = 123
 	};
 	enum FxSource : unsigned char

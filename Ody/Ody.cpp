@@ -157,9 +157,16 @@ void Ody::initialize()
 
 void Ody::poll()
 {
-	unsigned char ticks = ticksPassed;
-
-	if(ticks>0 || hardware_.getMidiChannelSelectMode()==true)
+	unsigned char ticks;
+	if(hardware_.getMidiChannelSelectMode()==false)
+	{
+		ticks = ticksPassed;
+	}
+	else
+	{
+		ticks = 2;  //this is because interrtupt that calcs ticks isn't running
+	}
+	if(ticks>0)
 	{
 		hardware_.pollMidi();
 		hardware_.pollAnlControls(ticks);
@@ -170,8 +177,9 @@ void Ody::poll()
 		if(hardware_.getMidiChannelSelectMode()==false)
 		{
 			engine_.poll(ticks);
+			ticksPassed -= ticks;
 		}
-		ticksPassed -= ticks;
+		
 	}
 
 	if(hardware_.getMidiChannelSelectMode()==false)
@@ -206,7 +214,7 @@ void Ody::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
 			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::OFF);
 			break;
 			case OdyFilter::MOZZI:
-			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::YELLOW); //red
+			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::GREEN); //red
 			break;
 			case OdyFilter::SIMPLE:
 			hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::RED);  //green
