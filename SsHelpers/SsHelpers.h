@@ -28,15 +28,27 @@ static const char EXP_CONVERT_BIPOLAR[256] PROGMEM = {-127,-127,-127,-127,-127,-
 static const unsigned char COMPRESS_FOUR_BIT_MASK[2] PROGMEM = {0x0F,0xF0};
 static const unsigned char COMPRESS_TWO_BIT_MASK[4] PROGMEM = {0x03,0x0C,0x30,0xC0};
 
+//static const float CV_TO_FREQ_EXP = 0.00086295;
+//static const float CV_TO_FREQ_MULT = 258.6643068;
+static const float CV_TO_FREQ_EXP = 0.000846127;
+static const float CV_TO_FREQ_MULT = 261.6255653;
+
+inline
+unsigned int convertCvFreq(unsigned int cv)
+{
+	float out = CV_TO_FREQ_MULT * exp(CV_TO_FREQ_EXP * (float)cv);
+	return (unsigned int)out;
+}
+
 inline
 char convertExponential(char input)
 {
-	return (char)pgm_read_byte(&(EXP_CONVERT[input]));
+	return (char)pgm_read_byte(&(EXP_CONVERT[(unsigned char)input]));
 }
 inline
 char convertInvExponential(char input)
 {
-	return 127-(char)pgm_read_byte(&(EXP_CONVERT[127-input]));
+	return 127-(char)pgm_read_byte(&(EXP_CONVERT[127-(unsigned char)input]));
 }
 inline 
 char convertExponentialBipolar(char input)
@@ -51,15 +63,6 @@ unsigned char shapeExponential(char input, float shapeAmt, unsigned char multipl
 	f = (float)input / 127;
 	g = round(exp(f * shapeAmt) * (float)multiplier - 1);
 	return (unsigned char)g;
-}
-inline
-unsigned char shapeLinear(unsigned char input, unsigned char shapeAmt)
-{
-	//zero gain = 128
-	unsigned int out;
-	out = ((unsigned int)input * shapeAmt) >> 9;
-	out += 128;
-	return (unsigned char)out;
 }
 inline
 unsigned char compressFourBit(unsigned char input, unsigned char newValue, unsigned char pos)

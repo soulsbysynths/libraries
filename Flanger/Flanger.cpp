@@ -19,9 +19,8 @@
 // default constructor
 Flanger::Flanger(unsigned char waveLength)
 {
-	waveLength_ = waveLength;
-	wavetable_ = new Wavetable(waveLength_);
-	scale_ = 256 / waveLength_;
+	resizeWavetable(waveLength);
+	wavetable_ = new Wavetable(waveLength);
 } //Flanger
 
 // default destructor
@@ -32,6 +31,13 @@ Flanger::~Flanger()
 		delete wavetable_;
 	}
 } //~Flanger
+
+void Flanger::resizeWavetable(unsigned char newWaveLen)
+{
+	waveLength_ = newWaveLen;
+	scale_ = 256 / waveLength_;
+}
+
 void Flanger::setLfoAmount(unsigned char newValue)
 {
 	lfoAmount_ = newValue;
@@ -47,19 +53,19 @@ void Flanger::setEnvAmount(unsigned char newValue)
 	if(lfoAmount_==0 && envAmount_==0)
 	{
 		clearBuffer();
-	}	
+	}
 }
 
 void Flanger::processWavetable(Wavetable& sourceWavetable, char envLevel, char lfoLevel)
 {
-    unsigned char i;
+	unsigned char i;
 	unsigned char readpos = 0;
 	unsigned char offset = 0;
 	static unsigned char writepos = 0;
 	int input, output;
 	
-    if (lfoAmount_>0 || envAmount_>0)
-    {		
+	if (lfoAmount_>0 || envAmount_>0)
+	{
 		unsigned char lfoOffset = ((unsigned int)lfoAmount_+1) * (lfoLevel + 127) >> 8;
 		lfoOffset /= scale_;
 		unsigned char envOffset = ((unsigned int)envAmount_+1) * abs(envLevel) >> 7;
@@ -83,14 +89,14 @@ void Flanger::processWavetable(Wavetable& sourceWavetable, char envLevel, char l
 		else
 		{
 			readpos = writepos - offset;
-		} 
+		}
 		for(i=0;i<sourceWavetable.getWaveLength();++i)
 		{
 			input = (sourceWavetable.getSample(i)) + (wavetable_->getSample(readpos)>>fbBs_);
 			wavetable_->setSample(writepos,constrainChar(input));
 			
-			output = (sourceWavetable.getSample(i)>>dryBs_) + (wavetable_->getSample(readpos)>>wetBs_);	
-			sourceWavetable.setSample(i,constrainChar(output));	
+			output = (sourceWavetable.getSample(i)>>dryBs_) + (wavetable_->getSample(readpos)>>wetBs_);
+			sourceWavetable.setSample(i,constrainChar(output));
 			writepos++;
 			if(writepos>=waveLength_)
 			{
@@ -103,7 +109,7 @@ void Flanger::processWavetable(Wavetable& sourceWavetable, char envLevel, char l
 			}
 		}
 		cleared_ = false;
-    }	
+	}
 }
 void Flanger::clearBuffer()
 {

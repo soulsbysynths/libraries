@@ -30,7 +30,7 @@ OdyPatch::~OdyPatch()
 void OdyPatch::setFunctionValue(unsigned char func, unsigned char newValue)
 {
 	unsigned char i = func>>1;
-	funcValue_c_[i] = compressFourBit(funcValue_c_[i],newValue,(bool)(func%2));
+	funcValue_c_[i] = compressFourBit(funcValue_c_[i],newValue,func%2);
 	if(base_!=NULL)
 	{
 		base_->patchValueChanged(func,newValue);
@@ -40,7 +40,7 @@ void OdyPatch::setFunctionValue(unsigned char func, unsigned char newValue)
 unsigned char OdyPatch::getFunctionValue(unsigned char func)
 {
 	unsigned char i = func>>1;
-	return uncompressFourBit(funcValue_c_[i],(bool)(func%2));
+	return uncompressFourBit(funcValue_c_[i],func%2);
 }
 void OdyPatch::setOptionValue(unsigned char func, bool newValue)
 {
@@ -63,7 +63,7 @@ void OdyPatch::setCtrlValue(unsigned char ctrl, unsigned char newValue)
 	ctrlValue_[ctrl] = newValue;
 	if(base_!=NULL)
 	{
-		base_->patchCtrlChanged(ctrl,newValue);
+		base_->patchCtrlChanged(ctrl,ctrlValue_[ctrl]);
 	}
 }
 unsigned char OdyPatch::getCtrlValue(unsigned char ctrl)
@@ -86,7 +86,7 @@ void OdyPatch::writePatch(unsigned char patchNum)
 		data[addr] = ctrlValue_[i];
 		addr++;
 	}
-	for(i=0;i<2;++i)
+	for(i=0;i<2;++i)   //no need to read/write last 3 func opts
 	{
 		data[addr] = optionValue_c_[i];
 		addr++;
@@ -111,7 +111,7 @@ void OdyPatch::readPatch(unsigned char patchNum)
 		setCtrlValue(i,data[addr]);
 		addr++;
 	}
-	for(i=0;i<2;++i)
+	for(i=0;i<2;++i)  //no need to read/write last 3 func opts
 	{
 		for(j=0;j<8;++j)
 		{

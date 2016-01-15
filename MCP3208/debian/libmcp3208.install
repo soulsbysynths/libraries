@@ -1,0 +1,6 @@
+LICENSE usr/share/doc/libmcp3208/
+MCP3208.cpp libraries/IO/MCP3208/
+MCP3208.h libraries/IO/MCP3208/
+README.md usr/share/doc/libmcp3208/
+examples/chipKIT/ADCDemo/ADCDemo.ino libraries/IO/MCP3208/examples/chipKIT/ADCDemo
+examples/Arduino/ADCDemo/ADCDemo.ino libraries/IO/MCP3208/examples/Arduino/ADCDemo

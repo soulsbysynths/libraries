@@ -37,6 +37,7 @@ volatile static unsigned char oscLevel[3];
 volatile static unsigned char filtType = 0;
 volatile static char filtC = 0;
 volatile static char filtRC = 0;
+static int filtBuf[2] = {0,0};
 
 ISR(TIMER2_OVF_vect) {
 
@@ -44,7 +45,7 @@ ISR(TIMER2_OVF_vect) {
 	static unsigned int tickCnt = 0;
 	static int output = 0;
 	static int hpfLpfOutput = 0;
-	static int filtBuf[2];
+	//static int filtBuf[2];
 	static unsigned char index[2];
 
 	processStage++;
@@ -174,6 +175,7 @@ void Ody::poll()
 		hardware_.pollRotEncoders(ticks);
 		hardware_.refreshFlash(ticks);
 		hardware_.refreshLeds();
+		//hardware_.getLedCircular(1).select(engine_.getPatchPtr()->getCtrlValue(0));
 		if(hardware_.getMidiChannelSelectMode()==false)
 		{
 			engine_.poll(ticks);
@@ -195,7 +197,12 @@ void Ody::poll()
 		}
 		oscWave[2] = (unsigned char)engine_.getFxSource();
 		oscLevel[2] = engine_.getFxLevel();
-		filtType = (unsigned char)engine_.getFilter().getType();
+		if(filtType!=(unsigned char)engine_.getFilter().getType())
+		{
+			filtType = (unsigned char)engine_.getFilter().getType();
+			filtBuf[0] = 0;
+			filtBuf[1] = 0;
+		}
 		filtC = engine_.getFilter().getCscaled();
 		filtRC = engine_.getFilter().getRCscaled();	
 	}

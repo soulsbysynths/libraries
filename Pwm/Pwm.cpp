@@ -19,8 +19,7 @@
 // default constructor
 Pwm::Pwm(unsigned char waveLength)
 {
-	waveLength_ = waveLength;
-	scale_ = 256 / waveLength;
+	setWaveLength(waveLength);
 } //Pwm
 
 // default destructor
@@ -28,9 +27,14 @@ Pwm::~Pwm()
 {
 } //~Pwm
 
+void Pwm::setWaveLength(unsigned char newValue)
+{
+	waveLength_ = newValue;
+	scale_ = 256 / waveLength_;
+}
+
 void Pwm::processWavetable(Wavetable& sourceWavetable, char envLevel, char lfoLevel)
 {
-	unsigned char i;
 	unsigned char offset;
 	if (lfoAmount_>0 || envAmount_>0)
 	{
@@ -46,9 +50,9 @@ void Pwm::processWavetable(Wavetable& sourceWavetable, char envLevel, char lfoLe
 		{
 			offset = lfoOffset + envOffset;
 		}
-		for(i=0;i<offset;++i)
+		for(unsigned char i=0;i<offset;++i)
 		{
 			sourceWavetable.setSample(i,0);
 		}
-	}	
+	}
 }

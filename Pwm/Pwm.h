@@ -28,8 +28,8 @@ protected:
 private:
 	unsigned char lfoAmount_ = 0;
 	unsigned char envAmount_ = 0;
-	unsigned char scale_ = 0;
-	unsigned char waveLength_ = 0;
+	unsigned char scale_ = 1;
+	unsigned char waveLength_ = 128;
 //functions
 public:
 	Pwm(unsigned char waveLength);
@@ -38,6 +38,8 @@ public:
 	unsigned char getLfoAmount(){return lfoAmount_;}
 	void setEnvAmount(unsigned char newValue){envAmount_ = newValue;}
 	unsigned char getEnvAmount(){return envAmount_;}
+	void setWaveLength(unsigned char newValue);
+	unsigned char getWaveLength(){return waveLength_;}
 	void processWavetable(Wavetable& sourceWavetable, char envLevel, char lfoLevel);
 protected:
 private:

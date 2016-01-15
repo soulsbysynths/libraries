@@ -1,4 +1,4 @@
-//BiquadFilter.cpp  Biquad Filter class 
+//BiquadFilter.cpp  Biquad Filter class
 //Copyright (C) 2015  Paul Soulsby info@soulsbysynths.com
 //
 //This program is free software: you can redistribute it and/or modify
@@ -91,8 +91,16 @@ void BiquadFilter::refresh(unsigned long sampleFreq, char lfoOutput, char envOut
 	{
 		max_fc = sampleFreq >> 1;
 		max_fc -= sampleFreq >> 6;
-		f = max_fc;
-		f = f * (fc_ + 1) >> 8;
+		if(sfTracking_==true)
+		{
+			f = max_fc;
+			f = f * (fc_ + 1) >> 8;
+		}
+		else
+		{
+			f = ((unsigned long)fc_ << 3);
+		}
+		
 		if(lfoAmount_>0)
 		{
 			f = f * ((unsigned int)shapeExponential(lfoOutput,lfoAmountF_,MULT_ENV_LFO) + 1) >> BS_ENV_LFO;
@@ -298,10 +306,10 @@ void BiquadFilter::processWavetable(Wavetable& sourceWavetable)
 		}
 		//if(sourceWavetable.isAllSamplesSame()==true)
 		//{
-			//bi1_ = 0;
-			//bi2_ = 0;
-			//bo1_ = 0;
-			//bo2_ = 0;
+		//bi1_ = 0;
+		//bi2_ = 0;
+		//bo1_ = 0;
+		//bo2_ = 0;
 		//}
 	}
 }

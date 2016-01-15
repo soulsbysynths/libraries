@@ -18,6 +18,7 @@
 #define __WAVETABLE_H__
 
 #include <string.h>
+//#include <SsHelpers.h>
 
 //#define NULL 0
 
@@ -27,7 +28,7 @@ class Wavetable
 public:
 protected:
 private:
-	unsigned char waveLength_;
+	unsigned char waveLength_ = 128;
 	char* samples_ = NULL;
 //functions
 public:
@@ -37,8 +38,8 @@ public:
 	~Wavetable();
 	Wavetable& operator = (const Wavetable& wt);
 	unsigned char getWaveLength(){return waveLength_;}
-	void setSample(unsigned char index, char newSample){samples_[index] = newSample;}
-	char getSample(unsigned char index){return samples_[index];}
+	void setSample(unsigned char index, char newSample){if(samples_!=NULL){ samples_[index] = newSample;}}
+	char getSample(unsigned char index){if(samples_!=NULL){return samples_[index];}}
 	void clearSamples(); 
 	bool isAllSamplesSame();
 protected:

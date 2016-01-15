@@ -120,7 +120,7 @@ void AtmEngine::poll(unsigned char ticksPassed)
 	frequency_ = portamento_.getOutput();
 	pitch_.setInput(frequency_);
 	pitch_.refresh(lfo,env,pitchBend_);
-	audio_->setSampleFreq((unsigned long)pitch_.getOutput() * WAVE_LENGTH);
+	audio_->setSampleFreq((unsigned long)pitch_.getOutput() * (WAVE_LENGTH >> 2));
 	
 	Wavetable working_buffer_(WAVE_LENGTH);
 	oscillator_->copyWavetable(working_buffer_);

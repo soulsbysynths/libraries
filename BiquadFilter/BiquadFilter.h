@@ -53,13 +53,14 @@ private:
 	const float MIN_Q = 0.5;
 	const float MULT_Q = 0.076470588235294;
 	unsigned char fc_ = 120;
-	unsigned char q_;
+	unsigned char q_ = 0;
 	FiltType type_ = FILT_LPF;
-	bool gainAdj_;
-	unsigned char envAmount_;
-	float envAmountF_;
-	unsigned char lfoAmount_;
-	float lfoAmountF_;
+	bool gainAdj_ = false;
+	bool sfTracking_ = true;
+	unsigned char envAmount_ = 0;
+	float envAmountF_ = 0;
+	unsigned char lfoAmount_ = 0;
+	float lfoAmountF_ = 0;
 	float a_;
 	float a0_ = 1;
 	float a1_;
@@ -83,6 +84,8 @@ public:
 	FiltType getType(){return type_;}
 	void setGainAdj(bool newGainAdj);
 	bool getGainAdj(){return gainAdj_;}
+	void setSampFreqTracking(bool newValue){sfTracking_ = newValue;}
+	bool getSampFreqTracking(){return sfTracking_;}
 	void setEnvAmount(unsigned char newAmount);
 	unsigned char getEnvAmount(){return envAmount_;}
 	void setLfoAmount(unsigned char newAmount);

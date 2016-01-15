@@ -23,4 +23,5 @@
 #define WAVE_LENGTH 32  //don't go higher than 32, without altering Oscillator PROGMEM
 #define NOTE_PRIORITY 2  //0 = classic atmegatron (only current note), 1 = low note, 2 = high note, 3 = last note
 #define LEGATO 0
+
 #endif /* ATMENGINESETTINGS_H_ */
