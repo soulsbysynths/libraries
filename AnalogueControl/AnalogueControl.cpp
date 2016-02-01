@@ -30,7 +30,6 @@ AnalogueControl::~AnalogueControl()
 
 bool AnalogueControl::hasChanged(unsigned char ticksPassed)
 {
-	unsigned char a, testval;
 	bool changed = false;
 
 	int diff = abs((int)value_ - valueLast_);

@@ -27,7 +27,7 @@ class Flanger
 public:
 protected:
 private:
-	unsigned char waveLength_;
+	unsigned char waveLength_ = 128;
 	unsigned char lfoAmount_ = 0;
 	unsigned char envAmount_ = 0;
 	unsigned char scale_ = 1;
@@ -44,6 +44,7 @@ public:
 	unsigned char getLfoAmount(){return lfoAmount_;}
 	void setEnvAmount(unsigned char newValue);
 	unsigned char getEnvAmount(){return envAmount_;}
+	void resizeWavetable(unsigned char newWaveLen);
 	void processWavetable(Wavetable& sourceWavetable, char envLevel, char lfoLevel);
 	void clearBuffer();
 protected:

@@ -120,7 +120,7 @@ void AtmEngine::poll(unsigned char ticksPassed)
 	frequency_ = portamento_.getOutput();
 	pitch_.setInput(frequency_);
 	pitch_.refresh(lfo,env,pitchBend_);
-	audio_->setSampleFreq((unsigned long)pitch_.getOutput() * WAVE_LENGTH);
+	audio_->setSampleFreq((unsigned long)pitch_.getOutput() * (WAVE_LENGTH >> 2));
 	
 	Wavetable working_buffer_(WAVE_LENGTH);
 	oscillator_->copyWavetable(working_buffer_);
@@ -169,8 +169,8 @@ void AtmEngine::setBank(unsigned char newBank)
 
 void AtmEngine::triggerNote(unsigned char note)
 {
-	//frequency_ = pgm_read_word(&(midiFreqs[note]));
-	portamento_.setInput(pgm_read_word(&(midiFreqs[note])));
+	//frequency_ = pgm_read_word(&(MIDI_FREQS[note]));
+	portamento_.setInput(pgm_read_word(&(MIDI_FREQS[note])));
 	ampEnvelope_.trigger();
 	filtEnvelope_.trigger();
 }
@@ -334,7 +334,7 @@ void AtmEngine::midiNoteOnReceived(unsigned char note, unsigned char velocity)
 			#if LEGATO==1
 			if(totNotesOn_>1)
 			{
-				portamento_.setInput(pgm_read_word(&(midiFreqs[note])));
+				portamento_.setInput(pgm_read_word(&(MIDI_FREQS[note])));
 			}
 			else
 			{
@@ -411,11 +411,11 @@ void AtmEngine::midiNoteOffReceived(unsigned char note)
 		else if(arpeggiator_->getType()==0)
 		{
 			#if NOTE_PRIORITY == NP_LOW
-			portamento_.setInput(pgm_read_word(&(midiFreqs[noteLowest_])));
+			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteLowest_])));
 			#elif NOTE_PRIORITY == NP_HIGH
-			portamento_.setInput(pgm_read_word(&(midiFreqs[noteHighest_])));
+			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteHighest_])));
 			#elif NOTE_PRIORITY == NP_LAST
-			portamento_.setInput(pgm_read_word(&(midiFreqs[noteLast_])));
+			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteLast_])));
 			#endif
 		}
 		else
@@ -528,10 +528,7 @@ void AtmEngine::midiSysexWrite(unsigned char data)
 {
 	base_->engineMidiTransmit(data);
 }
-void AtmEngine::midiChannelChanged(unsigned char channel)
-{
-	base_->engineFunctionChanged(0,channel,false);
-}
+
 void AtmEngine::midiPitchBendReceived(char bend)
 {
 	pitchBend_ = bend;
@@ -562,26 +559,26 @@ void AtmEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		filter_.setType((BiquadFilter::FiltType) newValue);
 		break;
 		case FUNC_FENVA:
-		filtEnvelope_.setAttack(pgm_read_word(&(envADR_inc[newValue])));
+		filtEnvelope_.setAttack(pgm_read_word(&(ENV_ADR_INC[newValue])));
 		break;
 		case FUNC_FENVDR:
-		filtEnvelope_.setDecay(pgm_read_word(&(envADR_inc[newValue])));
-		filtEnvelope_.setRelease(pgm_read_word(&(envADR_inc[newValue])));
+		filtEnvelope_.setDecay(pgm_read_word(&(ENV_ADR_INC[newValue])));
+		filtEnvelope_.setRelease(pgm_read_word(&(ENV_ADR_INC[newValue])));
 		break;
 		case FUNC_FENVS:
-		filtEnvelope_.setSustain(pgm_read_word(&(envS_level[newValue])));
+		filtEnvelope_.setSustain(pgm_read_word(&(ENV_S_LEVEL[newValue])));
 		break;
 		case FUNC_AENVA:
-		ampEnvelope_.setAttack(pgm_read_word(&(envADR_inc[newValue])));
+		ampEnvelope_.setAttack(pgm_read_word(&(ENV_ADR_INC[newValue])));
 		break;
 		case FUNC_AENVD:
-		ampEnvelope_.setDecay(pgm_read_word(&(envADR_inc[newValue])));
+		ampEnvelope_.setDecay(pgm_read_word(&(ENV_ADR_INC[newValue])));
 		break;
 		case FUNC_AENVS:
-		ampEnvelope_.setSustain(pgm_read_word(&(envS_level[newValue])));
+		ampEnvelope_.setSustain(pgm_read_word(&(ENV_S_LEVEL[newValue])));
 		break;
 		case FUNC_AENVR:
-		ampEnvelope_.setRelease(pgm_read_word(&(envADR_inc[newValue])));
+		ampEnvelope_.setRelease(pgm_read_word(&(ENV_ADR_INC[newValue])));
 		break;
 		case FUNC_LFOTYPE:
 		lfo_.setTable(newValue);
@@ -596,7 +593,7 @@ void AtmEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		arpeggiator_->setDivision(newValue);
 		break;
 		case FUNC_PORTA:
-		portamento_.setSpeed(pgm_read_word(&(porta_speed[newValue])));
+		portamento_.setSpeed(pgm_read_word(&(PORTA_SPEED[newValue])));
 		break;
 		case FUNC_BITCRUSH:
 		wavecrusher_.setType(newValue);

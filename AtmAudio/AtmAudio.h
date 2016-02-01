@@ -22,7 +22,7 @@
 
 #include "Wavetable.h"
 
-#define UPDATE_ON_ZERO 0
+#define UPDATE_ON_ZERO
 
 #ifndef bitRead
 #define bitRead(value, bit) (((value) >> (bit)) & 0x01)
@@ -51,6 +51,7 @@ public:
 	void setSampleFreq(unsigned long newSf);
 	unsigned long getSampleFreq(){return sampleFreq_;}
 	void pasteWavetable(Wavetable& sourceWavetable);
+	void resizeWavetable(unsigned char newWaveLen);
 	void initialize();
 protected:
 private:

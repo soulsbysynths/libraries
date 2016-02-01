@@ -77,7 +77,16 @@ char Envelope::getOutput()
 }
 char Envelope::getExpOutput()
 {
-	char out = pgm_read_byte(&(expConvert[abs(output_>>8)]));
+	char out;
+	if(state_==ATTACKING)
+	{
+		out = convertInvExponential(abs(output_>>8));
+	}
+	else
+	{
+		out = convertExponential(abs(output_>>8));
+	}
+	 
 	if(invert_==true)
 	{
 		return -out;
@@ -115,7 +124,7 @@ void Envelope::refresh(unsigned char ticksPassed)
 			break;
 			case ATTACKING:
 			inc = (unsigned long)attack_ * ticksPassed;
-			if(inc >= (MAX_VALUE - output_))
+			if(inc >= (unsigned long)(MAX_VALUE - output_))
 			{
 				state_ = DECAYING;
 				output_ = MAX_VALUE;
@@ -127,7 +136,7 @@ void Envelope::refresh(unsigned char ticksPassed)
 			break;
 			case DECAYING:
 			inc = (unsigned long)decay_ * ticksPassed;
-			if(inc >= (output_ - sustain_))
+			if(inc >= (unsigned long)(output_ - sustain_))
 			{
 				state_ = SUSTAINING;
 				output_ = sustain_;
@@ -144,7 +153,7 @@ void Envelope::refresh(unsigned char ticksPassed)
 			break;
 			case RELEASING:
 			inc = (unsigned long)release_ * ticksPassed;
-			if(inc >= output_)
+			if(inc >= (unsigned long)output_)
 			{
 				state_ = IDLE;
 				output_ = 0;

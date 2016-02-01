@@ -17,8 +17,8 @@
 #ifndef __SWITCH_H__
 #define __SWITCH_H__
 
-#define HIGH 0x1
-#define LOW  0x0
+//#define HIGH 0x1
+//#define LOW  0x0
 
 class Switch
 {
@@ -26,9 +26,11 @@ class Switch
 public:
 protected:
 private:
-	unsigned char state_ = LOW;
+	static const unsigned char S_HIGH = 1;
+	static const unsigned char S_LOW = 0;
+	unsigned char state_ = S_LOW;
 	unsigned char ticks_ = 0;
-	unsigned char stateLast_ = LOW;
+	unsigned char stateLast_ = S_LOW;
 	unsigned int holdTime_ = 0;
 	bool holdEventFired_ = false;
 	unsigned char debounceTicks_ = 100;

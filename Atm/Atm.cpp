@@ -30,20 +30,12 @@ Atm::~Atm()
 
 void Atm::initialize()
 {
-	engine_.initialize();
 	hardware_.getRotEncoder(AtmHardware::FUNCTION).setContinuous(true);
 	hardware_.beginMidi(MIDI_UBRR);
-	engine_.getMidiPtr()->setChannel(hardware_.readMidiChannel());
-	if(hardware_.getMidiChannelSelectMode()==true)
+	if(hardware_.getMidiChannelSelectMode()==false)
 	{
-		hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::YELLOW);
-		hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::OFF);
-		hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::OFF);
-		hardware_.getLedCircular(AtmHardware::VALUE).setState(0);
-		hardware_.getRotEncoder(AtmHardware::FUNCTION).setValue((char)engine_.getMidiPtr()->getChannel());
-	}
-	else
-	{
+		engine_.initialize();
+		engine_.getMidiPtr()->setChannel(hardware_.getMidiChannel());
 		for(unsigned char i=0;i<2;++i)
 		{
 			hardware_.getLedSwitch(i).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::GREEN,true);
@@ -59,8 +51,11 @@ void Atm::poll(unsigned char ticksPassed)
 	hardware_.pollRotEncoders(ticksPassed);
 	hardware_.refreshFlash(ticksPassed);
 	hardware_.refreshLeds();
-	engine_.poll(ticksPassed);
-	engine_.refreshSysex();
+	if(hardware_.getMidiChannelSelectMode()==false)
+	{
+		engine_.poll(ticksPassed);
+		engine_.refreshSysex();		
+	}
 }
 
 bool Atm::isShiftHold(AtmEngine::Func func)
@@ -79,40 +74,34 @@ bool Atm::isFuncFill(AtmEngine::Func func) const
 void Atm::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
 {
 	bool col;
-	if(hardware_.getMidiChannelSelectMode()==true)
+	
+	hardware_.getRotEncoder(AtmHardware::VALUE).setValue((char)val);
+	if(isFuncFill((AtmEngine::Func)func)==true)
 	{
-		hardware_.getLedCircular(AtmHardware::FUNCTION).select(val);
+		hardware_.getRotEncoder(AtmHardware::VALUE).setContinuous(false);
+		hardware_.getLedCircular(AtmHardware::VALUE).fill(val);
 	}
 	else
 	{
-		hardware_.getRotEncoder(AtmHardware::VALUE).setValue((char)val);
-		if(isFuncFill((AtmEngine::Func)func)==true)
-		{
-			hardware_.getRotEncoder(AtmHardware::VALUE).setContinuous(false);
-			hardware_.getLedCircular(AtmHardware::VALUE).fill(val);
-		}
-		else
-		{
-			hardware_.getRotEncoder(AtmHardware::VALUE).setContinuous(true);
-			hardware_.getLedCircular(AtmHardware::VALUE).select(val);
-		}
-		hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)func);
-		if(func==AtmEngine::FUNC_AENVD)
-		{
-			col = engine_.getMidiPtr()->getSysexEnable();
-		}
-		else
-		{
-			col = opt;
-		}
-		if(col==true)
-		{
-			hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::GREEN);
-		}
-		else
-		{
-			hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::RED);
-		}
+		hardware_.getRotEncoder(AtmHardware::VALUE).setContinuous(true);
+		hardware_.getLedCircular(AtmHardware::VALUE).select(val);
+	}
+	hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)func);
+	if(func==AtmEngine::FUNC_AENVD)
+	{
+		col = engine_.getMidiPtr()->getSysexEnable();
+	}
+	else
+	{
+		col = opt;
+	}
+	if(col==true)
+	{
+		hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::GREEN);
+	}
+	else
+	{
+		hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::RED);
 	}
 
 }
@@ -140,20 +129,13 @@ void Atm::engineSysexComplete()
 //**************************hardware events************************************
 void Atm::hardwareAnalogueControlChanged(unsigned char control, unsigned char newValue)
 {
-	if(hardware_.getMidiChannelSelectMode()==true)
-	{
-		return;
-	}
 	engine_.getPatchPtr()->setCtrlValue(engine_.getBank(),control,newValue);
 }
 
 void Atm::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 {
 	bool opt;
-	if(hardware_.getMidiChannelSelectMode()==true)
-	{
-		return;
-	}
+
 	if(sw==AtmHardware::FUNCTION)
 	{
 		if(isShiftHold(engine_.getFunction())==true)
@@ -242,10 +224,7 @@ void Atm::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 }
 void Atm::hardwareSwitchHeld(unsigned char sw)
 {
-	if(hardware_.getMidiChannelSelectMode()==true)
-	{
-		return;
-	}
+
 	if(sw==AtmHardware::FUNCTION && isShiftHold(engine_.getFunction())==true)
 	{
 		hardware_.getLedSwitch(AtmHardware::FUNCTION).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::GREEN,LedRgb::RED,true);
@@ -265,46 +244,39 @@ void Atm::hardwareSwitchHeld(unsigned char sw)
 }
 void Atm::hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise)
 {
-	if(hardware_.getMidiChannelSelectMode()==true)
+	if(rotary==AtmHardware::FUNCTION)
 	{
-		if(rotary==AtmHardware::FUNCTION)
-		{
-			hardware_.writeMidiChannel(newValue);
-			engine_.getMidiPtr()->setChannel(newValue);
-		}
+		engine_.setFunction((AtmEngine::Func)newValue);
 	}
-	else
-	{
-		if(rotary==AtmHardware::FUNCTION)
-		{
-			engine_.setFunction((AtmEngine::Func)newValue);
-		}
 
-		if(rotary==AtmHardware::VALUE)
+	if(rotary==AtmHardware::VALUE)
+	{
+		if(hardware_.getSwitch(AtmHardware::VALUE).getState()==HIGH)
 		{
-			if(hardware_.getSwitch(AtmHardware::VALUE).getState()==HIGH)
+			if(testNote_<127 && testNote_>0)
 			{
-				if(testNote_<127 && testNote_>0)
+				engine_.midiNoteOffReceived(testNote_);
+				if(clockwise==true)
 				{
-					engine_.midiNoteOffReceived(testNote_);
-					if(clockwise==true)
-					{
-						testNote_++;
-					}
-					else
-					{
-						testNote_--;
-					}
-					engine_.midiNoteOnReceived(testNote_,127);
+					testNote_++;
 				}
+				else
+				{
+					testNote_--;
+				}
+				engine_.midiNoteOnReceived(testNote_,127);
 			}
-			else
-			{
-				engine_.getPatchPtr()->setFunctionValue(engine_.getFunction(),newValue);
-			}
+		}
+		else
+		{
+			engine_.getPatchPtr()->setFunctionValue(engine_.getFunction(),newValue);
 		}
 	}
 
+}
+void Atm::hardwareMidiChannelChanged(unsigned char channel)
+{
+	engine_.getMidiPtr()->setChannel(channel);
 }
 void Atm::hardwareMidiReceived(unsigned char data)
 {

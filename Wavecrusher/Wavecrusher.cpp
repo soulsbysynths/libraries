@@ -32,12 +32,12 @@ void WaveCrusher::setType(unsigned char newType)
 	if(type_==0)
 	{
 		sampleShift_ = 0;
-		sampleHold_ = 1;	
+		sampleHold_ = 1;
 	}
 	else
 	{
 		sampleShift_ = (type_%4) + 4;
-		sampleHold_ = 1 << (type_>>2);		
+		sampleHold_ = 1 << (type_>>2);
 	}
 }
 
@@ -53,5 +53,5 @@ void WaveCrusher::processWavetable(Wavetable& sourceWavetable)
 			samp = samp << sampleShift_;
 		}
 		sourceWavetable.setSample(i,samp);
-	}	
+	}
 }

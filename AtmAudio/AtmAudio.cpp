@@ -16,12 +16,13 @@
 
 #include "AtmAudio.h"
 
-static volatile unsigned char audioWaveLength;
-
+static volatile unsigned char audioWaveLength = 0;
+static volatile unsigned char audioWaveLengthMask = 255;
 static volatile unsigned int ocr1a = 1136;
 static volatile unsigned char bufferJump = 1;
 static Wavetable* audioBuffer = NULL;
-#if UPDATE_ON_ZERO==1
+static volatile bool updateOcr = false;
+#ifdef UPDATE_ON_ZERO
 static volatile bool doPaste = false;
 static volatile bool pasting = false;
 static Wavetable* audioDoubleBuffer = NULL;
@@ -30,10 +31,10 @@ static Wavetable* audioDoubleBuffer = NULL;
 // default constructor
 AtmAudio::AtmAudio(unsigned char waveLen)
 {
-	audioWaveLength = waveLen;
+	resizeWavetable(waveLen);
 	audioBuffer = new Wavetable(waveLen);
-	#if UPDATE_ON_ZERO==1
-	audioDoubleBuffer = new Wavetable(waveLen);
+	#ifdef UPDATE_ON_ZERO
+		audioDoubleBuffer = new Wavetable(waveLen);
 	#endif
 } //AtmAudio
 
@@ -44,7 +45,7 @@ AtmAudio::~AtmAudio()
 	{
 		delete audioBuffer;
 	}
-	#if UPDATE_ON_ZERO==1
+	#ifdef UPDATE_ON_ZERO
 	if(audioDoubleBuffer != NULL)
 	{
 		delete audioDoubleBuffer;
@@ -101,83 +102,92 @@ void AtmAudio::initialize()
 
 void AtmAudio::setSampleFreq(unsigned long newSf)
 {
+	unsigned int ocr;
+	unsigned char i;
+
 	if (newSf!=sampleFreq_)
 	{
 		sampleFreq_ = newSf;
-		if (sampleFreq_>225280)
+
+		for(i=0;i<8;++i)
 		{
-			if(sampleFreq_>450560)
+			ocr = (F_CPU<<i)/sampleFreq_;
+			if(ocr>1280)  //5120
 			{
-				sampleFreq_ = 450560;
+				bufferJump = 1 << i;
+				break;
 			}
-			ocr1a= (F_CPU<<3)/sampleFreq_;
-			bufferJump = 8;
 		}
-		else if (sampleFreq_>112640)
-		{
-			ocr1a= (F_CPU<<2)/sampleFreq_;
-			bufferJump = 4;
-		}
-		else if (sampleFreq_>56320)
-		{
-			ocr1a= (F_CPU<<1)/sampleFreq_;
-			bufferJump = 2;
-		}
-		else
-		{
-			if(sampleFreq_<245)
-			{
-				sampleFreq_ = 245;
-			}
-			ocr1a = F_CPU/sampleFreq_;
-			bufferJump = 1;
-		}
+		ocr1a = ocr-1;
+		updateOcr = true;
 	}
+}
+
+void AtmAudio::resizeWavetable(unsigned char newWaveLen)
+{
+	audioWaveLength = newWaveLen;
+	audioWaveLengthMask = audioWaveLength -1;
 }
 
 void AtmAudio::pasteWavetable(Wavetable& sourceWavetable)
 {
-	#if UPDATE_ON_ZERO==1
+	unsigned char i;
+	#ifdef UPDATE_ON_ZERO
 	if(pasting==false)
 	{
-		doPaste = true;
-		for(unsigned char i=0;i<audioWaveLength;++i)
+		for(i=0;i<audioWaveLength;++i)
 		{
 			audioDoubleBuffer->setSample(i,sourceWavetable.getSample(i));
+			audioBuffer->setSample(i,sourceWavetable.getSample(i));
 		}
+		doPaste = true;
 	}
 	#else
-	for(unsigned char i=0;i<audioWaveLength;++i)
+	for(i=0;i<audioWaveLength;++i)
 	{
 		audioBuffer->setSample(i,sourceWavetable.getSample(i));
 	}
 	#endif
-
-
 }
 
 ISR(TIMER1_COMPA_vect)
 {
+	static unsigned char jump = 1;
 	static unsigned char bufferIndex = 0;
-	#if UPDATE_ON_ZERO==1
-	if(doPaste==true && bufferIndex==0)
+
+	if(updateOcr==true && bufferIndex==0)
 	{
-		pasting = true;
-		doPaste = false;
+		OCR1A = ocr1a;
+		jump = bufferJump;
+		updateOcr = false;
+	}
+	#ifdef UPDATE_ON_ZERO
+	if(bufferIndex==0)
+	{
+		if(doPaste==true)
+		{
+			pasting = true;
+			doPaste = false;
+		}
+		else if(pasting==true)
+		{
+			pasting = false;
+		}
 	}
 	if(pasting==true)
 	{
-		audioBuffer->setSample(bufferIndex, audioDoubleBuffer->getSample(bufferIndex));
+		char samp = audioDoubleBuffer->getSample(bufferIndex);
+		audioBuffer->setSample(bufferIndex, samp);
+		OCR2B = samp + 128;
 	}
-	#endif
-	OCR2B = audioBuffer->getSample(bufferIndex) + 128;
-	OCR1A = ocr1a;
-	bufferIndex += bufferJump;
-	if(bufferIndex>=audioWaveLength)
+	else
 	{
-		bufferIndex -= audioWaveLength;
-		#if UPDATE_ON_ZERO==1
-		pasting = false;
-		#endif
+		OCR2B = audioBuffer->getSample(bufferIndex) + 128;
 	}
+	#else
+	OCR2B = audioBuffer->getSample(bufferIndex) + 128;
+	#endif
+	
+	bufferIndex += jump;
+	bufferIndex &= audioWaveLengthMask;
 }

@@ -39,7 +39,7 @@ AtmPatch::~AtmPatch()
 void AtmPatch::setFunctionValue(unsigned char func, unsigned char newValue)
 {
 	unsigned char i = func>>1;
-	funcValue_c_[i] = compressFourBit(funcValue_c_[i],newValue,(bool)(func%2));
+	funcValue_c_[i] = compressFourBit(funcValue_c_[i],newValue,func%2);
 	if(base_!=NULL)
 	{
 		base_->patchValueChanged(func,newValue);
@@ -49,7 +49,7 @@ void AtmPatch::setFunctionValue(unsigned char func, unsigned char newValue)
 unsigned char AtmPatch::getFunctionValue(unsigned char func)
 {
 	unsigned char i = func>>1;
-	return uncompressFourBit(funcValue_c_[i],(bool)(func%2));
+	return uncompressFourBit(funcValue_c_[i],func%2);
 }
 void AtmPatch::setOptionValue(unsigned char func, bool newValue)
 {

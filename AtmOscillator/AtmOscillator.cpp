@@ -60,7 +60,7 @@ void AtmOscillator::copyWavetable(Wavetable& destWavetable)
 		{
 			for(i=0;i<waveLength_;++i)
 			{
-				destWavetable.setSample(i,pgm_read_byte(&(oscWavetable[bank_][table_][i])));
+				destWavetable.setSample(i,pgm_read_byte(&(OSC_WAVETABLE[bank_][table_][i])));
 			}
 		}
 	}

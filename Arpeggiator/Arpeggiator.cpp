@@ -49,13 +49,13 @@ void Arpeggiator::setType(unsigned char newType)
 void Arpeggiator::setDivision(unsigned char newDiv)
 {
 	division_ = newDiv;
-	divMult_ = pgm_read_word(&(arpMult[division_]));
-	divBs_ = pgm_read_byte(&(arpBs[division_]));
+	divMult_ = pgm_read_word(&(ARP_MULT[division_]));
+	divBs_ = pgm_read_byte(&(ARP_BS[division_]));
 }
 void Arpeggiator::reset()
 {
 	pos_ = 0;
-	indexLast_ = arpLength;
+	indexLast_ = ARP_LENGTH;
 	noteLast_ = 0;
 	note_ = findNote();
 }
@@ -67,14 +67,14 @@ void Arpeggiator::refresh(unsigned int cycleTick)
 	}
 	unsigned char index = ((unsigned long)cycleTick * divMult_) >> divBs_;
 	unsigned char newNote = 0;
-	index &= arpBitMask;
+	index &= ARP_BIT_MASK;
 	
 	if(index!=indexLast_)
 	{
 		char steps_passed = index - indexLast_;
 		if(steps_passed<0)
 		{
-			steps_passed += arpLength;
+			steps_passed += ARP_LENGTH;
 		}
 		for(char i=0;i<steps_passed;++i)
 		{
@@ -91,14 +91,14 @@ void Arpeggiator::refresh(unsigned int cycleTick)
 unsigned char Arpeggiator::findNote()
 {
 	unsigned char note = 0;
-	unsigned char l = arpLength;
+	unsigned char l = ARP_LENGTH;
 	if(pingPong_==true)
 	{
 		l *= 2;
 	}
 	for(unsigned char i=0;i<l;++i)
 	{
-		note =  getNoteOrder(pgm_read_byte(&(arpTypes[type_][pos_])));
+		note =  getNoteOrder(pgm_read_byte(&(ARP_TYPES[type_][pos_])));
 		incrementPos();
 		if(note>0)
 		{
@@ -161,7 +161,7 @@ void Arpeggiator::incrementPos()
 {
 	if (pingPong_==false)
 	{
-		if (pos_==arpBitMask)
+		if (pos_==ARP_BIT_MASK)
 		{
 			pos_ = 0;
 		}
@@ -174,7 +174,7 @@ void Arpeggiator::incrementPos()
 	{
 		if (pongDown_==false)
 		{
-			if (pos_==arpBitMask)
+			if (pos_==ARP_BIT_MASK)
 			{
 				pos_--;
 				pongDown_ = true;

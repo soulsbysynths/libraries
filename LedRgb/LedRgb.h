@@ -49,7 +49,7 @@ public:
 	LedRgbColour getColour(){return led_;}
 	void flash(unsigned char flashes, unsigned char onTicks, unsigned char offTicks, LedRgbColour on_col, LedRgbColour off_col, bool startOn);
 	void flashStop();
-	bool refreshFlash(unsigned char tick_inc);
+	void refreshFlash(unsigned char tick_inc);
 protected:
 private:
 	LedRgb( const LedRgb &c );

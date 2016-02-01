@@ -37,7 +37,7 @@ private:
 	bool pongDown_ = false;
 	char pos_ = 0;
 	bool* noteOn_ = NULL;
-	unsigned char indexLast_ = arpLength;
+	unsigned char indexLast_ = ARP_LENGTH;
 	unsigned char noteLast_ = 0;
 	unsigned char note_ = 0;
 	unsigned char noteOrderUp_[16] = {0};

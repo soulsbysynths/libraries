@@ -111,6 +111,8 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	private:
 	static const unsigned char SYSEX_PROD_ID = 0;
 	static const unsigned int MIDI_TICKSPERCYCLE = 1536;
+	static const unsigned char HIGH = 1;
+	static const unsigned char LOW = 0;
 	#define NP_CLASSIC 0
 	#define NP_LOW 1
 	#define NP_HIGH 2
@@ -159,8 +161,6 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	const MasterClock& getMasterClock() const { return masterClock_; }
 	const AtmPatch* getPatchPtr() const { return  patch_; }
 	AtmPatch* getPatchPtr() { return patch_; }
-	const AtmOscillator* getOscillatorPtr() const { return  oscillator_; }
-	AtmOscillator* getOscillatorPtr() { return oscillator_; }
 	const Midi* getMidiPtr() const { return  midi_; }
 	Midi* getMidiPtr() { return midi_; }
 	void initialize();
@@ -181,7 +181,6 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	void midiSysexDataReceived(unsigned char index, unsigned char data);
 	void midiSysexStopReceived(void);
 	void midiSysexWrite(unsigned char data);
-	void midiChannelChanged(unsigned char channel);
 	void midiPitchBendReceived(char bend);
 	void refreshSysex();
 	void writeSysexPatch(unsigned char patchNum);

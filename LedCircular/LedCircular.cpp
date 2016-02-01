@@ -80,11 +80,10 @@ void LedCircular::flashStop(unsigned char segment)
 	flashCnt_[segment] = 0;
 	setSegment(segment,false);
 }
-bool LedCircular::refreshFlash(unsigned char tick_inc)
+void LedCircular::refreshFlash(unsigned char tick_inc)
 {
 	unsigned char j;
 	bool state;
-	bool flashing = false;
 	unsigned char onticks = 0;
 	unsigned char offticks = 0;
 	
@@ -92,7 +91,6 @@ bool LedCircular::refreshFlash(unsigned char tick_inc)
 	{
 		if(flashCnt_[j]>0)
 		{
-			flashing = true;
 			flashTick_[j] += tick_inc;
 			state = getSegment(j);
 			onticks = getFlashOnticks(j);
@@ -115,5 +113,4 @@ bool LedCircular::refreshFlash(unsigned char tick_inc)
 			}
 		}
 	}	
-	return flashing;
 }

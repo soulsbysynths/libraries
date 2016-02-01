@@ -44,7 +44,6 @@ void Midi::setChannel(unsigned char new_channel)
 	{
 		channel_ = new_channel;
 	}
-	base_->midiChannelChanged(channel_);
 }
 void Midi::reset()
 {
@@ -56,7 +55,6 @@ void Midi::reset()
 
 void Midi::read(unsigned char in_byte)
 {
-	unsigned char byte_cnt = 0;
 	static unsigned char note_byte=0;
 	static unsigned char vel_byte=0;
 	static unsigned char status_buffer=0;

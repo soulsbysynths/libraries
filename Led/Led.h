@@ -36,7 +36,7 @@ public:
 	bool getState(){return led_;}
 	void flash(unsigned char flashes, unsigned char onTicks, unsigned char offTicks, bool startOn);
 	void flashStop();
-	bool refreshFlash(unsigned char tick_inc);
+	void refreshFlash(unsigned char tick_inc);
 protected:
 private:
 	Led( const Led &c );

@@ -80,9 +80,8 @@ unsigned char LedRgb::getFlashOnticks()
 {
 	return uncompressFourBit(flashOnOffTicks_c_,1);
 }
-bool LedRgb::refreshFlash(unsigned char tick_inc)
+void LedRgb::refreshFlash(unsigned char tick_inc)
 {
-	bool flashing = false;
 	unsigned char onticks = 0;
 	unsigned char offticks = 0;
 	LedRgbColour col;
@@ -90,7 +89,6 @@ bool LedRgb::refreshFlash(unsigned char tick_inc)
 	LedRgbColour col_off;
 	if(flashCnt_>0)
 	{
-		flashing = true;
 		flashTick_ += tick_inc;
 		col = getColour();
 		col_on = getFlashOnCol();
@@ -115,5 +113,4 @@ bool LedRgb::refreshFlash(unsigned char tick_inc)
 			}
 		}
 	}	
-	return flashing;
 }
