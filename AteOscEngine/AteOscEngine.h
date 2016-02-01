@@ -26,7 +26,7 @@
 #include "BiquadFilter.h"
 #include "Portamento.h"
 #include "QuantizePitch.h"
-#include "AtmPitch.h"
+#include "AteOscPitch.h"
 #include "Wavecrusher.h"
 #include "Flanger.h"
 #include "Pwm.h"
@@ -76,13 +76,14 @@ class AteOscEngine : public AteOscPatchBase
 	AtmAudio* audio_;
 	BiquadFilter filter_;
 	Portamento portamento_;
+	AteOscPitch pitch_;
 	QuantizePitch quantize_;
 	WaveCrusher wavecrusher_;
 	Flanger* flanger_;
 	Pwm* pwm_;
-	unsigned int frequency_ = 440 << 2;
 	unsigned char waveLength_ = 128;
 	char cvFilter = 0;
+	unsigned int cvPitch = 0;
 	//functions
 	public:
 	void construct(AteOscEngineBase* base);
@@ -95,6 +96,7 @@ class AteOscEngine : public AteOscPatchBase
 	void setFunction(AteOscEngine::Func new_func);
 	AteOscEngine::Func getFunction(){return function_;}
 	void setFrequency(unsigned int newValue);
+	void setFrequencyCv(unsigned int newValue){cvPitch = newValue;}
 	void setWavelength(unsigned char newValue);
 	unsigned char getWavelength(){return waveLength_;}
 	void patchValueChanged(unsigned char func, unsigned char newValue);

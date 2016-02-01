@@ -49,7 +49,7 @@ class AteOscPatch
 	static const unsigned char CTRLS = 5;
 	static const unsigned char HIGH = 1;
 	static const unsigned char LOW = 0;
-	unsigned char funcValue_c_[FUNC_CS] = {0,0,0,0};
+	unsigned char funcValue_c_[FUNC_CS] = {0x10,0x3F,0xF1,0x00};
 	unsigned char optionValue_c_ = 0;
 	unsigned char ctrlValue_[CTRLS] = {0,0,0,0,0};
 	AteOscPatchBase* base_ = NULL;

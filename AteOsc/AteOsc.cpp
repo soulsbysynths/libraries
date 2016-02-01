@@ -90,9 +90,21 @@ void AteOsc::poll(unsigned char ticksPassed)
 //***********engine events*********************
 void AteOsc::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
 {
-	if(func==AteOscEngine::FUNC_WAVELEN)
+	if(func==AteOscEngine::FUNC_WAVELEN || func==AteOscEngine::FUNC_MINCAPLEN)
 	{
 		hardware_.getRotEncoder(AteOscHardware::VALUE).setMaxValue(4);
+		if(func==AteOscEngine::FUNC_MINCAPLEN)
+		{
+			hardware_.setAudioMinLength(1<<(val+4));
+			//if(opt==true)
+			//{
+				//hardware_.setAudioPrescaler(7);
+			//}
+			//else
+			//{
+				//hardware_.setAudioPrescaler(3);
+			//}
+		}
 	}
 	else
 	{
@@ -119,11 +131,29 @@ void AteOsc::engineFunctionChanged(unsigned char func, unsigned char val, bool o
 //**************************hardware events************************************
 void AteOsc::hardwareCvInputChanged(unsigned char control, unsigned int newValue)
 {
-	static unsigned int lastValue = 0;
+	static const float MULT =  1.0199179261845620021111281154094;
+	static const float OFFSET = -13.19092317;
 	static const unsigned int HALF_SCALE = 2048;
+	static unsigned int lastValue = 0;
+	
+	
 	if(control==AteOscHardware::CV_PITCH)
 	{
-		engine_.setFrequency(convertCvFreq(newValue));
+			float adj = ((float)newValue * MULT) + OFFSET;
+			if(adj>4095)
+			{
+				engine_.setFrequencyCv(4095);
+			}
+			else if(adj<0)
+			{
+				engine_.setFrequencyCv(0);
+			}
+			else
+			{
+				engine_.setFrequencyCv((unsigned int)adj);
+			}
+			
+		
 	}
 	else if(control==AteOscHardware::CV_CAPTURE)
 	{
@@ -229,6 +259,10 @@ void AteOsc::hardwareAudioBufferStatusChanged(unsigned char newStatus)
 		break;
 		case AteOscHardware::BUFFER_IDLE:
 		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::GREEN);
+		if(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_CAPFREQ)==15)
+		{
+			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
+		}
 		break;
 		case AteOscHardware::BUFFER_CAPTURED:
 		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::GREEN);
@@ -242,14 +276,7 @@ void AteOsc::hardwareAudioBufferStatusChanged(unsigned char newStatus)
 			pos += jump;
 		}
 		engine_.getPatchPtr()->setOptionValue(AteOscEngine::FUNC_WAVELEN,true);
-		if(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_CAPFREQ)==15)
-		{
-			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
-		}
-		else
-		{
-			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_IDLE);
-		}
+		hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_IDLE);
 		break;
 	}
 

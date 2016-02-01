@@ -1,4 +1,4 @@
-//OdyHpf.h  Odytron high pass filter.  Now just holds cutoff.  Not really needed.
+//AteOscPitch.cpp  Atmegatron Pitch class (calculate output frequency)
 //Copyright (C) 2015  Paul Soulsby info@soulsbysynths.com
 //
 //This program is free software: you can redistribute it and/or modify
@@ -14,29 +14,27 @@
 //You should have received a copy of the GNU General Public License
 //along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "AteOscPitch.h"
 
-#ifndef __ODYHPF_H__
-#define __ODYHPF_H__
-
-
-class OdyHpf
+// default constructor
+AteOscPitch::AteOscPitch()
 {
-//variables
-public:
-protected:
-private:
-	unsigned char fc_ = 0;
-//functions
-public:
-	OdyHpf();
-	~OdyHpf();
-	void setFc(unsigned char newFc){fc_ = newFc;}
-	unsigned char getFc(){return fc_;}	
-protected:
-private:
-	OdyHpf( const OdyHpf &c );
-	OdyHpf& operator=( const OdyHpf &c );
+} //AteOscPitch
 
-}; //OdyHpf
-
-#endif //__ODYHPF_H__
+// default destructor
+AteOscPitch::~AteOscPitch()
+{
+} //~AteOscPitch
+void AteOscPitch::refresh(int cvOutput)
+{
+	unsigned long f = input_ * ((unsigned int)shapeExponential(cvOutput,MAX_CV,MULT_CV) + 1) >> BS_CV;
+	if(f>65535)
+	{
+		output_ = 65535;
+	}
+	else
+	{
+		output_ = (unsigned int)f;
+	}
+	
+}

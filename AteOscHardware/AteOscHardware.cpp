@@ -29,7 +29,7 @@ static volatile unsigned char switchState[3] = {0};
 static volatile char audioBuffer[AUDIO_BUFFER_SIZE] = {0};
 static volatile unsigned char audioWriteIndex = 0;
 static volatile unsigned char audioMinLength = 127;
-static volatile unsigned char audioPrescaler = 5;
+static const unsigned char audioPrescaler = 5;
 static volatile AteOscHardware::AudioBufferStatus audioBufferStatus =  AteOscHardware::BUFFER_IDLE;
 
 static volatile bool i2cTxing = false;
@@ -84,9 +84,10 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	{
 		pin = pgm_read_byte(&(pinReadOrder[a]));
 		cvInput_[a] = CvInput(readMCP3208input(pin));
+		//cvInput_[a].setLockOut(false);
 	}
-	cvInput_[CV_PITCH].setLockOut(false);
-	cvInput_[CV_PITCH].setSmooth(true);
+	//cvInput_[CV_PITCH].setLockOut(false);
+	//cvInput_[CV_PITCH].setSmooth(true);
 	
 	//Start_ADC interuupt and first conversion.;
 	ADMUX = AUDIO_INPUT;  // set the analog reference (high two bits of ADMUX) and select the channel (low 4 bits).  this also sets ADLAR (left-adjust result) to 0 (the default).
@@ -171,6 +172,14 @@ void AteOscHardware::setAudioBufferStatus(AudioBufferStatus newValue)
 		break;
 	}
 	
+}
+void AteOscHardware::setAudioMinLength(unsigned char newValue)
+{
+	audioMinLength = newValue;
+}
+unsigned char AteOscHardware::getAudioMinLength()
+{
+	return audioMinLength;
 }
 AteOscHardware::AudioBufferStatus AteOscHardware::getAudioBufferStatus()
 {

@@ -1,4 +1,4 @@
-//SsHelpers.h  Useful functions for Soulsby Synths classes
+//SsHelpers.h  Useful functions for Soulsby Synths classes.   NEEDS TIDYING.  NUMEROUS OSCITRON EXPERIMENTS IN HERE.
 //Copyright (C) 2015  Paul Soulsby info@soulsbysynths.com
 //
 //This program is free software: you can redistribute it and/or modify
@@ -30,8 +30,12 @@ static const unsigned char COMPRESS_TWO_BIT_MASK[4] PROGMEM = {0x03,0x0C,0x30,0x
 
 //static const float CV_TO_FREQ_EXP = 0.00086295;
 //static const float CV_TO_FREQ_MULT = 258.6643068;
-static const float CV_TO_FREQ_EXP = 0.000846127;
-static const float CV_TO_FREQ_MULT = 261.6255653;
+//static const float CV_TO_FREQ_EXP = 0.000846127;
+//static const float CV_TO_FREQ_MULT = 261.6255653;
+//static const float CV_TO_FREQ_EXP = 0.00086295;
+//static const float CV_TO_FREQ_MULT = 64.66607669;
+static const float CV_TO_FREQ_EXP = 0.00162456;
+static const float CV_TO_FREQ_MULT = 45.61257502;
 
 inline
 unsigned int convertCvFreq(unsigned int cv)
@@ -61,6 +65,15 @@ unsigned char shapeExponential(char input, float shapeAmt, unsigned char multipl
 	//zero gain = multiplier
 	float f, g;
 	f = (float)input / 127;
+	g = round(exp(f * shapeAmt) * (float)multiplier - 1);
+	return (unsigned char)g;
+}
+inline
+unsigned char shapeExponential(int input, float shapeAmt, unsigned char multiplier)
+{
+	//zero gain = multiplier
+	float f, g;
+	f = (float)input / 4095;
 	g = round(exp(f * shapeAmt) * (float)multiplier - 1);
 	return (unsigned char)g;
 }

@@ -141,6 +141,8 @@ class AteOscHardware
 	void setAudioBufferStatus(AudioBufferStatus newValue);
 	AudioBufferStatus getAudioBufferStatus();
 	unsigned char getAudioCurrent();
+	void setAudioMinLength(unsigned char newValue);
+	unsigned char getAudioMinLength();
 	void refreshLeds();
 	void refreshFlash(unsigned char ticksPassed);
 	void pollCvInputs(unsigned char ticksPassed);

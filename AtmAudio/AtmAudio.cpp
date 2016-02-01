@@ -125,28 +125,8 @@ void AtmAudio::setSampleFreq(unsigned long newSf)
 
 void AtmAudio::resizeWavetable(unsigned char newWaveLen)
 {
-	//if(audioBuffer != NULL)
-	//{
-		//delete audioBuffer;
-	//}
-	//#ifdef UPDATE_ON_ZERO
-	//if(audioDoubleBuffer != NULL)
-	//{
-		//delete audioDoubleBuffer;
-	//}
-	//#endif
 	audioWaveLength = newWaveLen;
 	audioWaveLengthMask = audioWaveLength -1;
-	//if(audioBuffer==NULL)
-	//{
-		//audioBuffer = new Wavetable(audioWaveLength);
-	//}
-	//#ifdef UPDATE_ON_ZERO
-	//if(audioDoubleBuffer==NULL)
-	//{
-		//audioDoubleBuffer = new Wavetable(audioWaveLength);
-	//}
-	//#endif
 }
 
 void AtmAudio::pasteWavetable(Wavetable& sourceWavetable)
@@ -163,7 +143,7 @@ void AtmAudio::pasteWavetable(Wavetable& sourceWavetable)
 		doPaste = true;
 	}
 	#else
-	for(i=0,i<audioWaveLength;++i)
+	for(i=0;i<audioWaveLength;++i)
 	{
 		audioBuffer->setSample(i,sourceWavetable.getSample(i));
 	}
