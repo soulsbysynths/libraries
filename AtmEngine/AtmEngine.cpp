@@ -63,7 +63,7 @@ void AtmEngine::construct(AtmEngineBase* base)
 	flanger_ = new Flanger(WAVE_LENGTH);
 	masterClock_.setTicksPerCycle(BPM_TICKS);
 	midi_ = new Midi(this,SYSEX_PROD_ID);
-	arpeggiator_ = new Arpeggiator(this,noteOn_);
+	arpeggiator_ = new Arpeggiator(this,midi_->getNoteOnPtr());
 	pwm_ = new Pwm(WAVE_LENGTH);
 }
 
@@ -156,7 +156,6 @@ void AtmEngine::poll(unsigned char ticksPassed)
 
 void AtmEngine::setFunction(AtmEngine::Func newFunc)
 {
-	bool col;
 	function_ = newFunc;
 	base_->engineFunctionChanged((unsigned char)function_,patch_->getFunctionValue(function_),patch_->getOptionValue(function_));
 }
@@ -180,9 +179,9 @@ void AtmEngine::releaseNote()
 	filtEnvelope_.release();
 }
 
-void AtmEngine::tieOptions(Func min_func, Func max_func, bool newOpt)
+void AtmEngine::tieOptions(Func minFunc, Func maxFunc, bool newOpt)
 {
-	for(unsigned char i=min_func;i<=max_func;++i)
+	for(unsigned char i=minFunc;i<=maxFunc;++i)
 	{
 		if(patch_->getOptionValue(i)!=newOpt)
 		{
@@ -190,11 +189,11 @@ void AtmEngine::tieOptions(Func min_func, Func max_func, bool newOpt)
 		}
 	}
 }
-void AtmEngine::tieControls(unsigned char bank, unsigned char anlControl_)
+void AtmEngine::tieControls(unsigned char bank, unsigned char ctrl)
 {
-	if(patch_->getCtrlValue(HIGH-bank,anlControl_)!=patch_->getCtrlValue(bank,anlControl_))
+	if(patch_->getCtrlValue(HIGH-bank,ctrl)!=patch_->getCtrlValue(bank,ctrl))
 	{
-		patch_->setCtrlValue(HIGH-bank,anlControl_,patch_->getCtrlValue(bank,anlControl_));
+		patch_->setCtrlValue(HIGH-bank,ctrl,patch_->getCtrlValue(bank,ctrl));
 	}
 }
 void AtmEngine::writeSysexPatch(unsigned char patchNum)
@@ -310,120 +309,108 @@ void AtmEngine::refreshSysex()
 //***********************MIDI events********************************************
 void AtmEngine::midiNoteOnReceived(unsigned char note, unsigned char velocity)
 {
-	if(noteOn_[note]==false)
+	#if NOTE_PRIORITY == NP_LOW
+	if(note<noteLowest_)
 	{
-		totNotesOnLast_ = totNotesOn_;
-		totNotesOn_++;
-		noteOn_[note] = true;
-		#if NOTE_PRIORITY == NP_LOW
-		if(note<noteLowest_)
+		noteLowest_ = note;
+	}
+	#elif NOTE_PRIORITY == NP_HIGH
+	if(note>noteHighest_)
+	{
+		noteHighest_ = note;
+	}
+	#elif NOTE_PRIORITY == NP_LAST
+	noteOrder_[note] = midi_->getTotNotesOn();
+	noteLast_ = note;
+	#endif
+	if(arpeggiator_->getType()==0)
+	{
+		#if LEGATO==1
+		if(midi_->getTotNotesOn()>1)
 		{
-			noteLowest_ = note;
-		}
-		#elif NOTE_PRIORITY == NP_HIGH
-		if(note>noteHighest_)
-		{
-			noteHighest_ = note;
-		}
-		#elif NOTE_PRIORITY == NP_LAST
-		noteOrder_[note] = totNotesOn_;
-		noteLast_ = note;
-		#endif
-		if(arpeggiator_->getType()==0)
-		{
-			#if LEGATO==1
-			if(totNotesOn_>1)
-			{
-				portamento_.setInput(pgm_read_word(&(MIDI_FREQS[note])));
-			}
-			else
-			{
-				triggerNote(note);
-			}
-			#else
-			triggerNote(note);
-			#endif
+			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[note])));
 		}
 		else
 		{
-			arpeggiator_->buildNoteOrder();
+			triggerNote(note);
 		}
-		if (arpeggiator_->getType()>0 && totNotesOnLast_==0 && totNotesOn_==1 && midi_->getClockRunning()==false)
-		{
-			masterClock_.reset();
-			arpeggiator_->reset();
-		}
+		#else
+		triggerNote(note);
+		#endif
 	}
-
+	else
+	{
+		arpeggiator_->buildNoteOrder();
+	}
+	if (arpeggiator_->getType()>0 && totNotesOnLast_==0 && midi_->getTotNotesOn()==1 && midi_->getClockRunning()==false)
+	{
+		masterClock_.reset();
+		arpeggiator_->reset();
+	}
+	totNotesOnLast_ = midi_->getTotNotesOn();
 }
 
 void AtmEngine::midiNoteOffReceived(unsigned char note)
 {
-	if(noteOn_[note]==true)
+	#if NOTE_PRIORITY == NP_LOW
+	noteLowest_ = 127;
+	for(unsigned char i=0;i<128;++i)
 	{
-		totNotesOnLast_ = totNotesOn_;
-		totNotesOn_--;
-		noteOn_[note] = false;
-		#if NOTE_PRIORITY == NP_LOW
-		noteLowest_ = 127;
-		for(unsigned char i=0;i<128;++i)
+		if(midi_->getNoteOn(i)==true)
 		{
-			if(noteOn_[i]==true)
+			noteLowest_ = i;
+			break;
+		}
+	}
+	#elif NOTE_PRIORITY == NP_HIGH
+	if(note==noteHighest_)
+	{
+		noteHighest_ = 0;
+		for(unsigned char i=127;i!=0;--i)
+		{
+			if(midi_->getNoteOn(i)==true)
 			{
-				noteLowest_ = i;
+				noteHighest_ = i;
 				break;
 			}
 		}
-		#elif NOTE_PRIORITY == NP_HIGH
-		if(note==noteHighest_)
-		{
-			noteHighest_ = 0;
-			for(unsigned char i=127;i!=0;--i)
-			{
-				if(noteOn_[i]==true)
-				{
-					noteHighest_ = i;
-					break;
-				}
-			}
-		}
-		#elif NOTE_PRIORITY == NP_LAST
-		noteOrder_[note] = 0;
-		if(note==noteLast_)
-		{
-			noteLast_ = 0;
-			unsigned char last = 0;
-			for(unsigned char i=0;i<128;++i)
-			{
-				if(noteOrder_[i]>last)
-				{
-					last = noteOrder_[i];
-					noteLast_ = i;
-				}
-			}
-			
-		}
-		#endif
-		if(totNotesOn_==0 && arpeggiator_->getType()==0)
-		{
-			releaseNote();
-		}
-		else if(arpeggiator_->getType()==0)
-		{
-			#if NOTE_PRIORITY == NP_LOW
-			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteLowest_])));
-			#elif NOTE_PRIORITY == NP_HIGH
-			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteHighest_])));
-			#elif NOTE_PRIORITY == NP_LAST
-			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteLast_])));
-			#endif
-		}
-		else
-		{
-			arpeggiator_->buildNoteOrder();
-		}
 	}
-
+	#elif NOTE_PRIORITY == NP_LAST
+	noteOrder_[note] = 0;
+	if(note==noteLast_)
+	{
+		noteLast_ = 0;
+		unsigned char last = 0;
+		for(unsigned char i=0;i<128;++i)
+		{
+			if(noteOrder_[i]>last)
+			{
+				last = noteOrder_[i];
+				noteLast_ = i;
+			}
+		}
+		
+	}
+	#endif
+	if(midi_->getTotNotesOn()==0 && arpeggiator_->getType()==0)
+	{
+		releaseNote();
+	}
+	else if(arpeggiator_->getType()==0)
+	{
+		#if NOTE_PRIORITY == NP_LOW
+		portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteLowest_])));
+		#elif NOTE_PRIORITY == NP_HIGH
+		portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteHighest_])));
+		#elif NOTE_PRIORITY == NP_LAST
+		portamento_.setInput(pgm_read_word(&(MIDI_FREQS[noteLast_])));
+		#endif
+	}
+	else
+	{
+		arpeggiator_->buildNoteOrder();
+	}
+	totNotesOnLast_ = midi_->getTotNotesOn();
 }
 
 void AtmEngine::midiClockStartReceived()
@@ -438,9 +425,9 @@ void AtmEngine::midiClockStopReceived()
 	masterClock_.setTicksPerCycle(BPM_TICKS);
 	arpeggiator_->reset();
 }
-void AtmEngine::midiControlChangeReceived(unsigned char anlControl_, unsigned char val)
+void AtmEngine::midiControlChangeReceived(unsigned char cc, unsigned char val)
 {
-	switch ((MidiCC)anlControl_)
+	switch ((MidiCC)cc)
 	{
 		case CC_PITCHLFO:
 		patch_->setCtrlValue(HIGH,CTRL_LFO,val>>1);
@@ -643,17 +630,17 @@ void AtmEngine::patchOptionChanged(unsigned char func, bool newOpt)
 	}
 }
 
-void AtmEngine::patchCtrlChanged(unsigned char bank, unsigned char anlControl_, unsigned char newValue)
+void AtmEngine::patchCtrlChanged(unsigned char bank, unsigned char ctrl, unsigned char newValue)
 {
-	switch (anlControl_)
+	switch (ctrl)
 	{
 		case CTRL_FILT:
 		filter_.setFc(newValue);
-		tieControls(bank,anlControl_);
+		tieControls(bank,ctrl);
 		break;
 		case CTRL_Q:
 		filter_.setQ(newValue);
-		tieControls(bank,anlControl_);
+		tieControls(bank,ctrl);
 		break;
 		case CTRL_ENV:
 		if(bank==LOW)

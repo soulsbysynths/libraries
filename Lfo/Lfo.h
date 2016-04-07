@@ -29,8 +29,9 @@ private:
 	unsigned int divMult_ = 1;
 	unsigned char divBs_ = 4;
 	unsigned char table_ = 0;
-	char output_;
-	bool invert_;
+	char output_ = 0;
+	bool invert_ = false;
+	unsigned char index_ = 0;
 //functions
 public:
 	Lfo();
@@ -42,6 +43,7 @@ public:
 	void setInvert(bool new_inv){invert_ = new_inv;}
 	bool getInvert(){return invert_;}
 	char getOutput(){return output_;}
+	unsigned char getIndex(){return index_;}
 	void refresh(unsigned int cycleTick);
 protected:
 private:

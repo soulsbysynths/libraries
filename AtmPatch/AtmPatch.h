@@ -34,6 +34,12 @@
 #ifndef bitWrite
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
 #endif
+#ifndef HIGH
+#define  HIGH 0x01
+#endif
+#ifndef LOW
+#define LOW 0x00
+#endif
 
 class AtmPatch
 {
@@ -49,8 +55,6 @@ class AtmPatch
 	static const unsigned char OPTS = 8;
 	static const unsigned char CTRLS = 6;
 	static const unsigned char BANKS = 2;
-	static const unsigned char HIGH = 1;
-	static const unsigned char LOW = 0;
 	unsigned char funcValue_c_[FUNC_CS] = {16,96,0,246,0,8,5,0};
 	unsigned char optionValue_c_[OPT_CS] = {0,0};
 	unsigned char ctrlValue_[BANKS][CTRLS] = {{255,0,0,0,0,0},{255,0,0,0,0,0}};

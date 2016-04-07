@@ -22,7 +22,7 @@ class AtmPatchBase
 	public:
 	virtual void patchValueChanged(unsigned char func, unsigned char newValue) = 0;
 	virtual void patchOptionChanged(unsigned char func, bool newOpt) = 0;
-	virtual void patchCtrlChanged(unsigned char bank, unsigned char anlControl_, unsigned char newValue) = 0;
+	virtual void patchCtrlChanged(unsigned char bank, unsigned char ctrl, unsigned char newValue) = 0;
 };
 
 

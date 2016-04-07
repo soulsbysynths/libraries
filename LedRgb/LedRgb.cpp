@@ -82,19 +82,14 @@ unsigned char LedRgb::getFlashOnticks()
 }
 void LedRgb::refreshFlash(unsigned char tick_inc)
 {
-	unsigned char onticks = 0;
-	unsigned char offticks = 0;
-	LedRgbColour col;
-	LedRgbColour col_on;
-	LedRgbColour col_off;
 	if(flashCnt_>0)
 	{
 		flashTick_ += tick_inc;
-		col = getColour();
-		col_on = getFlashOnCol();
-		col_off = getFlashOffCol();
-		onticks = getFlashOnticks();
-		offticks = getFlashOffTicks();
+		LedRgbColour col = getColour();
+		LedRgbColour col_on = getFlashOnCol();
+		LedRgbColour col_off = getFlashOffCol();
+		unsigned char onticks = getFlashOnticks();
+		unsigned char offticks = getFlashOffTicks();
 		if((col==col_on && flashTick_>=onticks) || (col==col_off && flashTick_>=offticks))
 		{
 			if(col==col_on)
@@ -107,10 +102,7 @@ void LedRgb::refreshFlash(unsigned char tick_inc)
 				flashTick_ -= offticks;
 				setColour(col_on);
 			}
-			if(flashCnt_<255)
-			{
-				flashCnt_--;
-			}
+			flashCnt_--;
 		}
 	}	
 }

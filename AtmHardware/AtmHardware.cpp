@@ -24,7 +24,7 @@ static const unsigned char rotEncoderPins[2][2] PROGMEM = {{PIND4,PIND5},{PIND7,
 
 static volatile unsigned char midiBuffer[MIDI_BUFFER_SIZE] = {0};
 static volatile unsigned char midiWritePos = 0;
-static volatile unsigned char midiReadPos = 0;
+static volatile unsigned char midiReadPos = MIDI_BUFFER_MASK;
 static volatile AtmHardware::MidiError midiError = AtmHardware::MIDIERR_NONE;
 
 static volatile int rotEncoderCount[2] = {0};
@@ -163,28 +163,28 @@ void AtmHardware::construct(AtmHardwareBase* base)
 void AtmHardware::refreshFlash(unsigned char ticksPassed)
 {
 	unsigned char i;
-	static unsigned char tickMult = 0;
 	unsigned char tickInc = 0;
 
-	tickMult += ticksPassed;
-	
-	if(tickMult>=64)
+	ledFlashTickCnt += ticksPassed;
+	while (ledFlashTickCnt>=LED_FLASH_SCALE)
 	{
-		tickInc = tickMult >> 6;
-		tickMult -= (tickInc << 6);
+		ledFlashTickCnt -= LED_FLASH_SCALE;
+		tickInc++;
 	}
-	
-	for(i=0;i<2;++i)
+	if(tickInc>0)
 	{
-		ledCircular_[i].refreshFlash(tickInc);
-	}
+		for(i=0;i<2;++i)
+		{
+			ledCircular_[i].refreshFlash(tickInc);
+		}
 
-	for(i=0;i<3;++i)
-	{
-		ledSwitch_[i].refreshFlash(tickInc);
+		for(i=0;i<3;++i)
+		{
+			ledSwitch_[i].refreshFlash(tickInc);
+		}
+		
+		ledMidi_.refreshFlash(tickInc);
 	}
-	
-	ledMidi_.refreshFlash(tickInc);
 }
 void AtmHardware::refreshLeds()
 {
@@ -299,7 +299,7 @@ void AtmHardware::pollSwitches(unsigned char ticksPassed)
 				else
 				{
 					midiThru_ = MIDI_THRU_ON;
-					ledSwitch_[FUNCTION].setColour(LedRgb::RED);					
+					ledSwitch_[FUNCTION].setColour(LedRgb::RED);
 				}
 				writeMidiSettings();
 			}
@@ -326,7 +326,7 @@ void AtmHardware::pollRotEncoders(unsigned char ticksPassed)
 				ledCircular_[FUNCTION].select(midiChannel_);
 				writeMidiSettings();
 			}
-		}	
+		}
 	}
 }
 
@@ -334,22 +334,19 @@ void AtmHardware::pollMidi()
 {
 	for(unsigned char i=0;i<MIDI_BUFFER_SIZE;++i)
 	{
-		if(midiReadPos==midiWritePos)
+		unsigned char nextPos = (midiReadPos+1) & MIDI_BUFFER_MASK;
+		if(nextPos==midiWritePos)
 		{
 			break;
 		}
 		else
 		{
+			midiReadPos = nextPos;
 			base_->hardwareMidiReceived(midiBuffer[midiReadPos]);
 			if(midiThru_==MIDI_THRU_ON)
 			{
 				writeMidi(midiBuffer[midiReadPos]);
 			}
-			midiReadPos++;
-			if(midiReadPos>=MIDI_BUFFER_SIZE)
-			{
-				midiReadPos = 0;
-			}			
 		}
 	}
 
@@ -495,10 +492,9 @@ ISR (PCINT2_vect)
 	}
 }
 ISR(USART_RX_vect){
-	
-	 
+
 	unsigned char error = UCSR0A; //have to check for error before
-	unsigned char data = UDR0; 
+	unsigned char data = UDR0;
 	// Check for error
 	if(bitSet(error,FE0)==1)
 	{
@@ -515,15 +511,15 @@ ISR(USART_RX_vect){
 	}
 	else
 	{
-		midiBuffer[midiWritePos] = data;
-		midiWritePos++;
-		if(midiWritePos>=MIDI_BUFFER_SIZE)
-		{
-			midiWritePos = 0;
-		}
-		if(midiWritePos==midiReadPos)
+		unsigned char nextPos = (midiWritePos+1) & MIDI_BUFFER_MASK;
+		if(nextPos==midiReadPos)
 		{
 			midiError = AtmHardware::MIDIERR_BUFFERFULL;
+		}
+		else
+		{
+			midiBuffer[midiWritePos] = data;
+			midiWritePos = nextPos;
 		}
 	}
 }

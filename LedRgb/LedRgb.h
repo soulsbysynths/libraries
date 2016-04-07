@@ -36,11 +36,12 @@ public:
 	};
 protected:
 private:
+	static const unsigned char TICK_SCALE = 16;
 	LedRgbColour led_ = OFF;
 	unsigned char flashOnOff_c_ = 0;
 	unsigned char flashCnt_ = 0;
 	unsigned char flashOnOffTicks_c_ = 0;  //compresses on and off ticks into 4 bit
-	unsigned char flashTick_ = {0};
+	unsigned char flashTick_ = 0;
 //functions
 public:
 	LedRgb();

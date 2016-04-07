@@ -39,7 +39,12 @@
 #include "Flanger.h"
 #include "ClipDistortion.h"
 #include "Pwm.h"
-
+#ifndef HIGH
+#define HIGH 0x01
+#endif
+#ifndef LOW
+#define LOW 0x00
+#endif
 
 class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 {
@@ -111,8 +116,6 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	private:
 	static const unsigned char SYSEX_PROD_ID = 0;
 	static const unsigned int MIDI_TICKSPERCYCLE = 1536;
-	static const unsigned char HIGH = 1;
-	static const unsigned char LOW = 0;
 	#define NP_CLASSIC 0
 	#define NP_LOW 1
 	#define NP_HIGH 2
@@ -138,10 +141,8 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	ClipDistortion clipdistortion_;
 	Pwm* pwm_;
 	unsigned int frequency_ = 440;
-	unsigned char totNotesOn_ = 0;
 	unsigned char totNotesOnLast_ = 0;
 	char pitchBend_ = 0;
-	bool noteOn_[128] = {false};
 	#if NOTE_PRIORITY == NP_LOW
 	unsigned char noteLowest_ = 127;
 	#elif NOTE_PRIORITY == NP_HIGH
@@ -171,8 +172,8 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	unsigned char getBank(){return bank_;}
 	void patchValueChanged(unsigned char func, unsigned char newValue);
 	void patchOptionChanged(unsigned char func, bool new_opt);
-	void patchCtrlChanged(unsigned char bank, unsigned char anlControl_, unsigned char newValue);
-	void midiControlChangeReceived(unsigned char anlControl_, unsigned char val);
+	void patchCtrlChanged(unsigned char bank, unsigned char ctrl, unsigned char newValue);
+	void midiControlChangeReceived(unsigned char cc, unsigned char val);
 	void midiNoteOnReceived(unsigned char note, unsigned char velocity);
 	void midiNoteOffReceived(unsigned char note);
 	void midiClockStartReceived(void);
@@ -193,8 +194,8 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	AtmEngine( const AtmEngine &c );
 	~AtmEngine();
 	AtmEngine& operator=( const AtmEngine &c );
-	void tieOptions(Func min_func, Func max_func, bool new_opt);
-	void tieControls(unsigned char bank, unsigned char anlControl_);
+	void tieOptions(Func minFunc, Func maxFunc, bool newOpt);
+	void tieControls(unsigned char bank, unsigned char ctrl);
 	void triggerNote(unsigned char note);
 	void releaseNote();
 	void writeSysexUserWave(unsigned char waveNum);

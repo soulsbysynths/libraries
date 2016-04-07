@@ -145,11 +145,22 @@ void Midi::read(unsigned char in_byte)
 			vel_byte = in_byte;
 			if (status_buffer == (NOTE_ON | channel_) && vel_byte > 0)
 			{
-				base_->midiNoteOnReceived(note_byte,vel_byte);
+				if(noteOn_[note_byte]==false)
+				{
+					noteOn_[note_byte] = true;
+					totNotesOn_++;
+					base_->midiNoteOnReceived(note_byte,vel_byte);
+				}
+
 			}
 			else if (status_buffer == (NOTE_OFF | channel_) || (status_buffer == (NOTE_ON | channel_) && vel_byte == 0))
 			{
-				base_->midiNoteOffReceived(note_byte);
+				if(noteOn_[note_byte]==true)
+				{
+					noteOn_[note_byte] = false;
+					totNotesOn_--;
+					base_->midiNoteOffReceived(note_byte);
+				}
 			}
 			else if (status_buffer == (PITCH_BEND | channel_))
 			{

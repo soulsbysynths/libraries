@@ -30,7 +30,7 @@ OdyEngine::~OdyEngine()
 {
 	//if(audio_!=NULL)
 	//{
-		//delete audio_;
+	//delete audio_;
 	//}
 	if(patch_!=NULL)
 	{
@@ -129,7 +129,7 @@ void OdyEngine::poll(unsigned char ticksPassed)
 			fmB = adsrEnvelope_.getExpOutput();
 		}
 		pitch_[i].refresh(pitchBend_,fmA,fmB);
-		audio_.setSampleFreq(i,(unsigned long)pitch_[i].getOutput()*(WAVE_LENGTH>>2));  //Finally scale freqs back down again (/4)	
+		audio_.setSampleFreq(i,(unsigned long)pitch_[i].getOutput()*(WAVE_LENGTH>>2));  //Finally scale freqs back down again (/4)
 	}
 	
 	if(amplifier_.getAmSource()==OdyAmplifier::AR)
@@ -188,81 +188,70 @@ void OdyEngine::releaseNote()
 //***********************MIDI events********************************************
 void OdyEngine::midiNoteOnReceived(unsigned char note, unsigned char velocity)
 {
-	if(noteOn_[note]==false)
-	{
-		totNotesOnLast_ = totNotesOn_;
-		totNotesOn_++;
-		noteOn_[note] = true;
-		if(note<noteLowest_)
-		{
-			noteLowest_ = note;
-		}
-		if(note>noteHighest_)
-		{
-			noteHighest_ = note;
-		}
 
-		#if LEGATO==1
-		if(totNotesOn_>1)
-		{
-			portamento_.setInput(pgm_read_word(&(MIDI_FREQS[note])));
-		}
-		else
-		{
-			triggerNote(note);
-		}
-		#else
-		triggerNote(note);
-		#endif
+	totNotesOnLast_ = midi_->getTotNotesOn();
+	if(note<noteLowest_)
+	{
+		noteLowest_ = note;
 	}
+	if(note>noteHighest_)
+	{
+		noteHighest_ = note;
+	}
+
+	#if LEGATO==1
+	if(midi_->getTotNotesOn()>1)
+	{
+		portamento_.setInput(pgm_read_word(&(MIDI_FREQS[note])));
+	}
+	else
+	{
+		triggerNote(note);
+	}
+	#else
+	triggerNote(note);
+	#endif
 
 }
 
 void OdyEngine::midiNoteOffReceived(unsigned char note)
 {
-	if(noteOn_[note]==true)
+	totNotesOnLast_ = midi_->getTotNotesOn();
+	if(note==noteLowest_)
 	{
-		totNotesOnLast_ = totNotesOn_;
-		totNotesOn_--;
-		noteOn_[note] = false;
-		if(note==noteLowest_)
+		noteLowest_ = 127;
+		for(unsigned char i=0;i<128;++i)
 		{
-			noteLowest_ = 127;
-			for(unsigned char i=0;i<128;++i)
+			if(midi_->getNoteOn(i)==true)
 			{
-				if(noteOn_[i]==true)
-				{
-					noteLowest_ = i;
-					break;
-				}
-			}			
-		}
-
-		if(note==noteHighest_)
-		{
-			noteHighest_ = 0;
-			for(unsigned char i=127;i!=0;--i)
-			{
-				if(noteOn_[i]==true)
-				{
-					noteHighest_ = i;
-					break;
-				}
+				noteLowest_ = i;
+				break;
 			}
 		}
-
-		if(totNotesOn_==0)
-		{
-			releaseNote();
-		}
-		else
-		{
-			portamento_[0].setInput(pgm_read_word(&(MIDI_FREQS[noteLowest_])));
-			portamento_[1].setInput(pgm_read_word(&(MIDI_FREQS[noteHighest_])));
-		}
-
 	}
 
+	if(note==noteHighest_)
+	{
+		noteHighest_ = 0;
+		for(unsigned char i=127;i!=0;--i)
+		{
+			if(midi_->getNoteOn(i)==true)
+			{
+				noteHighest_ = i;
+				break;
+			}
+		}
+	}
+
+	if(midi_->getTotNotesOn()==0)
+	{
+		releaseNote();
+	}
+	else
+	{
+		portamento_[0].setInput(pgm_read_word(&(MIDI_FREQS[noteLowest_])));
+		portamento_[1].setInput(pgm_read_word(&(MIDI_FREQS[noteHighest_])));
+	}
 }
 
 void OdyEngine::midiControlChangeReceived(unsigned char anlControl_, unsigned char val)
@@ -272,7 +261,7 @@ void OdyEngine::midiControlChangeReceived(unsigned char anlControl_, unsigned ch
 		case CC_MODWHEEL:
 		patch_->setFunctionValue(FUNC_OSC0FMA,val>>3);
 		patch_->setFunctionValue(FUNC_OSC1FMA,val>>3);
-		break;	
+		break;
 		case CC_PORTAMENTO:
 		patch_->setFunctionValue(FUNC_PORTAMENTO,val>>3);
 		break;
@@ -339,7 +328,7 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		pitch_[0].setFmAAmount(newValue);
 		break;
 		case FUNC_OSC0FMB:
-		pitch_[0].setFmBAmount(newValue);		
+		pitch_[0].setFmBAmount(newValue);
 		break;
 		case FUNC_OSC1FMA:
 		pitch_[1].setFmAAmount(newValue);
@@ -375,7 +364,7 @@ void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		break;
 		case FUNC_ENVS:
 		adsrEnvelope_.setSustain(pgm_read_word(&(ENV_S_LEVEL[newValue])));
-		break;		
+		break;
 		case FUNC_ENVD:
 		adsrEnvelope_.setDecay(pgm_read_word(&(ENV_D_INC[newValue])));
 		break;
@@ -413,13 +402,13 @@ void OdyEngine::patchOptionChanged(unsigned char func, bool newOpt)
 		break;
 		case FUNC_OSC0FMB:
 		pitch_[0].setFmBSource((OdyPitch::PitchFmBSource)newOpt);
-		break;		
+		break;
 		case FUNC_OSC1FMA:
 		pitch_[1].setFmASource((OdyPitch::PitchFmASource)newOpt);
 		break;
 		case FUNC_OSC1FMB:
 		pitch_[1].setFmBSource((OdyPitch::PitchFmBSource)newOpt);
-		break;		
+		break;
 		case FUNC_OSC1PW:
 		audio_.setWaveSync(newOpt);
 		break;

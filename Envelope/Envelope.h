@@ -61,6 +61,7 @@ public:
 	void setRetrigger(bool retrigger);
 	bool getRetrigger(){return retrigger_;}
 	char getOutput();
+	void setState(EnvState newState){state_ = newState;}
 	EnvState getState(){return state_;}
 	char getExpOutput();
 	void trigger();

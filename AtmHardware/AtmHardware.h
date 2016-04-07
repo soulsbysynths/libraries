@@ -45,8 +45,12 @@
 
 //#define NULL 0
 
-#define HIGH 0x1
-#define LOW  0x0
+#ifndef HIGH
+#define HIGH 0x01
+#endif
+#ifndef LOW
+#define LOW 0x00
+#endif
 #define IODIRA    (0x00)      // MCP23x17 I/O Direction Register
 #define IODIRB    (0x01)      // 1 = Input (default), 0 = Output
 
@@ -87,6 +91,7 @@
 #define    ADDR_ENABLE   (0b00001000)  // Configuration register for MCP23S17, the only thing we change is enabling hardware addressing
 
 #define MIDI_BUFFER_SIZE 64
+#define MIDI_BUFFER_MASK 63
 
 class AtmHardware
 {
@@ -98,7 +103,8 @@ class AtmHardware
 	static const unsigned int HOLD_EVENT_TICKS = 2000;
 	static const unsigned char SYSEX_PRODUCT = 0;
 	static const unsigned int MIDI_CHANNEL_ADDRESS = 1023;
-	
+	static const unsigned char LED_FLASH_SCALE = 16;
+
 	enum MidiError : unsigned char
 	{
 		MIDIERR_NONE,
@@ -120,6 +126,7 @@ class AtmHardware
 	static const unsigned char MIDI_THRU_ON = 0x80;
 	unsigned char midiThru_ = 0;
 	unsigned char midiChannel_ = 0;
+	unsigned char ledFlashTickCnt = 0;
 	//functions
 	
 	public:

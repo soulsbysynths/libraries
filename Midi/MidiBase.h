@@ -29,7 +29,7 @@ class MidiBase
 	virtual void midiSysexDataReceived(unsigned char index, unsigned char data) = 0;
 	virtual void midiSysexStopReceived(void) = 0;
 	virtual void midiSysexWrite(unsigned char data) = 0;
-	virtual void midiControlChangeReceived(unsigned char anlControl_, unsigned char val) = 0;
+	virtual void midiControlChangeReceived(unsigned char cc, unsigned char val) = 0;
 	virtual void midiPitchBendReceived(char bend) = 0;
 };
 

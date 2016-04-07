@@ -1,5 +1,5 @@
-//Lfo.cpp  Low frequency oscillator class
-//Copyright (C) 2015  Paul Soulsby info@soulsbysynths.com
+//StringsEngineBase.h  Audio engine base for Strings
+//Copyright (C) 2016  Paul Soulsby info@soulsbysynths.com
 //
 //This program is free software: you can redistribute it and/or modify
 //it under the terms of the GNU General Public License as published by
@@ -14,30 +14,19 @@
 //You should have received a copy of the GNU General Public License
 //along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "Lfo.h"
 
-// default constructor
-Lfo::Lfo()
-{
-} //Lfo
+#ifndef STRINGSENGINEBASE_H_
+#define STRINGSENGINEBASE_H_
 
-// default destructor
-Lfo::~Lfo()
+class StringsEngineBase
 {
-} //~Lfo
-void Lfo::setDivision(unsigned char newDiv)
-{
-	division_ = newDiv;
-	divMult_ = pgm_read_word(&(LFO_MULT[division_]));
-	divBs_ = pgm_read_byte(&(LFO_BS[division_]));
-}
-void Lfo::refresh(unsigned int cycleTick)
-{
-	index_ = ((unsigned long)cycleTick * divMult_) >> divBs_;
-	index_ &= LFO_BIT_MASK;
-	output_ = pgm_read_byte(&(LFO_WAVETABLE[table_][index_]));
-	if(invert_==true)
-	{
-		output_ *= -1;
-	}
-}
+	public:
+	virtual void engineFunctionChanged(unsigned char func, unsigned char val) = 0;
+	virtual void engineOptionChanged(unsigned char opt, bool val) = 0;
+};
+
+
+
+
+
+#endif /* STRINGSENGINEBASE_H_ */

@@ -1,7 +1,7 @@
-//Ody.h  Odytron class (add this object to Arduino sketch)
-//Copyright (C) 2015  Paul Soulsby info@soulsbysynths.com
+//Strings.h  Strings top level class (add this object to Arduino sketch)
+//Copyright (C) 2016  Paul Soulsby info@soulsbysynths.com
 //
-//This program is free software: you can redistribute it and/or modify
+//This program is free software: you can redistribute it and/or modAmt_ify
 //it under the terms of the GNU General Public License as published by
 //the Free Software Foundation, either version 3 of the License, or
 //(at your option) any later version.
@@ -15,32 +15,33 @@
 //along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-#ifndef __ODY_H__
-#define __ODY_H__
+#ifndef __STRINGS_H__
+#define __STRINGS_H__
 
-#include "OdyEngineBase.h"
+#include "StringsEngineBase.h"
 #include "AtmHardwareBase.h"
-#include "OdyEngine.h"
+#include "StringsEngine.h"
 #include "AtmHardware.h"
-#include "OdyOscillatorProgmem.h"
 
-class Ody : public AtmHardwareBase, OdyEngineBase 
+class Strings : public AtmHardwareBase, StringsEngineBase
 {
 //variables
 public:
 protected:
 private:
 	AtmHardware& hardware_;
-	OdyEngine& engine_;
+	StringsEngine& engine_;
+	const unsigned char IS_FUNC_FILL[2] = {0xE0,0x01};
 	const unsigned char LED_FLASH_TICKS = 4;
 	static const unsigned char MIDI_UBRR = 63; //(F_CPU / (MIDI_BAUD*8)) - 1
 	unsigned char testNote_ = 60;
+	
 //functions
 public:
-	Ody();
-	~Ody();
+	Strings();
+	~Strings();
 	void initialize();
-	void poll();
+	void poll(unsigned char ticksPassed);
 	void hardwareSwitchChanged(unsigned char sw, unsigned char newValue);
 	void hardwareSwitchHeld(unsigned char sw);
 	void hardwareAnalogueControlChanged(unsigned char control, unsigned char newValue);
@@ -48,12 +49,13 @@ public:
 	void hardwareMidiChannelChanged(unsigned char channel);
 	void hardwareMidiReceived(unsigned char data);
 	void hardwareMidiError(unsigned char errorType);
-	void engineFunctionChanged(unsigned char func, unsigned char val, bool opt);
+	void engineFunctionChanged(unsigned char func, unsigned char val);
+	void engineOptionChanged(unsigned char opt, bool val);
 protected:
 private:
-	Ody( const Ody &c );
-	Ody& operator=( const Ody &c );
+	Strings( const Strings &c );
+	Strings& operator=( const Strings &c );
+	bool isFuncFill(StringsEngine::Func func) const;
+}; //Strings
 
-}; //Ody
-
-#endif //__ODY_H__
+#endif //__STRINGS_H__

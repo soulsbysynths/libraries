@@ -33,7 +33,7 @@ private:
 	AtmEngine& engine_;
 	const unsigned char IS_FUNC_FILL[2] = {0xFC,0x21};
 	const unsigned char IS_SHIFT_HOLD[2] = {0x20,0x81};
-	const unsigned char LED_FLASH_TICKS = 1;
+	const unsigned char LED_FLASH_TICKS = 4;
 	static const unsigned char MIDI_UBRR = 63; //(F_CPU / (MIDI_BAUD*8)) - 1
 	unsigned char testNote_ = 60;
 //functions

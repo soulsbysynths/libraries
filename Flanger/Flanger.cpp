@@ -78,9 +78,10 @@ void Flanger::processWavetable(Wavetable& sourceWavetable, char envLevel, char l
 		{
 			offset = lfoOffset + envOffset;
 		}
+		//SHOULD THIS WORKAROUND SHOULD BE DON EIN THE ENGINE, NOT HERE?
 		if(offset==0)
 		{
-			offset = 1;
+			offset = 1;  //THIS IS IMPORTANT AS IT MEANS THE SOUND IS NEVER IN PHASE - musically sounds nicer.
 		}
 		if(offset>writepos)
 		{
@@ -98,15 +99,9 @@ void Flanger::processWavetable(Wavetable& sourceWavetable, char envLevel, char l
 			output = (sourceWavetable.getSample(i)>>dryBs_) + (wavetable_->getSample(readpos)>>wetBs_);
 			sourceWavetable.setSample(i,constrainChar(output));
 			writepos++;
-			if(writepos>=waveLength_)
-			{
-				writepos = 0;
-			}
+			writepos &= (waveLength_-1);
 			readpos++;
-			if(readpos>=waveLength_)
-			{
-				readpos = 0;
-			}
+			readpos &= (waveLength_-1);
 		}
 		cleared_ = false;
 	}

@@ -131,10 +131,8 @@ private:
 	OdyLfo lfo_;
 	Portamento portamento_[2];
 	OdyPitch pitch_[2];
-	unsigned char totNotesOn_ = 0;
 	unsigned char totNotesOnLast_ = 0;
 	char pitchBend_ = 0;
-	bool noteOn_[128] = {false};
 	unsigned char noteLowest_ = 127;
 	unsigned char noteHighest_ = 0;
 
