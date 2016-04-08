@@ -305,17 +305,18 @@ void StringsEngine::poll(unsigned char ticksPassed)
 	{
 		masterClock_.refresh(ticksPassed);
 	}
-	arpeggiator_->refresh(masterClock_.getOutput());
-	lfoPitch_.refresh(masterClock_.getOutput());
-	lfoPhase_.refresh(masterClock_.getOutput());
+	unsigned int clk = masterClock_.getOutput();
+	arpeggiator_->refresh(clk);
+	lfoPitch_.refresh(clk);
+	lfoPhase_.refresh(clk);
 	unsigned char lastCycleIndex = lfoCycle_.getIndex();
-	lfoCycle_.refresh(masterClock_.getOutput());
+	lfoCycle_.refresh(clk);
 	if(patch_->getOptionValue(FUNC_CYCLER)==true && lfoCycle_.getIndex()<lastCycleIndex)
 	{
 		cycleWaves();
 	}
 	lfoTicks += ticksPassed;
-	if(lfoTicks>lfoSpeed_)
+	while (lfoTicks>=lfoSpeed_)
 	{
 		lfoCnt++;
 		lfoTicks -= lfoSpeed_;
@@ -339,7 +340,7 @@ void StringsEngine::poll(unsigned char ticksPassed)
 	
 	int p = (((int)lfoPhase_.getOutput()) * ((int)phaserSource_+1)) >> 8;
 	p += ((int)pgm_read_byte(&(SINE_TABLE[lfoCnt])) * (256-phaserSource_)) >> 8;
-	p += 127;
+	p += 128;  //128 sounds better.  Don't let it ever get 100% in phase
 	lfoPhaserVal = constrainUChar(p);
 
 }
@@ -799,7 +800,7 @@ void StringsEngine::patchCtrlChanged(unsigned char bank, unsigned char ctrl, uns
 		pitchEnvAmt_ = ((float)newValue * MAX_PITCH) / 255;
 		break;
 		case CTRL_PHASESPEED:
-		lfoSpeed_ = newValue >> 1;
+		lfoSpeed_ = (newValue >> 1)+1;
 		break;
 		case CTRL_PHASERDEPTH:
 		phaserMix = newValue;
