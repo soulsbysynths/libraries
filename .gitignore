@@ -5,13 +5,6 @@ Ade33HwTester/*
 Ade33LogicEngine/*
 Ade33Patch/*
 Ade33TimingEngine/*
-AteOsc/*
-AteOscEngine/*
-AteOscHardware/*
-AteOscHardwareTester/*
-AteOscOscillator/*
-AteOscPatch/*
-AteOscPitch/*
 FM24C64B/*
 avrfix/*
 CD4051/*
