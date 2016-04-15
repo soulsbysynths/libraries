@@ -43,10 +43,10 @@ AteOscEngine::Ctrl AteOsc::cHardToEngFunc(AteOscHardware::CvInputName cvInput)
 {
 	switch (cvInput)
 	{
-		case AteOscHardware::CV_PITCHOFF:
-		return AteOscEngine::CTRL_PITCHOFF;
+		case AteOscHardware::CV_PITCHPOT:
+		return AteOscEngine::CTRL_PITCHFINE;
 		break;
-		case AteOscHardware::CV_FILTOFF:
+		case AteOscHardware::CV_FILTPOT:
 		return AteOscEngine::CTRL_FILTOFF;
 		break;
 		case AteOscHardware::CV_FLANGE:
@@ -60,7 +60,17 @@ AteOscEngine::Ctrl AteOsc::cHardToEngFunc(AteOscHardware::CvInputName cvInput)
 		break;
 	}
 }
-
+bool AteOsc::isShiftHold(AteOscEngine::Func func)
+{
+	if(func==AteOscEngine::FUNC_MEM || func==AteOscEngine::FUNC_WAVELEN)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 //void AteOscHardwareTester::refreshAudioTest()
 //{
 //unsigned char i;
@@ -109,23 +119,11 @@ AteOscEngine::Ctrl AteOsc::cHardToEngFunc(AteOscHardware::CvInputName cvInput)
 //}
 
 //***********engine events*********************
-void AteOsc::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
+void AteOsc::engineFunctionChanged(unsigned char func, unsigned char val)
 {
-	if(func==AteOscEngine::FUNC_WAVELEN || func==AteOscEngine::FUNC_MINCAPLEN)
+	if(func==AteOscEngine::FUNC_WAVELEN)
 	{
 		hardware_.getRotEncoder(AteOscHardware::VALUE).setMaxValue(4);
-		if(func==AteOscEngine::FUNC_MINCAPLEN)
-		{
-			hardware_.setAudioMinLength(1<<(val+4));
-			//if(opt==true)
-			//{
-			//hardware_.setAudioPrescaler(7);
-			//}
-			//else
-			//{
-			//hardware_.setAudioPrescaler(3);
-			//}
-		}
 	}
 	else
 	{
@@ -134,6 +132,14 @@ void AteOsc::engineFunctionChanged(unsigned char func, unsigned char val, bool o
 	hardware_.getRotEncoder(AteOscHardware::VALUE).setValue((char)val);
 	hardware_.getLedCircular(AteOscHardware::FUNCTION).select(func);
 	hardware_.getLedCircular(AteOscHardware::VALUE).select(val);
+	//hmm what to do about this?
+	//if(func==AteOscEngine::FUNC_CLOCKDIV && val==15)
+	//{
+	//hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
+	//}
+}
+void AteOsc::engineOptionChanged(unsigned char func, bool opt)
+{
 	if(opt==true)
 	{
 		hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::GREEN);
@@ -142,13 +148,7 @@ void AteOsc::engineFunctionChanged(unsigned char func, unsigned char val, bool o
 	{
 		hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
 	}
-	//hmm what to do about this?
-	//if(func==AteOscEngine::FUNC_CAPFREQ && val==15)
-	//{
-	//hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
-	//}
 }
-
 //**************************hardware events************************************
 void AteOsc::hardwareCvInputChanged(unsigned char control, unsigned int newValue)
 {
@@ -160,28 +160,15 @@ void AteOsc::hardwareCvInputChanged(unsigned char control, unsigned int newValue
 	
 	if(control==AteOscHardware::CV_PITCH)
 	{
-		//float adj = ((float)newValue * MULT) + OFFSET;
-		//if(adj>4095)
-		//{
-		//engine_.setFrequencyCv(4095);
-		//}
-		//else if(adj<0)
-		//{
-		//engine_.setFrequencyCv(0);
-		//}
-		//else
-		//{
-		//engine_.setFrequencyCv((unsigned int)adj);
-		//}
-		engine_.setFrequency(newValue);
+		engine_.getPitch().setInput((newValue * 15)>>4);  //see excel for why * 0.9367
 	}
 	else if(control==AteOscHardware::CV_FILT)
 	{
-		engine_.setFiltFc(newValue);
+		//engine_.setFiltFc(newValue);
 	}
 	else if(control==AteOscHardware::CV_CAPTURE)
 	{
-		if(engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_CAPFREQ)==true && lastValue<HALF_SCALE && newValue>=HALF_SCALE)
+		if(engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_CLOCKDIV)==true && lastValue<HALF_SCALE && newValue>=HALF_SCALE)
 		{
 			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
 		}
@@ -200,7 +187,7 @@ void AteOsc::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 
 	if(sw==AteOscHardware::FUNCTION)
 	{
-		if(engine_.getFunction()==AteOscEngine::FUNC_MEM)
+		if(isShiftHold(engine_.getFunction())==true)
 		{
 			if(newValue==HIGH)
 			{
@@ -209,15 +196,38 @@ void AteOsc::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 			else
 			{
 				hardware_.getLedSwitch(AteOscHardware::FUNCTION).flashStop();
-				hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
-				if(hardware_.getSwitch(sw).getHoldTime()>AteOscHardware::HOLD_EVENT_TICKS)
+				if(engine_.getFunction()==AteOscEngine::FUNC_MEM)
 				{
-					engine_.getPatchPtr()->writePatch(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_MEM));
+					hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
+					if(hardware_.getSwitch(sw).getHoldTime()>AteOscHardware::HOLD_EVENT_TICKS)
+					{
+						engine_.getPatchPtr()->writePatch(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_MEM));
+					}
+					else
+					{
+						engine_.getPatchPtr()->readPatch(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_MEM));
+					}
 				}
 				else
 				{
-					engine_.getPatchPtr()->readPatch(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_MEM));
+					if(hardware_.getSwitch(sw).getHoldTime()>AteOscHardware::HOLD_EVENT_TICKS)
+					{
+						engine_.getOscillatorPtr()->writeUserWave(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_WAVE));
+					}
+					else
+					{
+						engine_.getPatchPtr()->setOptionValue(AteOscEngine::FUNC_WAVE,!engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_WAVE));
+					}
+					if(engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_WAVE)==true)
+					{
+						hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::GREEN);
+					}
+					else
+					{
+						hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
+					}
 				}
+
 			}
 		}
 		else if(newValue==HIGH)
@@ -245,7 +255,7 @@ void AteOsc::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 void AteOsc::hardwareSwitchHeld(unsigned char sw)
 {
 
-	if(sw==AteOscHardware::FUNCTION && engine_.getFunction()==AteOscEngine::FUNC_MEM)
+	if(sw==AteOscHardware::FUNCTION && isShiftHold(engine_.getFunction()))
 	{
 		hardware_.getLedSwitch(AteOscHardware::FUNCTION).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::GREEN,LedRgb::RED,true);
 	}
@@ -276,24 +286,24 @@ void AteOsc::hardwareAudioBufferStatusChanged(unsigned char newStatus)
 		break;
 		case AteOscHardware::BUFFER_OVERFLOW:
 		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::RED);
-		if(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_CAPFREQ)==15)
+		if(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_CLOCKDIV)==15)
 		{
 			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
 		}
 		break;
 		case AteOscHardware::BUFFER_IDLE:
 		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::GREEN);
-		if(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_CAPFREQ)==15)
+		if(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_CLOCKDIV)==15)
 		{
 			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
 		}
 		break;
 		case AteOscHardware::BUFFER_CAPTURED:
 		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::GREEN);
-		//look at hardware tester if you wanna know why these numbers work!
+		//see excel sheet for proof of this interpolation
 		unsigned int pos = 0;
-		unsigned int jump = hardware_.getAudioBufferLength() << 1;
-		unsigned char destWaveLen = engine_.getOscillatorPtr()->getUserWaveLength();
+		unsigned int jump = hardware_.getAudioBufferLength() << 1;  //0-255
+		unsigned char destWaveLen = engine_.getOscillatorPtr()->getWaveLength(); //128
 		for(unsigned char i=0;i<destWaveLen;++i)
 		{
 			engine_.getOscillatorPtr()->setUserWavetableSample(i,hardware_.getAudioBuffer(pos >> 8));

@@ -45,7 +45,7 @@ class AteOscEngine : public AteOscPatchBase
 	}
 	enum Ctrl : unsigned char
 	{
-		CTRL_PITCHOFF = 0,
+		CTRL_PITCHFINE = 0,
 		CTRL_PWM,
 		CTRL_FILTOFF,
 		CTRL_Q,
@@ -56,8 +56,8 @@ class AteOscEngine : public AteOscPatchBase
 	{
 		FUNC_WAVE = 0,
 		FUNC_WAVELEN,
-		FUNC_CAPFREQ,
-		FUNC_MINCAPLEN,
+		FUNC_CLOCKDIV,
+		FUNC_PITCHCOARSE,
 		FUNC_FILT,
 		FUNC_PORTA,
 		FUNC_BITCRUSH,
@@ -89,12 +89,12 @@ class AteOscEngine : public AteOscPatchBase
 	AteOscPatch* getPatchPtr() { return patch_; }
 	const AteOscOscillator* getOscillatorPtr() const { return  oscillator_; }
 	AteOscOscillator* getOscillatorPtr() { return oscillator_; }
+	AteOscPitch& getPitch() { return pitch_; }
+	const AteOscPitch& getPitch() const { return pitch_; }
 	void initialize();
 	void poll(unsigned char ticksPassed);
 	void setFunction(AteOscEngine::Func new_func);
 	AteOscEngine::Func getFunction(){return function_;}
-	void setFrequency(unsigned int newCvValue);
-	void setFiltFc(unsigned int newCvValue);
 	void setWavelength(unsigned char newValue);
 	unsigned char getWavelength(){return waveLength_;}
 	void patchValueChanged(unsigned char func, unsigned char newValue);

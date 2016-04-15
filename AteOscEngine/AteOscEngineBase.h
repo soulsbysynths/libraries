@@ -20,7 +20,8 @@
 class AteOscEngineBase
 {
 	public:
-	virtual void engineFunctionChanged(unsigned char func, unsigned char val, bool opt) = 0;
+	virtual void engineFunctionChanged(unsigned char func, unsigned char val) = 0;
+	virtual void engineOptionChanged(unsigned char func, bool opt) = 0;
 };
 
 

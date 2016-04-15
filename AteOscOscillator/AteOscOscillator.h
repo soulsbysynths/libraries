@@ -21,8 +21,6 @@
 #include "Wavetable.h"
 #include "AteOscOscillatorProgmem.h"
 
-#define OSC_USER_WAVELEN 128
-
 class AteOscOscillator
 {
 //variables
@@ -33,7 +31,6 @@ private:
 	unsigned char table_ = 0;
 	unsigned char bank_ = 0;
 	bool userMode_ = false;
-	unsigned int userWaveStartAddress_ = 0;
 	Wavetable* userWavetable_ = NULL;
 //functions
 public:
@@ -49,8 +46,6 @@ public:
 	void setUserWavetableSample(unsigned char index,char newSample);
 	char getUserWavetableSample(unsigned char index);
 	unsigned int getWaveLength(){return OSC_WAVELEN;}
-	unsigned char getUserWaveLength(){return OSC_USER_WAVELEN;}
-	unsigned int getUserWaveStartAddress(){return userWaveStartAddress_;}
 	void writeUserWave(unsigned char waveNum);
 	void readUserWave(unsigned char waveNum);
 protected:

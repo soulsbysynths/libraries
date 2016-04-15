@@ -16,6 +16,8 @@
 
 #include "AteOscHardwareTester.h"
 
+extern void writeFram(const void* data, unsigned int startAddr, size_t size);
+extern void readFram(void* data, unsigned int startAddr, size_t size);
 
 
 // default constructor
@@ -43,7 +45,7 @@ void AteOscHardwareTester::refreshAudioTest()
 	unsigned int scaleWaveLen,skip,pos;
 	static const unsigned char SCALE = 8;
 	
-	hardware_.getLedCircular(AteOscHardware::VALUE).select(hardware_.getAudioCurrent()>>4);
+	//hardware_.getLedCircular(AteOscHardware::VALUE).select(hardware_.getAudioCurrent()>>4);
 	
 	if(hardware_.getAudioBufferStatus()==AteOscHardware::BUFFER_CAPTURED)
 	{
@@ -153,7 +155,11 @@ void AteOscHardwareTester::hardwareCvInputChanged(unsigned char control, unsigne
 
 void AteOscHardwareTester::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 {
+	static const unsigned char MEMTEST_SIZE = 128;
+	static const unsigned int MEMTEST_ADDR = 1024;
 	unsigned char i;
+	unsigned char writetest[MEMTEST_SIZE] = {0};
+	unsigned char readtest[MEMTEST_SIZE] = {0};
 	if(newValue==HIGH)
 	{
 		for(i=0;i<2;++i)
@@ -169,6 +175,19 @@ void AteOscHardwareTester::hardwareSwitchChanged(unsigned char sw, unsigned char
 		}
 		else
 		{
+			Serial.println("Writing");
+			for (i=0;i<MEMTEST_SIZE;++i)
+			{
+				writetest[i]  = MEMTEST_SIZE-i;
+			}
+			writeFram((const void*)writetest,MEMTEST_ADDR,MEMTEST_SIZE);
+			Serial.println("Reading");
+			readFram((void*)readtest,MEMTEST_ADDR,MEMTEST_SIZE);
+			for (i=0;i<MEMTEST_SIZE;++i)
+			{
+				Serial.println(readtest[i],DEC);
+			}
+			Serial.println("Finished");
 			test_ = TEST_AUDIO;
 		}
 		

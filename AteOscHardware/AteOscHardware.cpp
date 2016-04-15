@@ -28,11 +28,11 @@ static volatile int rotEncoderCount[2] = {0};
 static volatile unsigned char switchState[3] = {0};
 static volatile char audioBuffer[AUDIO_BUFFER_SIZE] = {0};
 static volatile unsigned char audioWriteIndex = 0;
-static volatile unsigned char audioMinLength = 127;
 static const unsigned char audioPrescaler = 5;
 static volatile AteOscHardware::AudioBufferStatus audioBufferStatus =  AteOscHardware::BUFFER_IDLE;
 
 static volatile bool i2cTxing = false;
+static volatile bool i2cRxing = false;
 static volatile unsigned char i2cWritePos = 0;
 static volatile unsigned char i2cReadPos = 0;
 static volatile unsigned char i2cAddr = 0;
@@ -40,8 +40,9 @@ static volatile unsigned char i2cBuffer[I2C_BUFFER_SIZE] = {0};
 
 //static const unsigned char pinReadOrder[CV_READ_ORDER_SIZE] PROGMEM = {0,1,2,3,4,5,2,3,6,7,2,3}; //{4,5,0,1,6,7}; //{4,4,4,4,4,4};
 
-#define TW_TX (1 << TWINT) | (1 << TWEN) | (1 << TWIE)
-#define TW_STOP ((1 << TWSTO) | (1 << TWINT) | (1 << TWEN))
+#define TW_TX_NACK (1 << TWINT) | (1 << TWEN) | (1 << TWIE)
+#define TW_TX_ACK (1 << TWINT) | (1 << TWEN) | (1 << TWIE) | (1 << TWEA)
+#define TW_STOP (1 << TWSTO) | (1 << TWINT) | (1 << TWEN)
 
 void writeMemory(const void* data, void* startAddr, size_t size)
 {
@@ -51,7 +52,51 @@ void writeMemory(const void* data, void* startAddr, size_t size)
 void readMemory(void* data, const void* startAddr, size_t size)
 {
 	eeprom_read_block(data,startAddr,size);
+
 }
+
+void writeFram(const void* data, unsigned int startAddr, size_t size)
+{
+	unsigned char i;
+	while (i2cTxing==true || i2cRxing==true || bitRead(TWCR,TWSTO)==true)
+	{
+	}
+	i2cBuffer[0] = startAddr >> 8;
+	i2cBuffer[1] = startAddr & 0xFF;
+	memcpy((void*)&i2cBuffer[2],data,size);
+	i2cWritePos = size + 2;
+	i2cTxing = true;
+	i2cAddr = TW_WRITE;
+	i2cAddr |= FM24C64B_DEFAULT_ADDRESS << 1;
+	TWCR = ((1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (1 << TWIE) | (1 << TWEA));
+}
+
+void readFram(void* data, unsigned int startAddr, size_t size)
+{
+	while (i2cTxing==true || i2cRxing==true || bitRead(TWCR,TWSTO)==true)
+	{
+	}
+	i2cBuffer[0] = startAddr >> 8;
+	i2cBuffer[1] = startAddr & 0xFF;
+	i2cWritePos = 2;
+	i2cTxing = true;
+	i2cAddr = TW_WRITE;
+	i2cAddr |= FM24C64B_DEFAULT_ADDRESS << 1;
+	TWCR = ((1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (1 << TWIE) | (1 << TWEA));
+	while (i2cTxing==true || bitRead(TWCR,TWSTO)==true)
+	{
+	}
+	i2cWritePos = size;
+	i2cRxing = true;
+	i2cAddr = TW_READ;
+	i2cAddr |= FM24C64B_DEFAULT_ADDRESS << 1;
+	TWCR = ((1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (1 << TWIE) | (1 << TWEA));
+	while (i2cRxing==true || bitRead(TWCR,TWSTO)==true)
+	{
+	}
+	memcpy(data,(const void*)i2cBuffer,size);
+}
+
 // default constructor
 AteOscHardware::AteOscHardware(AteOscHardwareBase* base)
 {
@@ -154,7 +199,7 @@ char AteOscHardware::getAudioBuffer(unsigned char sample)
 }
 unsigned char AteOscHardware::getAudioBufferLength()
 {
-	return audioWriteIndex;
+	return audioWriteIndex + 1;
 }
 void AteOscHardware::setAudioBufferStatus(AudioBufferStatus newValue)
 {
@@ -171,14 +216,6 @@ void AteOscHardware::setAudioBufferStatus(AudioBufferStatus newValue)
 		break;
 	}
 	
-}
-void AteOscHardware::setAudioMinLength(unsigned char newValue)
-{
-	audioMinLength = newValue;
-}
-unsigned char AteOscHardware::getAudioMinLength()
-{
-	return audioMinLength;
 }
 AteOscHardware::AudioBufferStatus AteOscHardware::getAudioBufferStatus()
 {
@@ -198,16 +235,16 @@ void AteOscHardware::refreshFlash(unsigned char ticksPassed)
 	
 	if(tickInc>0)
 	{
-	 //can only flash 16 leds at the mo. must make array dymanic
-	 //for(i=0;i<2;++i)
-	 //{
-	 ledCircular_[1].refreshFlash(tickInc);
-	 //}
+		//can only flash 16 leds at the mo. must make array dymanic
+		//for(i=0;i<2;++i)
+		//{
+		ledCircular_[1].refreshFlash(tickInc);
+		//}
 
-	 for(i=0;i<2;++i)
-	 {
-		 ledSwitch_[i].refreshFlash(tickInc);
-	 }
+		for(i=0;i<2;++i)
+		{
+			ledSwitch_[i].refreshFlash(tickInc);
+		}
 	}
 	
 
@@ -321,7 +358,7 @@ void AteOscHardware::beginI2c()
 }
 void AteOscHardware::writeI2cByte(unsigned char address, unsigned char reg, unsigned char value)
 {
-	while (i2cTxing==true || bitRead(TWCR,TWSTO)==true)
+	while (i2cTxing==true || i2cRxing==true || bitRead(TWCR,TWSTO)==true)
 	{
 	}
 	i2cBuffer[0] = reg;
@@ -330,11 +367,11 @@ void AteOscHardware::writeI2cByte(unsigned char address, unsigned char reg, unsi
 	i2cTxing = true;
 	i2cAddr = TW_WRITE;
 	i2cAddr |= (MCP23017_ADDRESS | address) << 1;
-	TWCR = ((1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (1 << TWIE));
+	TWCR = ((1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (1 << TWIE) | (1 << TWEA));
 }
 void AteOscHardware::writeI2cWord(unsigned char address, unsigned char reg, unsigned int word)
 {
-	while (i2cTxing==true || bitRead(TWCR,TWSTO)==true)
+	while (i2cTxing==true || i2cRxing==true || bitRead(TWCR,TWSTO)==true)
 	{
 	}
 	i2cBuffer[0] = reg;
@@ -344,7 +381,7 @@ void AteOscHardware::writeI2cWord(unsigned char address, unsigned char reg, unsi
 	i2cTxing = true;
 	i2cAddr = TW_WRITE;
 	i2cAddr |= (MCP23017_ADDRESS | address) << 1;
-	TWCR = ((1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (1 << TWIE));
+	TWCR = ((1 << TWSTA) | (1 << TWINT) | (1 << TWEN) | (1 << TWIE) | (1 << TWEA));
 }
 void AteOscHardware::beginSpi()
 {
@@ -392,15 +429,10 @@ unsigned int AteOscHardware::readMCP3208input(unsigned char input)
 	return out;
 }
 
-unsigned char AteOscHardware::getAudioCurrent()
-{
-	return audioCurrent;
-}
 
 ISR(ADC_vect)
 {
 	unsigned char samp = ADCH;
-	audioCurrent = samp;
 	switch (audioBufferStatus)
 	{
 		case AteOscHardware::BUFFER_WAITZCROSS:
@@ -421,7 +453,7 @@ ISR(ADC_vect)
 		{
 			audioBufferStatus = AteOscHardware::BUFFER_OVERFLOW;
 		}
-		else if(audioBuffer[audioWriteIndex]>=0 && audioBuffer[audioWriteIndex-1]<0 && audioWriteIndex>=audioMinLength)
+		else if(audioBuffer[audioWriteIndex]>=0 && audioBuffer[audioWriteIndex-1]<0 && audioWriteIndex>=AUDIO_MIN_LEN)
 		{
 			audioBufferStatus = AteOscHardware::BUFFER_CAPTURED;
 		}
@@ -479,7 +511,7 @@ ISR(TWI_vect)
 		case TW_REP_START: // sent repeated start condition
 		// copy device address and r/w bit to output register and ack
 		TWDR = i2cAddr;
-		TWCR = TW_TX;
+		TWCR = TW_TX_ACK;
 		i2cReadPos = 0;
 		break;
 
@@ -492,7 +524,7 @@ ISR(TWI_vect)
 			// copy data to output register and ack
 			TWDR = i2cBuffer[i2cReadPos];
 			i2cReadPos++;
-			TWCR = TW_TX;
+			TWCR = TW_TX_ACK;
 		}
 		else
 		{
@@ -510,6 +542,35 @@ ISR(TWI_vect)
 		TWCR = ((1 << TWSTO) | (1 << TWINT) | (1 << TWEN) | (1 << TWIE));
 		i2cTxing = false;
 		break;
+
+		// Master Receiver
+		case TW_MR_DATA_ACK: // data received, ack sent
+		// put byte into buffer
+		i2cBuffer[i2cReadPos] = TWDR;
+		i2cReadPos++;  //****NO BREAK HERE - IT SENDS THE ACK 
+		case TW_MR_SLA_ACK:  // address sent, ack received
+		// ack if more bytes are expected, otherwise nack
+		if(i2cReadPos<i2cWritePos)
+		{
+			// copy data to output register and ack
+			TWCR = TW_TX_ACK;
+		}
+		else
+		{
+			TWCR = TW_TX_NACK;
+		}
+		break;
+		case TW_MR_DATA_NACK: // data received, nack sent
+		// put final byte into buffer
+		i2cBuffer[i2cReadPos] = TWDR;
+		TWCR = TW_STOP;
+		i2cRxing = false;
+		break;
+		case TW_MR_SLA_NACK: // address sent, nack received
+		TWCR = TW_STOP;
+		i2cRxing = false;
+		break;
+
 		// All
 		case TW_NO_INFO:   // no state information
 		break;

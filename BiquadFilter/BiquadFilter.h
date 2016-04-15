@@ -3,16 +3,16 @@
 //
 //This program is free software: you can redistribute it and/or modify
 //it under the terms of the GNU General Public License as published by
-//the Free Software Foundation, either version 3 of the License, or
+//the Free Software Foundation either version 3 of the License or
 //(at your option) any later version.
-//
-//This program is distributed in the hope that it will be useful,
+//This program is distributed in the hope that it will be useful
+
 //but WITHOUT ANY WARRANTY; without even the implied warranty of
 //MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //GNU General Public License for more details.
 //
 //You should have received a copy of the GNU General Public License
-//along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//along with this program.  If not see <http://www.gnu.org/licenses/>.
 
 #ifndef __BIQUADFILTER_H__
 #define __BIQUADFILTER_H__
@@ -90,13 +90,13 @@ public:
 	unsigned char getEnvAmount(){return envAmount_;}
 	void setLfoAmount(unsigned char newAmount);
 	unsigned char getLfoAmount(){return lfoAmount_;}
-	void refresh(unsigned long sampleFreq, char lfoOutput, char envOutput);
+	void refresh(unsigned long sampleFreq,char lfoOutput,char envOutput);
 	void processWavetable(Wavetable& sourceWavetable);
 protected:
 private:
 	BiquadFilter( const BiquadFilter &c );
 	BiquadFilter& operator=( const BiquadFilter &c );
-	void BiquadCalculator(FiltType type, float fc, float q, float a, float piOverSf);
+	void BiquadCalculator(FiltType type,float fc,float q,float a,float piOverSf);
 	float BiquadProcess(float bi0);
 }; //BiquadFilter
 
