@@ -25,29 +25,29 @@ AteOscPitch::AteOscPitch()
 AteOscPitch::~AteOscPitch()
 {
 } //~AteOscPitch
-void AteOscPitch::setInput(unsigned int newInp)
+
+unsigned int AteOscPitch::getOutput()
 {
-	input_ = newInp;
-	refresh();
-}
-void AteOscPitch::setOffset(char newOffset)
-{
-	offset_ = newOffset;
-	refresh();
-}
-void AteOscPitch::refresh()
-{
-	//unsigned long f = input_;// ((unsigned int)shapeExponential(cvOutput,MAX_CV,MULT_CV) + 1) >> BS_CV;
-	//f = f * ((unsigned int)shapeExponential(offset_,MAX_ENV,MULT_ENV) + 1) >> BS_ENV;
-	float f = (((float)offset_ / 16)+1) * (float)input_;
-	//long off = ((long)input_ * offset_) >>4;
-	if(f>65535)
+	unsigned int output = input_ + coarseOffset_ + fineOffset_;
+	if(topHalf_==true)
 	{
-		output_ = 65535;
+		output += 4096;
+	}
+	if(output>8128)
+	{
+		return 8128;
 	}
 	else
 	{
-		output_ = (unsigned int)f;
+		return output;
 	}
-	
+}
+
+unsigned int AteOscPitch::getFrequency()
+{
+	unsigned int out = getOutput();
+	unsigned int mult = out / LIN_FREQS_PER_OCT;
+	unsigned int ind = out - (mult * LIN_FREQS_PER_OCT);
+	unsigned long freq = (unsigned long)pgm_read_word(&(POW_TWO[mult])) * pgm_read_word(&(LIN_TO_LOG_FREQ[ind]));
+	return (unsigned int)(freq >> 9);  //scale back down again. 
 }

@@ -44,6 +44,7 @@ public:
 protected:
 private:
 	unsigned long sampleFreq_ = 14080;
+	unsigned char pasteJump_= 0;
 //functions
 public:
 	AtmAudio(unsigned char waveLen);

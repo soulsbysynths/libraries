@@ -19,6 +19,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <string.h>
 #include <stdlib.h>
 #include <avr/eeprom.h>
 #include <util/twi.h>
@@ -43,15 +44,22 @@
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
 #endif
 
+#ifndef HIGH
 #define HIGH 0x1
+#endif
+#ifndef LOW
 #define LOW  0x0
+#endif
+
 
 #define CV_INPUTS 8
 // #define CV_READ_ORDER_SIZE 12
 
 #define F_SCL 100000UL // SCL frequency
-#define I2C_BUFFER_SIZE 3
+#define I2C_BUFFER_SIZE 130
 #define AUDIO_BUFFER_SIZE 256
+
+#define FM24C64B_DEFAULT_ADDRESS        (0x50) /* 1010 + A2 + A1 + A0 = 0x50 default */
 
 #define MCP23017_ADDRESS 0x20
 // registers
@@ -85,6 +93,8 @@
 #define MCP3208_SINGLE    (0b00000110)
 #define MCP3208_DIFFERENTIAL    (0b00000100)
 
+
+
 class AteOscHardware
 {
 	//variables
@@ -106,8 +116,8 @@ class AteOscHardware
 	{
 		CV_FILT = 0,
 		CV_RES = 1,
-		CV_PITCHOFF = 2,
-		CV_FILTOFF = 3,
+		CV_PITCHPOT = 2,
+		CV_FILTPOT = 3,
 		CV_PITCH = 4,
 		CV_PWM = 5,
 		CV_FLANGE = 6,
@@ -143,11 +153,10 @@ class AteOscHardware
 	const LedRgb& getLedSwitch(unsigned char index) const { return ledSwitch_[index]; }
 	char getAudioBuffer(unsigned char sample);
 	unsigned char getAudioBufferLength();
+	unsigned char getAudioMinLength();
+	void setAudioMinLength(unsigned char newLength);
 	void setAudioBufferStatus(AudioBufferStatus newValue);
 	AudioBufferStatus getAudioBufferStatus();
-	unsigned char getAudioCurrent();
-	void setAudioMinLength(unsigned char newValue);
-	unsigned char getAudioMinLength();
 	void refreshLeds();
 	void refreshFlash(unsigned char ticksPassed);
 	void pollCvInputs(unsigned char ticksPassed);

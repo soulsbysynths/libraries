@@ -17,7 +17,8 @@
 #ifndef __ATEOSCPITCH_H__
 #define __ATEOSCPITCH_H__
 
-#include "SsHelpers.h"
+#include <avr/pgmspace.h>
+#include "AteOscPitchProgmem.h"
 
 class AteOscPitch
 {
@@ -25,31 +26,23 @@ class AteOscPitch
 public:
 protected:
 private:
-	const float MAX_ENV = 1.386294361119891;
-	const unsigned char MULT_ENV = 64; 
-	const unsigned char BS_ENV = 6;
-	//const float MAX_LFO = 0.693147180559945;
-	//const unsigned char MULT_LFO = 128;
-	//const unsigned char BS_LFO = 7;
-	//const float MAX_CV = 3.4657359027997265470861606072909;
-	//const unsigned char MULT_CV = 8;
-	//const unsigned char BS_CV = 3;
-	unsigned int input_;
-	unsigned int output_;
-	char offset_;
+	unsigned int input_ = 0;  //12 tones per oct, 768 steps per oct, 64 steps per tone.
+	unsigned char fineOffset_ = 0;  //4 tones, 0-255
+	unsigned int coarseOffset_ = 0;  //half full range = 64 tones, 0-4095
+	bool topHalf_ = false;  //add half range = +4096
 //functions
 public:
 	AteOscPitch();
 	~AteOscPitch();
-	void setInput(unsigned int newInp);
-	unsigned int getOutput(){return output_;}
-	void setOffset(char newOffset);
+	void setInput(unsigned int newInp){input_ = newInp;}
+	unsigned int getOutput();
+	unsigned int getFrequency();  //outputs real freq << 2  (standard Atmegatron pitch res)
+	void setFineOffset(unsigned char newOffset){fineOffset_ = newOffset;}
+	void setCoarseOffset(unsigned int newOffset){coarseOffset_ = newOffset;}
+	void setTopHalf(bool newValue){topHalf_ = newValue;}
 protected:
-private:
-	void refresh();
 	AteOscPitch( const AteOscPitch &c );
 	AteOscPitch& operator=( const AteOscPitch &c );
-
 }; //AteOscPitch
 
 #endif //__ATEOSCPITCH_H__

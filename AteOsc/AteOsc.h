@@ -24,7 +24,6 @@ class AteOsc : public AteOscHardwareBase, AteOscEngineBase
 	AteOscHardware& hardware_;
 	AteOscEngine& engine_;
 	const unsigned char IS_FUNC_FILL[2] = {0xFC,0x21};
-	const unsigned char IS_SHIFT_HOLD[2] = {0x20,0x81};
 	const unsigned char LED_FLASH_TICKS = 4;
 	unsigned char testNote_ = 60;
 	//functions
@@ -38,13 +37,15 @@ class AteOsc : public AteOscHardwareBase, AteOscEngineBase
 	void hardwareCvInputChanged(unsigned char control, unsigned int newValue);
 	void hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise);
 	void hardwareAudioBufferStatusChanged(unsigned char newStatus);
-	void engineFunctionChanged(unsigned char func, unsigned char val, bool opt);
-	void engineBankChanged(unsigned char bank);
+	void engineFunctionChanged(unsigned char func, unsigned char val);
+	void engineOptionChanged(unsigned char func, bool opt);
+	void engineMinLengthChanged(unsigned char newLength);
 	protected:
 	private:
 	AteOscEngine::Ctrl cHardToEngFunc(AteOscHardware::CvInputName cvInput);
 	AteOsc( const AteOsc &c );
 	AteOsc& operator=( const AteOsc &c );
+	bool isShiftHold(AteOscEngine::Func func);
 }; //AteOsc
 
 #endif //__ATEOSC_H__

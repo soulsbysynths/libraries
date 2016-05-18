@@ -28,10 +28,6 @@ AteOscEngine::AteOscEngine(AteOscEngineBase* base)
 // default destructor
 AteOscEngine::~AteOscEngine()
 {
-	if(oscillator_!=NULL)
-	{
-		delete oscillator_;
-	}
 	if(audio_!=NULL)
 	{
 		delete audio_;
@@ -54,10 +50,9 @@ void AteOscEngine::construct(AteOscEngineBase* base)
 {
 	base_ = base;
 	patch_ = new AteOscPatch(this);
-	oscillator_ = new AteOscOscillator(patch_->PATCH_SIZE*16);
-	audio_ = new AtmAudio(128);
+	audio_ = new AtmAudio(LARGEST_WAVELENGTH);
 	audio_->resizeWavetable(waveLength_);
-	flanger_ = new Flanger(128);
+	flanger_ = new Flanger(LARGEST_WAVELENGTH);
 	flanger_->resizeWavetable(waveLength_);
 	pwm_ = new Pwm(waveLength_);
 }
@@ -77,45 +72,47 @@ void AteOscEngine::initialize()
 		patchValueChanged(i,patch_->getFunctionValue(i));
 		patchOptionChanged(i,patch_->getOptionValue(i));
 	}
-	filter_.setEnvAmount(255);
-	filter_.setLfoAmount(255);
-	filter_.setFc(10);
 	pitch_.setInput(110<<1);
-	//filter_.setSampFreqTracking(false);
 	pwm_->setEnvAmount(255);
 	flanger_->setEnvAmount(255);
+	filter_.setAbsoluteFc(true);
 	setFunction(FUNC_WAVE);
 }
 void AteOscEngine::poll(unsigned char ticksPassed)
 {
 	unsigned char i;
-	
+	unsigned long sf = 0;
 	//pitch_.setInput(440<<2);
 	if(patch_->getOptionValue(FUNC_PORTA)==true)
 	{
-		portamento_.setInput(pitch_.getOutput());
+		portamento_.setInput(pitch_.getFrequency());
 		portamento_.refresh(ticksPassed);
-		audio_->setSampleFreq((unsigned long)portamento_.getOutput() * (waveLength_>>2));
+		sf = (unsigned long)portamento_.getOutput() * (waveLength_>>2);
 	}
 	else
 	{
-		audio_->setSampleFreq((unsigned long)quantize_.processPitch(pitch_.getOutput()) * (waveLength_>>2));
+		sf = (unsigned long)quantize_.processPitch(pitch_.getFrequency()) * (waveLength_>>2);
 	}
-	
+	if(sf!=audio_->getSampleFreq())
+	{
+		audio_->setSampleFreq(sf);
+		//filter_.refresh(sf);
+		filter_.refresh(sf,NULL,NULL);
+	}
+
+
 	Wavetable working_buffer_(waveLength_);
-	oscillator_->copyWavetable(working_buffer_);
-	pwm_->processWavetable(working_buffer_,(char)(patch_->getCtrlValue(CTRL_PWM)>>1),0);
+	oscillator_.copyWavetable(working_buffer_);
+	pwm_->processWavetable(working_buffer_,(char)(patch_->getCtrlValue(CTRL_PWM)>>1),NULL);
 	if(patch_->getOptionValue(FUNC_BITCRUSH)==true)
 	{
 		wavecrusher_.processWavetable(working_buffer_);
 	}
-		
-	unsigned char mod = patch_->getCtrlValue(CTRL_FILTOFF)>>1;
-	filter_.refresh(audio_->getSampleFreq(),(char)mod,(char)mod);
+	
 	filter_.processWavetable(working_buffer_);
 	if(patch_->getCtrlValue(CTRL_FX)>0)  //not nice as flanger buffer isn't updated when 0
 	{
-		flanger_->processWavetable(working_buffer_,(char)(patch_->getCtrlValue(CTRL_FX)>>1),0);
+		flanger_->processWavetable(working_buffer_,(char)(patch_->getCtrlValue(CTRL_FX)>>1),NULL);
 	}
 	if(patch_->getOptionValue(FUNC_BITCRUSH)==false)
 	{
@@ -129,25 +126,10 @@ void AteOscEngine::setFunction(AteOscEngine::Func newFunc)
 {
 	bool col;
 	function_ = newFunc;
-	base_->engineFunctionChanged((unsigned char)function_,patch_->getFunctionValue(function_),patch_->getOptionValue(function_));
+	base_->engineFunctionChanged((unsigned char)function_,patch_->getFunctionValue(function_));
+	base_->engineOptionChanged((unsigned char)function_,patch_->getOptionValue(function_));
 }
 
-void AteOscEngine::setFrequency(unsigned int newCvValue)
-{
-	unsigned int lookup = newCvValue % CV_VALS_PER_OCT;
-	unsigned int baseFreq = pgm_read_word(&(CV_TO_FREQ[lookup]));
-	unsigned int mult = newCvValue / CV_VALS_PER_OCT;
-	pitch_.setInput(baseFreq>>(6-mult));
-	//pitch_.setInput(880<<2);
-}
-void AteOscEngine::setFiltFc(unsigned int newCvValue)
-{
-	//*****THIS MUST BE UPDATED TO BE LIKE PITCH
-	newCvValue >>= 4;
-	filter_.setFc((unsigned char)newCvValue);
-	//unsigned char mod = patch_->getCtrlValue(CTRL_FILTOFF)>>1;
-	//filter_.refresh(audio_->getSampleFreq(),(char)mod,(char)mod);
-}
 void AteOscEngine::setWavelength(unsigned char newValue)
 {
 	if(newValue!=waveLength_)
@@ -159,25 +141,37 @@ void AteOscEngine::setWavelength(unsigned char newValue)
 	}
 }
 
+void AteOscEngine::setFilterFcInput(unsigned int newInputValue)
+{
+	filterFc_.setInput(newInputValue);
+	//filter_.setFc(filterFc_.getOutput()>>1);  //twice range of pitch because sf = 2 * f
+	filter_.setFcAbs(filterFc_.getOutput()>>1);  //twice range of pitch because sf = 2 * f
+	//filter_.refresh(audio_->getSampleFreq());
+	filter_.refresh(audio_->getSampleFreq(),NULL,NULL);
+}
+
 //****************************************patch events********************************************
 void AteOscEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 {
-	bool forceEvent = false;
 	switch (func)
 	{
 		case FUNC_WAVE:
-		oscillator_->setTable(newValue);
+		oscillator_.setTable(newValue);
 		break;
 		case FUNC_WAVELEN:
 		setWavelength(1<<(newValue+4));
 		break;
-		case FUNC_CAPFREQ:
+		case FUNC_MINLENGTH:
+		base_->engineMinLengthChanged(pgm_read_byte(&(AUDIO_MIN_LENGTH[newValue])));
 		break;
-		case FUNC_MINCAPLEN:
-		forceEvent = true;
+		case FUNC_PITCHCOARSE:
+		pitch_.setCoarseOffset((unsigned int)newValue<<8);
 		break;
 		case FUNC_FILT:
+		//filter_.setType((BiquadFilterFM::FiltType) newValue);
 		filter_.setType((BiquadFilter::FiltType) newValue);
+		//filter_.refresh(audio_->getSampleFreq());
+		filter_.refresh(audio_->getSampleFreq(),NULL,NULL);
 		break;
 		case FUNC_PORTA:
 		portamento_.setSpeed(pgm_read_word(&(PORTA_SPEED[newValue])));
@@ -194,9 +188,9 @@ void AteOscEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		wavecrusher_.setType(newValue);
 		break;
 	}
-	if(func==function_  || forceEvent==true)
+	if(func==function_)
 	{
-		base_->engineFunctionChanged(func,newValue,patch_->getOptionValue(func));
+		base_->engineFunctionChanged(func,newValue);
 	}
 }
 
@@ -206,17 +200,22 @@ void AteOscEngine::patchOptionChanged(unsigned char func, bool newOpt)
 	switch (func)
 	{
 		case FUNC_WAVE:
-		oscillator_->setBank((unsigned char)newOpt);
+		oscillator_.setBank((unsigned char)newOpt);
 		break;
-		case FUNC_WAVELEN:
-		oscillator_->setUserMode(newOpt);
+		case FUNC_PITCHCOARSE:
+		pitch_.setTopHalf(newOpt);
 		break;
 		case FUNC_FILT:
 		filter_.setGainAdj(newOpt);
+		filter_.refresh(audio_->getSampleFreq(),NULL,NULL);
 		break;
 		case FUNC_PORTA:
 		//nothing to do here
 		break;
+	}
+	if(func==function_)
+	{
+		base_->engineOptionChanged(func,newOpt);
 	}
 }
 
@@ -225,17 +224,20 @@ void AteOscEngine::patchCtrlChanged(unsigned char anlControl_, unsigned char new
 	unsigned char mod;
 	switch (anlControl_)
 	{
-		case CTRL_PITCHOFF:
-		pitch_.setOffset((char)(newValue>>1));
+		case CTRL_PITCHFINE:
+		pitch_.setFineOffset(newValue);
 		break;
 		case CTRL_FILTOFF:
-		//mod = newValue>>1;
-		//filter_.refresh(audio_->getSampleFreq(),(char)mod,(char)mod);
+		filterFc_.setCoarseOffset((unsigned int)newValue<<5);
+		//filter_.setFc(filterFc_.getOutput()>>1);
+		filter_.setFcAbs(filterFc_.getOutput()>>1);
+		//filter_.refresh(audio_->getSampleFreq());
+		filter_.refresh(audio_->getSampleFreq(),NULL,NULL);
 		break;
 		case CTRL_Q:
 		filter_.setQ(newValue);
-		//mod = patch_->getCtrlValue(CTRL_FILTOFF) >> 1;
-		//filter_.refresh(audio_->getSampleFreq(),(char)mod,(char)mod);
+		//filter_.refresh(audio_->getSampleFreq());
+		filter_.refresh(audio_->getSampleFreq(),NULL,NULL);
 		break;
 	}
 }

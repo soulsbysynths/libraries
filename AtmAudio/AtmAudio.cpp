@@ -34,7 +34,7 @@ AtmAudio::AtmAudio(unsigned char waveLen)
 	resizeWavetable(waveLen);
 	audioBuffer = new Wavetable(waveLen);
 	#ifdef UPDATE_ON_ZERO
-		audioDoubleBuffer = new Wavetable(waveLen);
+	audioDoubleBuffer = new Wavetable(waveLen);
 	#endif
 } //AtmAudio
 
@@ -120,6 +120,13 @@ void AtmAudio::setSampleFreq(unsigned long newSf)
 		}
 		ocr1a = ocr-1;
 		updateOcr = true;
+		#ifdef UPDATE_ON_ZERO
+		if(bufferJump<pasteJump_)
+		{
+			pasteJump_ = bufferJump;
+			doPaste = true;  //this is because orig paste happened at bigger jump, so missing values
+		}
+		#endif
 	}
 }
 
@@ -138,8 +145,8 @@ void AtmAudio::pasteWavetable(Wavetable& sourceWavetable)
 		for(i=0;i<audioWaveLength;++i)
 		{
 			audioDoubleBuffer->setSample(i,sourceWavetable.getSample(i));
-			audioBuffer->setSample(i,sourceWavetable.getSample(i));
 		}
+		pasteJump_ = bufferJump;
 		doPaste = true;
 	}
 	#else
@@ -155,26 +162,26 @@ ISR(TIMER1_COMPA_vect)
 	static unsigned char jump = 1;
 	static unsigned char bufferIndex = 0;
 
-	if(updateOcr==true && bufferIndex==0)
+	if(updateOcr && !bufferIndex)
 	{
 		OCR1A = ocr1a;
 		jump = bufferJump;
 		updateOcr = false;
 	}
 	#ifdef UPDATE_ON_ZERO
-	if(bufferIndex==0)
+	if(!bufferIndex)
 	{
-		if(doPaste==true)
+		if(doPaste)
 		{
 			pasting = true;
 			doPaste = false;
 		}
-		else if(pasting==true)
+		else if(pasting)
 		{
 			pasting = false;
 		}
 	}
-	if(pasting==true)
+	if(pasting)
 	{
 		char samp = audioDoubleBuffer->getSample(bufferIndex);
 		audioBuffer->setSample(bufferIndex, samp);

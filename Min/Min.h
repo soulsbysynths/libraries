@@ -32,6 +32,7 @@ private:
 	MinEngine& engine_;
 	MinHardware& hardware_;
 	static const unsigned char MIDI_UBRR = 63; //(F_CPU / (MIDI_BAUD*8)) - 1
+	static const unsigned char FLASH_TICKS = 8;
 //functions
 public:
 	Min();

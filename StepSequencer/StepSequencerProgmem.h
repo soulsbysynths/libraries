@@ -26,7 +26,7 @@ static const unsigned char SEQ_BS[16] PROGMEM = {12,11,10,16,11,9,15,10,8,16,7,1
 static const unsigned char SEQ_BIT_MASK = 15;
 static const unsigned char SEQ_LENGTH = 16;
 
-static const char seqPatterns[16][16] PROGMEM =
+static const unsigned char seqPatterns[16][16] PROGMEM =
 {
 	
 	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},

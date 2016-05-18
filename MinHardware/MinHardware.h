@@ -41,12 +41,19 @@
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
 #endif
 
-#define NULL 0
+#ifndef NULL
+#define NULL 0x00
+#endif
 
-#define HIGH 0x1
-#define LOW  0x0
+#ifndef HIGH
+#define HIGH 0x01
+#endif
+#ifndef LOW
+#define LOW 0x00
+#endif
 
 #define MIDI_BUFFER_SIZE 64
+#define MIDI_BUFFER_MASK 63
 
 class MinHardware
 {
@@ -62,7 +69,7 @@ class MinHardware
 	static const unsigned char SW_BANK = 5;
 	static const unsigned int HOLD_EVENT_TICKS = 2000;
 	static const unsigned char SYSEX_PRODUCT = 0;
-	
+	static const unsigned char LED_FLASH_SCALE = 16;
 	enum MidiError : unsigned char
 	{
 		MIDIERR_NONE,
@@ -79,6 +86,7 @@ class MinHardware
 	LedRgb led_[2];
 	static const unsigned int FIRST_BOOT_ADDR = 1023;
 	static const unsigned int FIRST_BOOT_VAL = 127;
+	unsigned char ledFlashTickCnt = 0;
 	//functions
 	public:
 	static MinHardware& getInstance()
@@ -96,7 +104,7 @@ class MinHardware
 	bool getFirstBoot();
 	void setFirstBoot(bool newValue);
 	void refreshLEDs();
-	bool refreshFlash(unsigned char ticksPassed);
+	void refreshFlash(unsigned char ticksPassed);
 	void pollAnlControls(unsigned char ticksPassed);
 	void pollSwitches(unsigned char ticksPassed);
 	void beginMidi(unsigned int ubrr);

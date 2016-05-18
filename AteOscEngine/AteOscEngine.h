@@ -23,6 +23,7 @@
 #include "AteOscPatchBase.h"
 #include "AteOscEngineProgmem.h"
 #include "AteOscEngineBase.h"
+//#include "BiquadFilterFM.h"
 #include "BiquadFilter.h"
 #include "Portamento.h"
 #include "QuantizePitch.h"
@@ -45,7 +46,7 @@ class AteOscEngine : public AteOscPatchBase
 	}
 	enum Ctrl : unsigned char
 	{
-		CTRL_PITCHOFF = 0,
+		CTRL_PITCHFINE = 0,
 		CTRL_PWM,
 		CTRL_FILTOFF,
 		CTRL_Q,
@@ -56,8 +57,8 @@ class AteOscEngine : public AteOscPatchBase
 	{
 		FUNC_WAVE = 0,
 		FUNC_WAVELEN,
-		FUNC_CAPFREQ,
-		FUNC_MINCAPLEN,
+		FUNC_PITCHCOARSE,
+		FUNC_MINLENGTH,
 		FUNC_FILT,
 		FUNC_PORTA,
 		FUNC_BITCRUSH,
@@ -67,16 +68,17 @@ class AteOscEngine : public AteOscPatchBase
 	private:
 	static const unsigned char FUNCS = 8;
 	static const unsigned char CTRLS = 6;
-	static const unsigned char HIGH = 1;
-	static const unsigned char LOW = 0;
+	static const unsigned char LARGEST_WAVELENGTH = 128;
 	AteOscPatch* patch_;
-	AteOscOscillator* oscillator_;
+	AteOscOscillator oscillator_;
 	Func function_ = FUNC_WAVE;
 	AteOscEngineBase* base_ = NULL;
 	AtmAudio* audio_;
+	//BiquadFilterFM filter_;
 	BiquadFilter filter_;
 	Portamento portamento_;
 	AteOscPitch pitch_;
+	AteOscPitch filterFc_;
 	QuantizePitch quantize_;
 	WaveCrusher wavecrusher_;
 	Flanger* flanger_;
@@ -87,16 +89,17 @@ class AteOscEngine : public AteOscPatchBase
 	void construct(AteOscEngineBase* base);
 	const AteOscPatch* getPatchPtr() const { return  patch_; }
 	AteOscPatch* getPatchPtr() { return patch_; }
-	const AteOscOscillator* getOscillatorPtr() const { return  oscillator_; }
-	AteOscOscillator* getOscillatorPtr() { return oscillator_; }
+	const AteOscOscillator& getOscillator() const { return  oscillator_; }
+	AteOscOscillator& getOscillator() { return oscillator_; }
+	AteOscPitch& getPitch() { return pitch_; }
+	const AteOscPitch& getPitch() const { return pitch_; }
 	void initialize();
 	void poll(unsigned char ticksPassed);
 	void setFunction(AteOscEngine::Func new_func);
 	AteOscEngine::Func getFunction(){return function_;}
-	void setFrequency(unsigned int newCvValue);
-	void setFiltFc(unsigned int newCvValue);
 	void setWavelength(unsigned char newValue);
 	unsigned char getWavelength(){return waveLength_;}
+	void setFilterFcInput(unsigned int newInputValue);
 	void patchValueChanged(unsigned char func, unsigned char newValue);
 	void patchOptionChanged(unsigned char func, bool new_opt);
 	void patchCtrlChanged(unsigned char anlControl_, unsigned char newValue);

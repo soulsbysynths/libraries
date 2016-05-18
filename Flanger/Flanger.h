@@ -28,6 +28,7 @@ public:
 protected:
 private:
 	unsigned char waveLength_ = 128;
+	unsigned char waveLengthMask_ = 127;
 	unsigned char lfoAmount_ = 0;
 	unsigned char envAmount_ = 0;
 	unsigned char scale_ = 1;
