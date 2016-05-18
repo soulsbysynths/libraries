@@ -26,17 +26,17 @@ class AteOscPitch
 public:
 protected:
 private:
-	unsigned int input_ = 0;
-	unsigned char fineOffset_ = 0;
-	unsigned int coarseOffset_ = 0;
-	bool topHalf_ = false;
+	unsigned int input_ = 0;  //12 tones per oct, 768 steps per oct, 64 steps per tone.
+	unsigned char fineOffset_ = 0;  //4 tones, 0-255
+	unsigned int coarseOffset_ = 0;  //half full range = 64 tones, 0-4095
+	bool topHalf_ = false;  //add half range = +4096
 //functions
 public:
 	AteOscPitch();
 	~AteOscPitch();
 	void setInput(unsigned int newInp){input_ = newInp;}
 	unsigned int getOutput();
-	unsigned int getFrequency();
+	unsigned int getFrequency();  //outputs real freq << 2  (standard Atmegatron pitch res)
 	void setFineOffset(unsigned char newOffset){fineOffset_ = newOffset;}
 	void setCoarseOffset(unsigned int newOffset){coarseOffset_ = newOffset;}
 	void setTopHalf(bool newValue){topHalf_ = newValue;}

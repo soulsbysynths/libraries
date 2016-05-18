@@ -41,24 +41,19 @@ void AteOscHardwareTester::init()
 }
 void AteOscHardwareTester::refreshAudioTest()
 {
-	unsigned char i;
-	unsigned int scaleWaveLen,skip,pos;
-	static const unsigned char SCALE = 8;
-	
 	//hardware_.getLedCircular(AteOscHardware::VALUE).select(hardware_.getAudioCurrent()>>4);
-	
 	if(hardware_.getAudioBufferStatus()==AteOscHardware::BUFFER_CAPTURED)
 	{
-		scaleWaveLen = hardware_.getAudioBufferLength() << SCALE;
-		skip = scaleWaveLen / WAVE_LEN;
-		pos = 0;
-		for(i=0;i<WAVE_LEN;++i)
+		//see excel sheet for proof of this interpolation
+		unsigned int pos = 0;
+		unsigned int jump = (unsigned int)hardware_.getAudioBufferLength() << 1;  //0-255
+		for(unsigned char i=0;i<WAVE_LEN;++i)
 		{
-			wavetable_.setSample(i,hardware_.getAudioBuffer(pos >> SCALE));
-			pos += skip;
+			wavetable_.setSample(i,hardware_.getAudioBuffer(pos >> 8));
+			pos += jump;
 		}
-		hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_IDLE);
 		audio_->pasteWavetable(wavetable_);
+		hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_IDLE);
 	}
 	if(hardware_.getAudioBufferStatus()!=AteOscHardware::BUFFER_CAPTURING && hardware_.getAudioBufferStatus()!=AteOscHardware::BUFFER_WAITZCROSS)
 	{
@@ -172,9 +167,6 @@ void AteOscHardwareTester::hardwareSwitchChanged(unsigned char sw, unsigned char
 			test_ = TEST_POTS;
 			hardware_.getLedSwitch(sw).setColour(LedRgb::GREEN);
 			refreshSineWave();
-		}
-		else
-		{
 			Serial.println("Writing");
 			for (i=0;i<MEMTEST_SIZE;++i)
 			{
@@ -188,6 +180,9 @@ void AteOscHardwareTester::hardwareSwitchChanged(unsigned char sw, unsigned char
 				Serial.println(readtest[i],DEC);
 			}
 			Serial.println("Finished");
+		}
+		else
+		{
 			test_ = TEST_AUDIO;
 		}
 		

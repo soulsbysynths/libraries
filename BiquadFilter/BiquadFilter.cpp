@@ -91,14 +91,14 @@ void BiquadFilter::refresh(unsigned long sampleFreq, char lfoOutput, char envOut
 	{
 		max_fc = sampleFreq >> 1;
 		max_fc -= sampleFreq >> 6;
-		if(sfTracking_==true)
+		if(!absoluteFc_)
 		{
 			f = max_fc;
-			f = f * (fc_ + 1) >> 8;
+			f = f * (fcRel_ + 1) >> 8;
 		}
 		else
 		{
-			f = ((unsigned long)fc_ << 3);
+			f = (unsigned long)fcAbs_;
 		}
 		
 		if(lfoAmount_>0)
@@ -113,7 +113,10 @@ void BiquadFilter::refresh(unsigned long sampleFreq, char lfoOutput, char envOut
 		{
 			f = max_fc;
 		}
-		
+		if(f<20)
+		{
+			f = 20;
+		}
 	}
 
 	BiquadCalculator(type_,(float)f,(float)q_ * MULT_Q + MIN_Q, a_,M_PI/sampleFreq);

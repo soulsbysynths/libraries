@@ -227,7 +227,7 @@ void Min::hardwareSwitchHeld(unsigned char switch_)
 	if(switch_==MinHardware::SW_FUNC_DEC)
 	{
 		engine_.getPatchPtr()->writePatch(PATCH_NUM);
-		hardware_.getLed(MinHardware::LED_FUNC).flash(4,2,2,(LedRgb::LedRgbColour)col,(LedRgb::LedRgbColour)invcol,true);
+		hardware_.getLed(MinHardware::LED_FUNC).flash(4,FLASH_TICKS,FLASH_TICKS,(LedRgb::LedRgbColour)col,(LedRgb::LedRgbColour)invcol,true);
 		hardware_.setFirstBoot(false);
 	}
 }

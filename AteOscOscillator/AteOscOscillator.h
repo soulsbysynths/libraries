@@ -30,27 +30,25 @@ protected:
 private:
 	unsigned char table_ = 0;
 	unsigned char bank_ = 0;
-	bool userMode_ = false;
-	Wavetable* userWavetable_ = NULL;
+	Wavetable* wavetable_ = NULL;
 //functions
 public:
-	AteOscOscillator(unsigned int userWaveStartAddress);
+	AteOscOscillator();
 	~AteOscOscillator();
 	void copyWavetable(Wavetable& destWavetable);
 	void setTable(unsigned char newTable);
 	unsigned char getTable(){return table_;}
-	void setBank(unsigned char newBank){bank_ = newBank;}
+	void setBank(unsigned char newBank);
 	unsigned char getBank(){return bank_;}
-	void setUserMode(bool newUserMode);
-	bool getUserMode(){return userMode_;}
-	void setUserWavetableSample(unsigned char index,char newSample);
-	char getUserWavetableSample(unsigned char index);
+	void setWavetableSample(unsigned char index,char newSample);
+	char getWavetableSample(unsigned char index);
 	unsigned int getWaveLength(){return OSC_WAVELEN;}
-	void writeUserWave(unsigned char waveNum);
-	void readUserWave(unsigned char waveNum);
+	void writeWavetable();
+	void readWavetable();
+	void resetWavetable();
+	void resetFactory();
 protected:
 private:
-	AteOscOscillator() {}
 	AteOscOscillator( const AteOscOscillator &c );
 	AteOscOscillator& operator=( const AteOscOscillator &c );
 

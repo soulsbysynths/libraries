@@ -28,7 +28,7 @@ static volatile int rotEncoderCount[2] = {0};
 static volatile unsigned char switchState[3] = {0};
 static volatile char audioBuffer[AUDIO_BUFFER_SIZE] = {0};
 static volatile unsigned char audioWriteIndex = 0;
-static const unsigned char audioPrescaler = 5;
+static volatile unsigned char audioMinLength = 4;
 static volatile AteOscHardware::AudioBufferStatus audioBufferStatus =  AteOscHardware::BUFFER_IDLE;
 
 static volatile bool i2cTxing = false;
@@ -96,7 +96,17 @@ void readFram(void* data, unsigned int startAddr, size_t size)
 	}
 	memcpy(data,(const void*)i2cBuffer,size);
 }
-
+bool getFramBusy()
+{
+	if(i2cTxing || i2cRxing)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 // default constructor
 AteOscHardware::AteOscHardware(AteOscHardwareBase* base)
 {
@@ -192,14 +202,21 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	}
 
 }
-
 char AteOscHardware::getAudioBuffer(unsigned char sample)
 {
 	return audioBuffer[sample];
 }
 unsigned char AteOscHardware::getAudioBufferLength()
 {
-	return audioWriteIndex + 1;
+	return audioWriteIndex;  //audioWriteIndex starts and stops on zero cross, so top index is audioWriteIndex-1 and len = audioWriteIndex
+}
+unsigned char AteOscHardware::getAudioMinLength()
+{
+	return audioMinLength;
+}
+void AteOscHardware::setAudioMinLength(unsigned char newLength)
+{
+	audioMinLength = newLength;
 }
 void AteOscHardware::setAudioBufferStatus(AudioBufferStatus newValue)
 {
@@ -209,10 +226,9 @@ void AteOscHardware::setAudioBufferStatus(AudioBufferStatus newValue)
 		case BUFFER_IDLE:
 		break;
 		case BUFFER_WAITZCROSS:
-		ADCSRA = 0x8F;
-		bitSet(ADCSRA, ADSC);
 		audioWriteIndex = 0;
 		audioBuffer[AUDIO_BUFFER_SIZE-1] = 0x7F;  //make max value, so not instantly read as zero crossing
+		ADCSRA = 0xCE;  //11001110
 		break;
 	}
 	
@@ -444,8 +460,7 @@ ISR(ADC_vect)
 			audioWriteIndex = 0;
 		}
 		audioWriteIndex++;
-		ADCSRA = 0b10001000  | audioPrescaler;//0x8F;
-		bitSet(ADCSRA, ADSC);
+		ADCSRA = 0xCE; //11001110
 		break;
 		case AteOscHardware::BUFFER_CAPTURING:
 		audioBuffer[audioWriteIndex] = samp - 128;
@@ -453,15 +468,14 @@ ISR(ADC_vect)
 		{
 			audioBufferStatus = AteOscHardware::BUFFER_OVERFLOW;
 		}
-		else if(audioBuffer[audioWriteIndex]>=0 && audioBuffer[audioWriteIndex-1]<0 && audioWriteIndex>=AUDIO_MIN_LEN)
+		else if(audioBuffer[audioWriteIndex]>=0 && audioBuffer[audioWriteIndex-1]<0 && audioWriteIndex>=audioMinLength)
 		{
 			audioBufferStatus = AteOscHardware::BUFFER_CAPTURED;
 		}
 		else
 		{
-			ADCSRA = 0b10001000 | audioPrescaler;//0x8F;
-			bitSet(ADCSRA, ADSC);
 			audioWriteIndex++;  //don't want to inc if finished, want zero cross to next zero cross-1 (waveform looping)
+			ADCSRA = 0xCE; //11001110
 		}
 		
 		break;

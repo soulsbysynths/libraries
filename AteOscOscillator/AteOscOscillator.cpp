@@ -20,20 +20,21 @@ extern void writeMemory(const void* data, void* startAddr, size_t size);
 extern void readMemory(void* data, const void* startAddr, size_t size);
 extern void writeFram(const void* data, unsigned int startAddr, size_t size);
 extern void readFram(void* data, unsigned int startAddr, size_t size);
+extern bool getFramBusy();
 
 // default constructor
-AteOscOscillator::AteOscOscillator(unsigned int userWaveStartAddress)
+AteOscOscillator::AteOscOscillator()
 {
-	userWavetable_ = new Wavetable(OSC_WAVELEN);
-	//readUserWave(0);
+	wavetable_ = new Wavetable(OSC_WAVELEN);
+	resetWavetable();
 } //AteOscOscillator
 
 // default destructor
 AteOscOscillator::~AteOscOscillator()
 {
-	if(userWavetable_ != NULL)
+	if(wavetable_ != NULL)
 	{
-		delete userWavetable_;
+		delete wavetable_;
 	}
 } //~AteOscOscillator
 
@@ -45,20 +46,7 @@ void AteOscOscillator::copyWavetable(Wavetable& destWavetable)
 	unsigned char destWaveLen = destWavetable.getWaveLength();
 	unsigned char jump;
 
-	if(userMode_==true)
-	{
-		if(userWavetable_ != NULL)
-		{
-			//destWavetable = *userWavetable_;
-			jump = OSC_WAVELEN / destWaveLen;
-			for(i=0;i<destWaveLen;++i)
-			{
-				destWavetable.setSample(i,userWavetable_->getSample(pos));
-				pos += jump;
-			}
-		}
-	}
-	else
+	if(wavetable_ != NULL)
 	{
 		if(table_==15 && bank_==0)
 		{
@@ -69,57 +57,83 @@ void AteOscOscillator::copyWavetable(Wavetable& destWavetable)
 		}
 		else
 		{
+			//destWavetable = *userWavetable_;
 			jump = OSC_WAVELEN / destWaveLen;
 			for(i=0;i<destWaveLen;++i)
 			{
-				destWavetable.setSample(i,pgm_read_byte(&(OSC_WAVETABLE[bank_][table_][pos])));
+				destWavetable.setSample(i,wavetable_->getSample(pos));
 				pos += jump;
 			}
 		}
 	}
 }
-
+void AteOscOscillator::setBank(unsigned char newBank)
+{
+	bank_ = newBank;
+	readWavetable();
+}
 void AteOscOscillator::setTable(unsigned char newTable)
 {
 	table_ = newTable;
-	if(userMode_==true)
-	{
-		readUserWave(newTable);
-	}
+	readWavetable();
 }
-void AteOscOscillator::setUserMode(bool newUserMode)
+void AteOscOscillator::setWavetableSample(unsigned char index,char newSample)
 {
-	userMode_ = newUserMode;
-	if(userMode_==true)
-	{
-		readUserWave(table_);
-	}
+	wavetable_->setSample(index,newSample);
 }
-void AteOscOscillator::setUserWavetableSample(unsigned char index,char newSample)
+char AteOscOscillator::getWavetableSample(unsigned char index)
 {
-	userWavetable_->setSample(index,newSample);
+	return wavetable_->getSample(index);
 }
-char AteOscOscillator::getUserWavetableSample(unsigned char index)
+void AteOscOscillator::writeWavetable()
 {
-	return userWavetable_->getSample(index);
-}
-void AteOscOscillator::writeUserWave(unsigned char waveNum)
-{
-	unsigned int addr  = ((unsigned int)waveNum * OSC_WAVELEN);
+	unsigned int waveNum = (bank_ * OSC_TABLES) + table_;
+	unsigned int addr  = waveNum * OSC_WAVELEN;
 	unsigned char data[OSC_WAVELEN];
 	for (unsigned char i=0;i<OSC_WAVELEN;++i)
 	{
-		data[i] = userWavetable_->getSample(i);
+		data[i] = (unsigned char)wavetable_->getSample(i);
 	}
 	writeFram((const void*)data, addr, sizeof(data));
 }
-void AteOscOscillator::readUserWave(unsigned char waveNum)
+void AteOscOscillator::readWavetable()
 {
-	unsigned int addr = ((unsigned int)waveNum * OSC_WAVELEN);
+	unsigned int waveNum = (bank_ * OSC_TABLES) + table_;
+	unsigned int addr = waveNum * OSC_WAVELEN;
 	unsigned char data[OSC_WAVELEN];
 	readFram((void*)data, addr, sizeof(data));
 	for (unsigned char i=0;i<OSC_WAVELEN;++i)
 	{
-		userWavetable_->setSample(i,(char)data[i]);
+		wavetable_->setSample(i,(char)data[i]);
 	}
+}
+void AteOscOscillator::resetWavetable()
+{
+	for(unsigned char i=0;i<OSC_WAVELEN;++i)
+	{
+		wavetable_->setSample(i,(char)pgm_read_byte(&(OSC_WAVETABLE[bank_][table_][i])));
+	}
+}
+void AteOscOscillator::resetFactory()
+{
+	unsigned int waveNum;
+	unsigned int addr;
+	unsigned char data[OSC_WAVELEN];
+	for(unsigned char i=0;i<OSC_BANKS;++i)
+	{
+		for(unsigned char j=0;j<OSC_TABLES;++j)
+		{
+			while (getFramBusy())
+			{
+			}
+			waveNum = (i * OSC_TABLES) + j;
+			addr  = waveNum * OSC_WAVELEN;
+			for (unsigned char k=0;k<OSC_WAVELEN;++k)
+			{
+				data[k] = pgm_read_byte(&(OSC_WAVETABLE[i][j][k]));
+			}
+			writeFram((const void*)data, addr, sizeof(data));			
+		}
+	}
+	resetWavetable();
 }

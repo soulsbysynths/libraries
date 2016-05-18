@@ -52,11 +52,12 @@ private:
 	const unsigned char BS_ENV_LFO = 6;
 	const float MIN_Q = 0.5;
 	const float MULT_Q = 0.076470588235294;
-	unsigned char fc_ = 120;
+	unsigned char fcRel_ = 120;  //this is scaled by sample freq
+	unsigned int fcAbs_ = 10000;
 	unsigned char q_ = 0;
 	FiltType type_ = FILT_LPF;
 	bool gainAdj_ = false;
-	bool sfTracking_ = true;
+	bool absoluteFc_ = false;
 	unsigned char envAmount_ = 0;
 	float envAmountF_ = 0;
 	unsigned char lfoAmount_ = 0;
@@ -76,16 +77,18 @@ private:
 public:
 	BiquadFilter();
 	~BiquadFilter();
-	void setFc(unsigned char newFc){fc_ = newFc;}
-	unsigned char getFc(){return fc_;}
+	void setFc(unsigned char newFc){fcRel_ = newFc;}
+	unsigned char getFc(){return fcRel_;}
+	void setFcAbs(unsigned int newFc){fcAbs_ = newFc;}
+	unsigned int getFcAbs(){return fcAbs_;}
 	void setQ(unsigned char newQ){q_ = newQ;}
 	unsigned char getQ(){return q_;}
 	void setType(FiltType newType);
 	FiltType getType(){return type_;}
 	void setGainAdj(bool newGainAdj);
 	bool getGainAdj(){return gainAdj_;}
-	void setSampFreqTracking(bool newValue){sfTracking_ = newValue;}
-	bool getSampFreqTracking(){return sfTracking_;}
+	void setAbsoluteFc(bool newValue){absoluteFc_ = newValue;}
+	bool getAbsoluteFc(){return absoluteFc_;}
 	void setEnvAmount(unsigned char newAmount);
 	unsigned char getEnvAmount(){return envAmount_;}
 	void setLfoAmount(unsigned char newAmount);

@@ -17,7 +17,7 @@
 #include "MinHardware.h"
 
 //#define DEBUG 1
-	
+
 static volatile unsigned char midiBuffer[MIDI_BUFFER_SIZE] = {0};
 static volatile unsigned char midiWritePos = 0;
 static volatile unsigned char midiReadPos = 0;
@@ -144,31 +144,27 @@ void MinHardware::construct(MinHardwareBase* base)
 	
 }
 
-bool MinHardware::refreshFlash(unsigned char ticksPassed)
+
+void MinHardware::refreshFlash(unsigned char ticksPassed)
 {
 	unsigned char i;
-	bool flashing = false;
-	static unsigned char tickMult = 0;
 	unsigned char tickInc = 0;
 
-	tickMult += ticksPassed;
-	
-	if(tickMult>=64)
+	ledFlashTickCnt += ticksPassed;
+	while (ledFlashTickCnt>=LED_FLASH_SCALE)
 	{
-		tickInc = tickMult >> 6;
-		tickMult -= (tickInc << 6);
+		ledFlashTickCnt -= LED_FLASH_SCALE;
+		tickInc++;
 	}
-
-	for(i=0;i<2;++i)
+	if(tickInc>0)
 	{
-		if(led_[i].refreshFlash(tickInc)==true)
+		for(i=0;i<2;++i)
 		{
-			flashing = true;
+			led_[i].refreshFlash(tickInc);
 		}
 	}
-	
-	return flashing;
 }
+
 void MinHardware::refreshLEDs()
 {
 
@@ -206,7 +202,7 @@ void MinHardware::refreshLEDs()
 	else
 	{
 		bitClear(PORTD,PIND5);
-	}	
+	}
 	
 	if(bitRead((unsigned char)led_[LED_VALUE].getColour(),1)==1)
 	{
@@ -253,18 +249,15 @@ void MinHardware::pollMidi()
 {
 	for(unsigned char i=0;i<MIDI_BUFFER_SIZE;++i)
 	{
-		if(midiReadPos==midiWritePos)
+		unsigned char nextPos = (midiReadPos+1) & MIDI_BUFFER_MASK;
+		if(nextPos==midiWritePos)
 		{
 			break;
 		}
 		else
 		{
+			midiReadPos = nextPos;
 			base_->hardwareMidiReceived(midiBuffer[midiReadPos]);
-			midiReadPos++;
-			if(midiReadPos>=MIDI_BUFFER_SIZE)
-			{
-				midiReadPos = 0;
-			}
 		}
 	}
 
@@ -351,6 +344,7 @@ ISR (PCINT2_vect)
 	switchState[5] = bitRead(inv_pind,PIND4);
 }
 ISR(USART_RX_vect){
+
 	unsigned char error = UCSR0A; //have to check for error before
 	unsigned char data = UDR0;
 	// Check for error
@@ -369,15 +363,15 @@ ISR(USART_RX_vect){
 	}
 	else
 	{
-		midiBuffer[midiWritePos] = data;
-		midiWritePos++;
-		if(midiWritePos>=MIDI_BUFFER_SIZE)
-		{
-			midiWritePos = 0;
-		}
-		if(midiWritePos==midiReadPos)
+		unsigned char nextPos = (midiWritePos+1) & MIDI_BUFFER_MASK;
+		if(nextPos==midiReadPos)
 		{
 			midiError = MinHardware::MIDIERR_BUFFERFULL;
+		}
+		else
+		{
+			midiBuffer[midiWritePos] = data;
+			midiWritePos = nextPos;
 		}
 	}
 }

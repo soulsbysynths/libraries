@@ -44,8 +44,13 @@
 #define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
 #endif
 
+#ifndef HIGH
 #define HIGH 0x1
+#endif
+#ifndef LOW
 #define LOW  0x0
+#endif
+
 
 #define CV_INPUTS 8
 // #define CV_READ_ORDER_SIZE 12
@@ -53,7 +58,6 @@
 #define F_SCL 100000UL // SCL frequency
 #define I2C_BUFFER_SIZE 130
 #define AUDIO_BUFFER_SIZE 256
-#define AUDIO_MIN_LEN 4
 
 #define FM24C64B_DEFAULT_ADDRESS        (0x50) /* 1010 + A2 + A1 + A0 = 0x50 default */
 
@@ -149,6 +153,8 @@ class AteOscHardware
 	const LedRgb& getLedSwitch(unsigned char index) const { return ledSwitch_[index]; }
 	char getAudioBuffer(unsigned char sample);
 	unsigned char getAudioBufferLength();
+	unsigned char getAudioMinLength();
+	void setAudioMinLength(unsigned char newLength);
 	void setAudioBufferStatus(AudioBufferStatus newValue);
 	AudioBufferStatus getAudioBufferStatus();
 	void refreshLeds();

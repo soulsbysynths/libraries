@@ -19,8 +19,9 @@
 
 #include <avr/pgmspace.h>
 #define OSC_WAVELEN 128
-
-const signed char OSC_WAVETABLE[2][16][OSC_WAVELEN] PROGMEM =
+#define OSC_TABLES 16
+#define OSC_BANKS 2
+const signed char OSC_WAVETABLE[OSC_BANKS][OSC_TABLES][OSC_WAVELEN] PROGMEM =
 {
 	{
 		{

@@ -35,6 +35,7 @@ Flanger::~Flanger()
 void Flanger::resizeWavetable(unsigned char newWaveLen)
 {
 	waveLength_ = newWaveLen;
+	waveLengthMask_ = newWaveLen - 1;
 	scale_ = 256 / waveLength_;
 }
 
@@ -58,17 +59,16 @@ void Flanger::setEnvAmount(unsigned char newValue)
 
 void Flanger::processWavetable(Wavetable& sourceWavetable, char envLevel, char lfoLevel)
 {
-	unsigned char i;
 	unsigned char readpos = 0;
 	unsigned char offset = 0;
 	static unsigned char writepos = 0;
-	int input, output;
-	
+	int input;
+	char output;
 	if (lfoAmount_>0 || envAmount_>0)
 	{
-		unsigned char lfoOffset = ((unsigned int)lfoAmount_+1) * (lfoLevel + 127) >> 8;
+		unsigned char lfoOffset = ((unsigned int)lfoAmount_+1) * (unsigned char)(lfoLevel + 127) >> 8;
 		lfoOffset /= scale_;
-		unsigned char envOffset = ((unsigned int)envAmount_+1) * abs(envLevel) >> 7;
+		unsigned char envOffset = ((unsigned int)envAmount_+1) * (unsigned char)abs(envLevel) >> 7;
 		envOffset /= scale_;
 		if(lfoOffset+envOffset>waveLength_)
 		{
@@ -85,23 +85,23 @@ void Flanger::processWavetable(Wavetable& sourceWavetable, char envLevel, char l
 		}
 		if(offset>writepos)
 		{
-			readpos = writepos + waveLength_ - offset;
+			readpos = writepos + (waveLength_ - offset);
 		}
 		else
 		{
 			readpos = writepos - offset;
 		}
-		for(i=0;i<sourceWavetable.getWaveLength();++i)
+		for(unsigned char i=0;i<sourceWavetable.getWaveLength();++i)
 		{
-			input = (sourceWavetable.getSample(i)) + (wavetable_->getSample(readpos)>>fbBs_);
+			input = (int)sourceWavetable.getSample(i) + (wavetable_->getSample(readpos)>>fbBs_);
 			wavetable_->setSample(writepos,constrainChar(input));
 			
 			output = (sourceWavetable.getSample(i)>>dryBs_) + (wavetable_->getSample(readpos)>>wetBs_);
-			sourceWavetable.setSample(i,constrainChar(output));
+			sourceWavetable.setSample(i,output);
 			writepos++;
-			writepos &= (waveLength_-1);
+			writepos &= waveLengthMask_;
 			readpos++;
-			readpos &= (waveLength_-1);
+			readpos &= waveLengthMask_;
 		}
 		cleared_ = false;
 	}

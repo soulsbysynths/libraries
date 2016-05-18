@@ -39,6 +39,7 @@ class AteOsc : public AteOscHardwareBase, AteOscEngineBase
 	void hardwareAudioBufferStatusChanged(unsigned char newStatus);
 	void engineFunctionChanged(unsigned char func, unsigned char val);
 	void engineOptionChanged(unsigned char func, bool opt);
+	void engineMinLengthChanged(unsigned char newLength);
 	protected:
 	private:
 	AteOscEngine::Ctrl cHardToEngFunc(AteOscHardware::CvInputName cvInput);
