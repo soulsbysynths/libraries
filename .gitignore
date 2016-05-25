@@ -10,6 +10,8 @@ avrfix/*
 CD4051/*
 MCP3208/*
 mozz_rand/*
+SimpleSDAudio/*
+MCP23S17/*
 Adafruit_FRAM_I2C-master/Adafruit_FRAM_I2C.cpp
 Adafruit_FRAM_I2C-master/Adafruit_FRAM_I2C.h
 Adafruit_FRAM_I2C-master/examples/MB85RC256V/MB85RC256V.ino
