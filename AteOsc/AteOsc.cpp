@@ -24,25 +24,28 @@ void AteOsc::initialize()
 {
 	hardware_.getRotEncoder(AteOscHardware::FUNCTION).setContinuous(true);
 	engine_.initialize();
+	engine_.getQuantize().setQntKey(hardware_.getQuantKey());
 	hardware_.getLedSwitch(AteOscHardware::FUNCTION).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::GREEN,true);
 	hardware_.getLedSwitch(AteOscHardware::VALUE).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::GREEN,LedRgb::RED,true);
-	//Serial.begin(9600);
 }
-
 void AteOsc::poll(unsigned char ticksPassed)
 {
 	hardware_.pollCvInputs(ticksPassed);
+	hardware_.pollGateInput();
 	hardware_.pollSwitches(ticksPassed);
 	hardware_.pollRotEncoders(ticksPassed);
 	hardware_.pollAudioBufferStatus();
 	hardware_.refreshFlash(ticksPassed);
 	hardware_.refreshLeds();
-	engine_.poll(ticksPassed);
-	if(hardware_.getAudioBufferStatus()==AteOscHardware::BUFFER_OVERFLOW && engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_MINLENGTH)==true)
-	{
-		hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
-	}
+	engine_.pollPitch(ticksPassed);
+	engine_.pollWave();
+	//unsigned char s = hardware_.getAudioBufferStatus();
+	//if(engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_MINLENGTH)==false && !(s==AteOscHardware::BUFFER_CAPTURING || s==AteOscHardware::BUFFER_WAITZCROSS))
+	//{
+	//hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
+	//}
 }
+
 
 AteOscEngine::Ctrl AteOsc::cHardToEngFunc(AteOscHardware::CvInputName cvInput)
 {
@@ -67,7 +70,7 @@ AteOscEngine::Ctrl AteOsc::cHardToEngFunc(AteOscHardware::CvInputName cvInput)
 }
 bool AteOsc::isShiftHold(AteOscEngine::Func func)
 {
-	if(func==AteOscEngine::FUNC_MEM || func==AteOscEngine::FUNC_WAVELEN)
+	if(func==AteOscEngine::FUNC_MEM || func==AteOscEngine::FUNC_WAVELEN || func==AteOscEngine::FUNC_PORTA)
 	{
 		return true;
 	}
@@ -109,18 +112,30 @@ void AteOsc::engineOptionChanged(unsigned char func, bool opt)
 		hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
 	}
 }
+void AteOsc::engineStartCapture(bool way)
+{
+	if(way==true)
+	{
+		hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
+	}
+	else
+	{
+		hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_IDLE);
+	}
+}
 void AteOsc::engineMinLengthChanged(unsigned char newLength)
 {
 	hardware_.setAudioMinLength(newLength);
 }
+void AteOsc::engineDoEvents()
+{
+	hardware_.pollGateInput();
+	hardware_.pollCvPitch();
+	engine_.pollPitch(0);
+}
 //**************************hardware events************************************
 void AteOsc::hardwareCvInputChanged(unsigned char control, unsigned int newValue)
 {
-	//static const float MULT =  1.0199179261845620021111281154094;
-	//static const float OFFSET = -13.19092317;
-	static const unsigned int HALF_SCALE = 2048;
-	static unsigned int lastValue = 0;
-	
 	
 	if(control==AteOscHardware::CV_PITCH)
 	{
@@ -130,23 +145,28 @@ void AteOsc::hardwareCvInputChanged(unsigned char control, unsigned int newValue
 	{
 		engine_.setFilterFcInput((newValue * 15)>>4);  //see excel for why * 0.9367
 	}
-	else if(control==AteOscHardware::CV_CAPTURE)
-	{
-		if(engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_MINLENGTH)==true && lastValue<HALF_SCALE && newValue>=HALF_SCALE)
-		{
-			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
-		}
-		lastValue = newValue;
-	}
 	else
 	{
 		engine_.getPatchPtr()->setCtrlValue((unsigned char)cHardToEngFunc((AteOscHardware::CvInputName)control),newValue>>4);
 	}
-	//Serial.print(control,DEC);
-	//Serial.print(':');
-	//Serial.println(newValue,DEC);
 }
-
+void AteOsc::hardwareGateInputChanged(bool newValue)
+{
+	if(newValue==true)
+	{
+		if(engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_MINLENGTH)==true)
+		{
+			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
+		}
+		else
+		{
+			unsigned char p = engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_WAVE);
+			p++;
+			p &= 0x0F;
+			engine_.getPatchPtr()->setFunctionValue(AteOscEngine::FUNC_WAVE,p);
+		}
+	}
+}
 void AteOsc::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 {
 	bool opt;
@@ -182,6 +202,30 @@ void AteOsc::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 					{
 						hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_IDLE);
 						engine_.getOscillator().resetWavetable();
+					}
+					break;
+					case AteOscEngine::FUNC_PORTA:
+					if(hardware_.getSwitch(sw).getHoldTime()>AteOscHardware::HOLD_EVENT_TICKS)
+					{
+						valueSecondaryMode_ = true;
+						hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::YELLOW);
+						hardware_.getLedCircular(AteOscHardware::VALUE).select(engine_.getQuantize().getQntKey());
+						hardware_.getRotEncoder(AteOscHardware::VALUE).setMaxValue(12);
+						hardware_.getRotEncoder(AteOscHardware::VALUE).setValue(engine_.getQuantize().getQntKey());
+					}
+					else
+					{
+						if(valueSecondaryMode_==true)
+						{
+							valueSecondaryMode_ = false;
+							engineFunctionChanged(AteOscEngine::FUNC_PORTA,engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_PORTA)); //force circ LED through
+							engineOptionChanged(AteOscEngine::FUNC_PORTA,engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_PORTA)); //force sw LED through
+						}
+						else
+						{
+							opt = !engine_.getPatchPtr()->getOptionValue(engine_.getFunction());
+							engine_.getPatchPtr()->setOptionValue(engine_.getFunction(),opt);
+						}
 					}
 					break;
 					case AteOscEngine::FUNC_MEM:
@@ -230,7 +274,16 @@ void AteOsc::hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char ne
 
 	if(rotary==AteOscHardware::VALUE)
 	{
-		engine_.getPatchPtr()->setFunctionValue(engine_.getFunction(),newValue);
+		if(valueSecondaryMode_==true && engine_.getFunction()==AteOscEngine::FUNC_PORTA)
+		{
+			engine_.getQuantize().setQntKey(newValue);
+			hardware_.setQuantKey(newValue);
+			hardware_.getLedCircular(AteOscHardware::VALUE).select(newValue);
+		}
+		else
+		{
+			engine_.getPatchPtr()->setFunctionValue(engine_.getFunction(),newValue);
+		}
 	}
 }
 
@@ -250,7 +303,7 @@ void AteOsc::hardwareAudioBufferStatusChanged(unsigned char newStatus)
 		break;
 		case AteOscHardware::BUFFER_IDLE:
 		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::GREEN);
-		if(engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_MINLENGTH)==true)
+		if(engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_MINLENGTH)==false)
 		{
 			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
 		}

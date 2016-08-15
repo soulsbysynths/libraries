@@ -16,8 +16,8 @@
 
 #include "AteOscOscillator.h"
 
-extern void writeMemory(const void* data, void* startAddr, size_t size);
-extern void readMemory(void* data, const void* startAddr, size_t size);
+//extern void writeMemory(const void* data, void* startAddr, size_t size);
+//extern void readMemory(void* data, const void* startAddr, size_t size);
 extern void writeFram(const void* data, unsigned int startAddr, size_t size);
 extern void readFram(void* data, unsigned int startAddr, size_t size);
 extern bool getFramBusy();

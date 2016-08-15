@@ -43,11 +43,10 @@ unsigned int AteOscPitch::getOutput()
 	}
 }
 
-unsigned int AteOscPitch::getFrequency()
+unsigned int AteOscPitch::calcFrequency(unsigned int linearFreq)
 {
-	unsigned int out = getOutput();
-	unsigned int mult = out / LIN_FREQS_PER_OCT;
-	unsigned int ind = out - (mult * LIN_FREQS_PER_OCT);
+	unsigned int mult = linearFreq / LIN_FREQS_PER_OCT;
+	unsigned int ind = linearFreq - (mult * LIN_FREQS_PER_OCT);
 	unsigned long freq = (unsigned long)pgm_read_word(&(POW_TWO[mult])) * pgm_read_word(&(LIN_TO_LOG_FREQ[ind]));
 	return (unsigned int)(freq >> 9);  //scale back down again. 
 }

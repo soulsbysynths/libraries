@@ -21,40 +21,47 @@ QuantizePitch::~QuantizePitch()
 
 unsigned int QuantizePitch::processPitch(unsigned int sourcePitch)
 {
-	unsigned int quantized = getClosest(sourcePitch);
-	unsigned int out = (((unsigned long)quantized * qntAmout) >> qntAmountBs) + (((unsigned long)sourcePitch * (qntAmountMax-qntAmout)) >> qntAmountBs);
-	return out;
+	unsigned int offset = LIN_FREQS_PER_OCT - ((unsigned int)qntKey * LIN_FREQS_PER_NOTE);
+	unsigned int offsetPitch = sourcePitch + offset;
+	unsigned int pitch = offsetPitch % LIN_FREQS_PER_OCT;
+	unsigned int oct = offsetPitch - pitch;
+	return getClosest(pitch) + oct - offset;
 }
 
 unsigned int QuantizePitch::getClosest(unsigned int val) {
 
 	char lo = 0;
-	char hi = MIDI_FREQS_MAX_INDEX;
-	char best_ind = lo;
+	char hi = pgm_read_byte(&(QUANT_SCALES_MAX_INDEX[qntScale]));
+	char bestIndex = lo;
 	char mid;
+	unsigned int test = 0;
+	unsigned int best = (unsigned int)pgm_read_byte(&(QUANT_SCALES[qntScale][bestIndex])) << 6;
 	while (lo <= hi)
 	{
-		mid = lo + (hi - lo)  /2;
-		if(pgm_read_word(&(MIDI_FREQS[mid])) < val)
+		mid = lo + (hi - lo) / 2;
+		test = (unsigned int)pgm_read_byte(&(QUANT_SCALES[qntScale][mid])) << 6;
+		if(test < val)
 		{
 			lo = mid + 1;
 		}
 		
-		else if(pgm_read_word(&(MIDI_FREQS[mid])) > val)
+		else if(test > val)
 		{
 			hi = mid - 1;
 		}
 		else
 		{
-			best_ind = mid;
+			bestIndex = mid;
+			best = test;
 			break;
 		}
 		// check if data[mid] is closer to val than data[best_ind]
-		if(absdiff(pgm_read_word(&(MIDI_FREQS[mid])),val) < absdiff(pgm_read_word(&(MIDI_FREQS[best_ind])),val))
+		if(absdiff(test,val) < absdiff(best,val))
 		{
-			best_ind = mid;
+			bestIndex = mid;
+			best = (unsigned int)pgm_read_byte(&(QUANT_SCALES[qntScale][bestIndex])) << 6;
 		}
 	}
 
-	return pgm_read_word(&(MIDI_FREQS[best_ind]));
+	return best;
 }

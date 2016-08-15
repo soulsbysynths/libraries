@@ -14,6 +14,7 @@
 #include "AteOscHardware.h"
 #include "AteOscHardwareBase.h"
 #include "SsHelpers.h"
+//#include "Arduino.h"
 
 class AteOsc : public AteOscHardwareBase, AteOscEngineBase
 {
@@ -26,6 +27,7 @@ class AteOsc : public AteOscHardwareBase, AteOscEngineBase
 	const unsigned char IS_FUNC_FILL[2] = {0xFC,0x21};
 	const unsigned char LED_FLASH_TICKS = 4;
 	unsigned char testNote_ = 60;
+	bool valueSecondaryMode_ = false;
 	//functions
 	public:
 	AteOsc();
@@ -35,17 +37,21 @@ class AteOsc : public AteOscHardwareBase, AteOscEngineBase
 	void hardwareSwitchChanged(unsigned char sw, unsigned char newValue);
 	void hardwareSwitchHeld(unsigned char sw);
 	void hardwareCvInputChanged(unsigned char control, unsigned int newValue);
+	void hardwareGateInputChanged(bool newValue);
 	void hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise);
 	void hardwareAudioBufferStatusChanged(unsigned char newStatus);
 	void engineFunctionChanged(unsigned char func, unsigned char val);
 	void engineOptionChanged(unsigned char func, bool opt);
 	void engineMinLengthChanged(unsigned char newLength);
+	void engineDoEvents();
+	void engineStartCapture(bool way);
 	protected:
 	private:
 	AteOscEngine::Ctrl cHardToEngFunc(AteOscHardware::CvInputName cvInput);
 	AteOsc( const AteOsc &c );
 	AteOsc& operator=( const AteOsc &c );
 	bool isShiftHold(AteOscEngine::Func func);
+	void pollPitch(unsigned char ticksPassed);
 }; //AteOsc
 
 #endif //__ATEOSC_H__

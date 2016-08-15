@@ -23,8 +23,8 @@
 #include "AteOscPatchBase.h"
 #include "AteOscEngineProgmem.h"
 #include "AteOscEngineBase.h"
-//#include "BiquadFilterFM.h"
-#include "BiquadFilter.h"
+#include "BiquadFilterFM.h"
+//#include "BiquadFilter.h"
 #include "Portamento.h"
 #include "QuantizePitch.h"
 #include "AteOscPitch.h"
@@ -32,8 +32,7 @@
 #include "Flanger.h"
 #include "Pwm.h"
 
-
-class AteOscEngine : public AteOscPatchBase
+class AteOscEngine : public AteOscPatchBase, BiquadFilterFMBase
 {
 	
 	//variables
@@ -53,14 +52,25 @@ class AteOscEngine : public AteOscPatchBase
 		CTRL_FX,
 		CTRL_SAMPLE
 	};
+	//enum Func : unsigned char
+	//{
+		//FUNC_WAVE = 0,
+		//FUNC_WAVELEN,
+		//FUNC_PITCHCOARSE,
+		//FUNC_MINLENGTH,
+		//FUNC_FILT,
+		//FUNC_PORTA,
+		//FUNC_BITCRUSH,
+		//FUNC_MEM
+	//};
 	enum Func : unsigned char
 	{
 		FUNC_WAVE = 0,
 		FUNC_WAVELEN,
 		FUNC_PITCHCOARSE,
+		FUNC_PORTA,
 		FUNC_MINLENGTH,
 		FUNC_FILT,
-		FUNC_PORTA,
 		FUNC_BITCRUSH,
 		FUNC_MEM
 	};
@@ -74,8 +84,8 @@ class AteOscEngine : public AteOscPatchBase
 	Func function_ = FUNC_WAVE;
 	AteOscEngineBase* base_ = NULL;
 	AtmAudio* audio_;
-	//BiquadFilterFM filter_;
-	BiquadFilter filter_;
+	BiquadFilterFM* filter_;
+	//BiquadFilter filter_;
 	Portamento portamento_;
 	AteOscPitch pitch_;
 	AteOscPitch filterFc_;
@@ -84,6 +94,7 @@ class AteOscEngine : public AteOscPatchBase
 	Flanger* flanger_;
 	Pwm* pwm_;
 	unsigned char waveLength_ = 128;
+	bool updateFilter_ = false;
 	//functions
 	public:
 	void construct(AteOscEngineBase* base);
@@ -93,8 +104,11 @@ class AteOscEngine : public AteOscPatchBase
 	AteOscOscillator& getOscillator() { return oscillator_; }
 	AteOscPitch& getPitch() { return pitch_; }
 	const AteOscPitch& getPitch() const { return pitch_; }
+	QuantizePitch& getQuantize() { return quantize_; }
+	const QuantizePitch& getQuantize() const { return quantize_; }
 	void initialize();
-	void poll(unsigned char ticksPassed);
+	void pollPitch(unsigned char ticksPassed);
+	void pollWave();
 	void setFunction(AteOscEngine::Func new_func);
 	AteOscEngine::Func getFunction(){return function_;}
 	void setWavelength(unsigned char newValue);
@@ -103,6 +117,7 @@ class AteOscEngine : public AteOscPatchBase
 	void patchValueChanged(unsigned char func, unsigned char newValue);
 	void patchOptionChanged(unsigned char func, bool new_opt);
 	void patchCtrlChanged(unsigned char anlControl_, unsigned char newValue);
+	void filterDoEvents();
 	protected:
 	private:
 	AteOscEngine(AteOscEngineBase* base);
@@ -110,8 +125,6 @@ class AteOscEngine : public AteOscPatchBase
 	AteOscEngine( const AteOscEngine &c );
 	~AteOscEngine();
 	AteOscEngine& operator=( const AteOscEngine &c );
-	
-
 }; //AteOscEngine
 
 #endif //__ATEOSCENGINE_H__

@@ -23,6 +23,8 @@ class AteOscEngineBase
 	virtual void engineFunctionChanged(unsigned char func, unsigned char val) = 0;
 	virtual void engineOptionChanged(unsigned char func, bool opt) = 0;
 	virtual void engineMinLengthChanged(unsigned char newLength) = 0; 
+	virtual void engineDoEvents() = 0;
+	virtual void engineStartCapture(bool way) = 0;
 };
 
 

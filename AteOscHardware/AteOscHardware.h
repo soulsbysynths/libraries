@@ -25,7 +25,7 @@
 #include <util/twi.h>
 #include "AteOscHardwareBase.h"
 #include "SsHelpers.h"
-#include "LedRgb/LedRgb.h"
+#include "LedRgb.h"
 #include "LedCircular.h"
 #include "CvInput.h"
 #include "Switch.h"
@@ -52,7 +52,7 @@
 #endif
 
 
-#define CV_INPUTS 8
+#define CV_INPUTS 7
 // #define CV_READ_ORDER_SIZE 12
 
 #define F_SCL 100000UL // SCL frequency
@@ -92,8 +92,13 @@
 
 #define MCP3208_SINGLE    (0b00000110)
 #define MCP3208_DIFFERENTIAL    (0b00000100)
+#define MCP3208_OFFSET_EEPROM_ADDR 1019
 
-
+#define EEPROM_QUANT_KEY 1015
+#define EEPROM_PITCH_MSB 1016
+#define EEPROM_PITCH_LSB 1018
+#define EEPROM_FILT_MSB 1020
+#define EEPROM_FILT_LSB 1022
 
 class AteOscHardware
 {
@@ -104,6 +109,8 @@ class AteOscHardware
 	static const unsigned int HOLD_EVENT_TICKS = 2000;
 	static const unsigned char AUDIO_INPUT = 0;
 	static const unsigned char LED_FLASH_SCALE = 16;
+	static const unsigned int CV_HALF_SCALE = 2048;
+
 	enum AudioBufferStatus : unsigned char 
 	{
 		BUFFER_IDLE = 0,
@@ -128,6 +135,8 @@ class AteOscHardware
 	AteOscHardwareBase* base_;
 	RotaryEncoder rotEncoder_[2];
 	CvInput cvInput_[CV_INPUTS];
+	bool gateInput_ = false;
+	unsigned int cvCalib_[2][3] = {{0}};  //input (pitch, filt), low/high/high-low
 	Switch switch_[2];
 	LedCircular ledCircular_[2];
 	LedRgb ledSwitch_[2];
@@ -145,6 +154,7 @@ class AteOscHardware
 	const RotaryEncoder& getRotEncoder(unsigned char index) const { return rotEncoder_[index]; }
 	CvInput& getCvInput(unsigned char index) { return cvInput_[index]; }
 	const CvInput& getCvInput(unsigned char index) const { return cvInput_[index]; }
+	bool getGateInput(){return gateInput_;}
 	Switch& getSwitch(unsigned char index) { return switch_[index]; }
 	const Switch& getSwitch(unsigned char index) const { return switch_[index]; }
 	LedCircular& getLedCircular(unsigned char index) { return ledCircular_[index]; }
@@ -157,9 +167,13 @@ class AteOscHardware
 	void setAudioMinLength(unsigned char newLength);
 	void setAudioBufferStatus(AudioBufferStatus newValue);
 	AudioBufferStatus getAudioBufferStatus();
+	unsigned char getQuantKey();
+	void setQuantKey(unsigned char newValue);
 	void refreshLeds();
 	void refreshFlash(unsigned char ticksPassed);
 	void pollCvInputs(unsigned char ticksPassed);
+	void pollCvPitch();
+	void pollGateInput();
 	void pollSwitches(unsigned char ticksPassed);
 	void pollRotEncoders(unsigned char ticksPassed);
 	void pollAudioBufferStatus();

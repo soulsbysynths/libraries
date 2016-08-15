@@ -26,6 +26,7 @@ class AteOscHardwareBase
 	virtual void hardwareCvInputChanged(unsigned char control, unsigned int newValue) = 0;
 	virtual void hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise) = 0;
 	virtual void hardwareAudioBufferStatusChanged(unsigned char newStatus) = 0;
+	virtual void hardwareGateInputChanged(bool newValue) = 0;
 };
 
 #endif /* ATEOSCHARDWAREBASEH_ */

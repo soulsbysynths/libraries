@@ -77,7 +77,7 @@ private:
 	AteOscHardwareTester& operator=( const AteOscHardwareTester &c );
 	void refreshAudioTest();
 	void refreshSineWave();
-	
+	void writeCvCalib(unsigned char cvIp, unsigned int addr);
 }; //AteOscHardwareTester
 
 #endif //__ATEOSCHARDWARETESTER_H__

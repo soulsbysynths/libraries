@@ -10,27 +10,30 @@
 #define __QUANTIZEPITCH_H__
 
 #include "QuantizePitchProgmem.h"
+#include "AteOscPitchProgmem.h"
+
 #define min(a,b) ((a)<(b)?(a):(b))
 #define absdiff(a,b) ((a)>(b)?(a-b):(b-a))
 
 class QuantizePitch
 {
-//variables
-public:
-protected:
-private:
-	const unsigned char qntAmountMax = 16;
-	const unsigned char qntAmountBs = 4;
-	unsigned char qntAmout = 0;
-//functions
-public:
+	//variables
+	public:
+	protected:
+	private:
+	unsigned char qntScale = 0;
+	unsigned char qntKey = 0;  //0 = C
+	//functions
+	public:
 	QuantizePitch();
 	~QuantizePitch();
 	unsigned int processPitch(unsigned int sourcePitch);
-	void setQntAmount(unsigned char newValue){qntAmout = newValue;}
-	unsigned char getQntAmount(){return qntAmout;}
-protected:
-private:
+	void setQntScale(unsigned char newValue){qntScale = newValue;}
+	unsigned char getQntScale(){return qntScale;}
+	void setQntKey(unsigned char newValue){qntKey = newValue;}
+	unsigned char getQntKey(){return qntKey;}
+	protected:
+	private:
 	QuantizePitch( const QuantizePitch &c );
 	QuantizePitch& operator=( const QuantizePitch &c );
 	unsigned int getClosest(unsigned int x);
