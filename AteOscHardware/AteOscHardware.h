@@ -94,12 +94,6 @@
 #define MCP3208_DIFFERENTIAL    (0b00000100)
 #define MCP3208_OFFSET_EEPROM_ADDR 1019
 
-#define EEPROM_QUANT_KEY 1015
-#define EEPROM_PITCH_MSB 1016
-#define EEPROM_PITCH_LSB 1018
-#define EEPROM_FILT_MSB 1020
-#define EEPROM_FILT_LSB 1022
-
 class AteOscHardware
 {
 	//variables
@@ -110,7 +104,11 @@ class AteOscHardware
 	static const unsigned char AUDIO_INPUT = 0;
 	static const unsigned char LED_FLASH_SCALE = 16;
 	static const unsigned int CV_HALF_SCALE = 2048;
-
+	static const unsigned int  EEPROM_QUANT_KEY = 1015;
+	static const unsigned int  EEPROM_PITCH_LOW = 1016; //1.25V
+	static const unsigned int  EEPROM_PITCH_HIGH = 1018; //3.75V
+	static const unsigned int  EEPROM_FILT_LOW = 1020;  //1.25V
+	static const unsigned int  EEPROM_FILT_HIGH = 1022;  //3.75V
 	enum AudioBufferStatus : unsigned char 
 	{
 		BUFFER_IDLE = 0,
@@ -161,6 +159,7 @@ class AteOscHardware
 	const LedCircular& getLedCircular(unsigned char index) const { return ledCircular_[index]; }
 	LedRgb& getLedSwitch(unsigned char index) { return ledSwitch_[index]; }
 	const LedRgb& getLedSwitch(unsigned char index) const { return ledSwitch_[index]; }
+	void setCvCalib(unsigned int eepromAddress);
 	char getAudioBuffer(unsigned char sample);
 	unsigned char getAudioBufferLength();
 	unsigned char getAudioMinLength();

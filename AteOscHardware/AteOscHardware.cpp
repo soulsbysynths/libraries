@@ -136,7 +136,7 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	//setup analogue controls
 	//init variables
 	unsigned char data[2] = {0};
-	unsigned int addr = EEPROM_PITCH_MSB;
+	unsigned int addr = EEPROM_PITCH_LOW;
 	for(i=0;i<2;++i)
 	{
 		for(j=0;j<2;++j)
@@ -214,7 +214,34 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	}
 
 }
-
+void AteOscHardware::setCvCalib(unsigned int eepromAddress)
+{
+	const unsigned char CV_READS = 8;
+	unsigned char calibVal[2] = {0};
+	unsigned long calibRead = 0;
+	unsigned char cvIp, i, j;
+	if(eepromAddress==EEPROM_PITCH_LOW || eepromAddress==EEPROM_PITCH_HIGH)
+	{
+		cvIp = CV_PITCH;
+	}
+	else
+	{
+		cvIp = CV_FILT;
+	}
+	i = (eepromAddress - EEPROM_PITCH_LOW) >> 2;
+	j = (eepromAddress - EEPROM_PITCH_LOW - (i<<2)) >> 1;
+	for(unsigned char i=0;i<CV_READS;++i)
+	{
+		calibRead += readMCP3208input(cvIp);
+	}
+	calibRead = calibRead / CV_READS;
+	calibVal[0] = (unsigned char)((calibRead >> 8) & 0xFF);  //msb
+	calibVal[1] = (unsigned char)(calibRead & 0xFF);  //lsb
+	writeMemory((const void*)calibVal,(void*)eepromAddress,sizeof(calibVal));
+	cvCalib_[i][j] = (unsigned int)calibRead;
+	cvCalib_[i][2] = cvCalib_[i][1] - cvCalib_[i][0];  //used in mapping equation
+	
+}
 unsigned char AteOscHardware::getQuantKey()
 {
 	unsigned char data[1];

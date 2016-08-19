@@ -252,20 +252,20 @@ void AteOscHardwareTester::hardwareSwitchHeld(unsigned char sw)
 		switch(hardware_.getRotEncoder(AteOscHardware::FUNCTION).getValue())
 		{
 			case 0:
-			writeCvCalib(AteOscHardware::CV_PITCH,1016);
-			audio_->setSampleFreq(78L*WAVE_LEN);
+			writeCvCalib(AteOscHardware::CV_PITCH,AteOscHardware::EEPROM_PITCH_LOW);
+			audio_->setSampleFreq(78L*WAVE_LEN);   //MIDI NOTE 15
 			break;
 			case 1:
-			writeCvCalib(AteOscHardware::CV_PITCH,1018);
-			audio_->setSampleFreq(440L*WAVE_LEN);
+			writeCvCalib(AteOscHardware::CV_PITCH,AteOscHardware::EEPROM_PITCH_HIGH);
+			audio_->setSampleFreq(440L*WAVE_LEN);  //MIDI NOTE 45
 			break;
 			case 2:
-			writeCvCalib(AteOscHardware::CV_FILT,1020);
-			audio_->setSampleFreq(78L*WAVE_LEN);
+			writeCvCalib(AteOscHardware::CV_FILT,AteOscHardware::EEPROM_FILT_LOW);
+			audio_->setSampleFreq(78L*WAVE_LEN);   //MIDI NOTE 15
 			break;
 			case 3:
-			writeCvCalib(AteOscHardware::CV_FILT,1022);
-			audio_->setSampleFreq(440L*WAVE_LEN);
+			writeCvCalib(AteOscHardware::CV_FILT,AteOscHardware::EEPROM_FILT_HIGH);
+			audio_->setSampleFreq(440L*WAVE_LEN);  //MIDI NOTE 45
 			break;
 		}
 	}

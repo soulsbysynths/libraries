@@ -25,6 +25,7 @@ class AteOsc : public AteOscHardwareBase, AteOscEngineBase
 	AteOscHardware& hardware_;
 	AteOscEngine& engine_;
 	const unsigned char IS_FUNC_FILL[2] = {0xFC,0x21};
+	const unsigned char IS_SHIFT_HOLD = 0xA6;//0x8E;  //0xA6 proto
 	const unsigned char LED_FLASH_TICKS = 4;
 	unsigned char testNote_ = 60;
 	bool valueSecondaryMode_ = false;
@@ -52,6 +53,7 @@ class AteOsc : public AteOscHardwareBase, AteOscEngineBase
 	AteOsc& operator=( const AteOsc &c );
 	bool isShiftHold(AteOscEngine::Func func);
 	void pollPitch(unsigned char ticksPassed);
+	void toggleOption();
 }; //AteOsc
 
 #endif //__ATEOSC_H__

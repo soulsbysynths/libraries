@@ -112,7 +112,7 @@ void AtmAudio::setSampleFreq(unsigned long newSf)
 		for(i=0;i<8;++i)
 		{
 			ocr = (F_CPU<<i)/sampleFreq_;
-			if(ocr>1280)  //5120
+			if(ocr>255)  //1280 //5120  ****VERY TENTATIVELY 255, ORIG=100, def too low, but why so high as 1280???
 			{
 				bufferJump = 1 << i;
 				break;
