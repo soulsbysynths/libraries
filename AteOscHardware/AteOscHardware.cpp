@@ -148,7 +148,7 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 		cvCalib_[i][2] = cvCalib_[i][1] - cvCalib_[i][0];  //used in mapping equation
 	}
 
-	for(a=0;a<CV_INPUTS;++a)
+	for(a=0;a<INPUTS;++a)
 	{
 		cvInput_[a] = CvInput(0);
 	}
@@ -242,24 +242,16 @@ void AteOscHardware::setCvCalib(unsigned int eepromAddress)
 	cvCalib_[i][2] = cvCalib_[i][1] - cvCalib_[i][0];  //used in mapping equation
 	
 }
-unsigned char AteOscHardware::getQuantKey()
+unsigned char AteOscHardware::readEepromByte(unsigned int address)
 {
 	unsigned char data[1];
-	readMemory((void*)data,(const void*)EEPROM_QUANT_KEY,sizeof(data));
-	if(data[0]>11)
-	{
-		return 0;
-	}
-	else
-	{
-		return data[0];
-	}
-	
+	readMemory((void*)data,(const void*)address,sizeof(data));
+	return data[0];
 }
-void AteOscHardware::setQuantKey(unsigned char newValue)
+void AteOscHardware::writeEepromByte(unsigned int address, unsigned char newValue)
 {
 	unsigned char data[1] = {newValue};
-	writeMemory((const void*)data,(void*)EEPROM_QUANT_KEY,sizeof(data));
+	writeMemory((const void*)data,(void*)address,sizeof(data));
 }
 
 char AteOscHardware::getAudioBuffer(unsigned char sample)
@@ -366,77 +358,76 @@ void AteOscHardware::refreshLeds()
 	}
 }
 
-void AteOscHardware::pollCvPitch()
+void AteOscHardware::pollMappedCvInput(CvInputName input)
 {
-	long mapped = (((long)readMCP3208input(CV_PITCH) - cvCalib_[0][0]) << 11) / cvCalib_[0][2] + 1024;  //outmax = 3072, outmin = 1024, max-min = 2048 (<<11)    //OLD  outmax = 3891.2, outmin = 614.4 , max - min = 3276.8
+	unsigned char i = ((input == CV_PITCH) ? 0 : 1);
+	long mapped = (((long)readMCP3208input(input) - cvCalib_[i][0]) << 11) / cvCalib_[i][2] + 1024;  //outmax = 3072 = 3.75V, outmin = 1024 = 1.25V, max-min = 2048 (<<11)   
 	if(mapped<0)
 	{
-		cvInput_[CV_PITCH].setValue(0);
+		cvInput_[input].setValue(0);
 	}
 	else if (mapped>4095)
 	{
-		cvInput_[CV_PITCH].setValue(4095);
+		cvInput_[input].setValue(4095);
 	}
 	else
 	{
-		cvInput_[CV_PITCH].setValue((unsigned int)mapped);
+		cvInput_[input].setValue((unsigned int)mapped);
 	}
-	if(cvInput_[CV_PITCH].hasChanged(0)==true)  //ticks not used coz lockout off
+	if(cvInput_[input].hasChanged(0)==true)  //ticks not used coz lockout off
 	{
-		base_->hardwareCvInputChanged(CV_PITCH,cvInput_[CV_PITCH].getValue());
+		base_->hardwareCvInputChanged(input,cvInput_[input].getOutput());
 	}
 }
 void AteOscHardware::pollCvInputs(unsigned char ticksPassed)
 {
 	unsigned char a,i;
 
-	for(a=0;a<CV_INPUTS;++a)
+	for(a=0;a<INPUTS;++a)
 	{
-		if(a==CV_PITCH || a==CV_FILT)
+		if(inputMode_[a]==IP_CV)
 		{
-			if(a==CV_PITCH)
+			if(a==CV_PITCH || a==CV_FILT)
 			{
-				i = 0;
+				pollMappedCvInput((CvInputName)a);
 			}
 			else
 			{
-				i = 1;
-			}
-			long mapped = (((long)readMCP3208input(a) - cvCalib_[i][0]) << 11) / cvCalib_[i][2] + 1024;  //outmax = 3072, outmin = 1024, max-min = 2048 (<<11)    //OLD  outmax = 3891.2, outmin = 614.4 , max - min = 3276.8
-			if(mapped<0)
-			{
-				cvInput_[a].setValue(0);
-			}
-			else if (mapped>4095)
-			{
-				cvInput_[a].setValue(4095);
-			}
-			else
-			{
-				cvInput_[a].setValue((unsigned int)mapped);
-			}
-			if(cvInput_[a].hasChanged(ticksPassed)==true)  //ticks not used coz lockout off
-			{
-				base_->hardwareCvInputChanged(a,cvInput_[a].getValue());
-			}
-		}
-		else
-		{
-			cvInput_[a].setValue(readMCP3208input(a));
-			if(cvInput_[a].hasChanged(ticksPassed)==true)
-			{
-				base_->hardwareCvInputChanged(a,cvInput_[a].getValue());
+				cvInput_[a].setValue(readMCP3208input(a));
+				if(cvInput_[a].hasChanged(ticksPassed)==true)
+				{
+					if(a==CV_PWM && bitRead(ctrlMode_,0))
+					{
+						cvInput_[CV_PITCH].setGain(cvInput_[a].getValue() >> 4);
+					}
+					else if(a==CV_FLANGE && bitRead(ctrlMode_,1))
+					{
+						cvInput_[CV_FILT].setGain(cvInput_[a].getValue() >> 4);
+					}
+					else
+					{
+						base_->hardwareCvInputChanged(a,cvInput_[a].getValue());
+					}
+					
+				}
 			}
 		}
 	}
 }
-void AteOscHardware::pollGateInput()
+void AteOscHardware::pollGateInputs()
 {
-	bool newValue = readMCP3208input(CV_CAPTURE) > CV_HALF_SCALE ? true : false;
-	if(newValue!=gateInput_)
+	bool newValue;
+	for(unsigned char a=0;a<INPUTS;++a)
 	{
-		gateInput_ = newValue;
-		base_->hardwareGateInputChanged(newValue);
+		if(inputMode_[a]==IP_GATE)
+		{
+			newValue = readMCP3208input(a) > CV_HALF_SCALE ? true : false;
+			if(newValue!=gateInput_[a])
+			{
+				gateInput_[a] = newValue;
+				base_->hardwareGateInputChanged(a,newValue);
+			}
+		}
 	}
 }
 void AteOscHardware::pollSwitches(unsigned char ticksPassed)

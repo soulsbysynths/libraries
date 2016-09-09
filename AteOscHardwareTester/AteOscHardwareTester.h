@@ -71,6 +71,7 @@ public:
 	void hardwareCvInputChanged(unsigned char control, unsigned int newValue);
 	void hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise);
 	void hardwareAudioBufferStatusChanged(unsigned char newStatus);
+	void hardwareGateInputChanged(bool newValue){}
 protected:
 private:
 	AteOscHardwareTester( const AteOscHardwareTester &c );

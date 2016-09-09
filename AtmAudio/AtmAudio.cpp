@@ -162,8 +162,8 @@ ISR(TIMER1_COMPA_vect)
 	static unsigned char jump = 1;
 	static unsigned char bufferIndex = 0;
 
-	if(updateOcr && !bufferIndex)
-	//if(updateOcr)
+	//if(updateOcr && !bufferIndex)
+	if(updateOcr && !(bufferIndex%bufferJump))
 	{
 		OCR1A = ocr1a;
 		jump = bufferJump;

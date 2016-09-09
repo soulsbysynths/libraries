@@ -31,6 +31,7 @@
 #include "Wavecrusher.h"
 #include "Flanger.h"
 #include "Pwm.h"
+#include "AteOscPitch.h"
 
 class AteOscEngine : public AteOscPatchBase, BiquadFilterFMBase
 {
@@ -52,28 +53,28 @@ class AteOscEngine : public AteOscPatchBase, BiquadFilterFMBase
 		CTRL_FX,
 		CTRL_SAMPLE
 	};
-	enum Func : unsigned char
-	{
-		FUNC_WAVE = 0,
-		FUNC_WAVELEN,
-		FUNC_PITCHCOARSE,
-		FUNC_MINLENGTH,
-		FUNC_FILT,
-		FUNC_PORTA,
-		FUNC_BITCRUSH,
-		FUNC_MEM
-	};
 	//enum Func : unsigned char
 	//{
 		//FUNC_WAVE = 0,
 		//FUNC_WAVELEN,
 		//FUNC_PITCHCOARSE,
-		//FUNC_PORTA,
 		//FUNC_MINLENGTH,
 		//FUNC_FILT,
+		//FUNC_PORTA,
 		//FUNC_BITCRUSH,
 		//FUNC_MEM
 	//};
+	enum Func : unsigned char
+	{
+		FUNC_WAVE = 0,
+		FUNC_WAVELEN,
+		FUNC_PITCHCOARSE,
+		FUNC_PORTA,
+		FUNC_MINLENGTH,
+		FUNC_FILT,
+		FUNC_BITCRUSH,
+		FUNC_MEM
+	};
 	protected:
 	private:
 	static const unsigned char FUNCS = 8;
@@ -95,6 +96,10 @@ class AteOscEngine : public AteOscPatchBase, BiquadFilterFMBase
 	Pwm* pwm_;
 	unsigned char waveLength_ = 128;
 	bool updateFilter_ = false;
+	unsigned int linearFreq_ = 4416; //=440
+	char pwmValue_ = 0;
+	char flangeValue_ = 0;
+	bool portaMode_ = false;
 	//functions
 	public:
 	void construct(AteOscEngineBase* base);

@@ -18,8 +18,7 @@
 #define __CVINPUT_H__
 
 #include <stdlib.h>
-#define RUNAVE_BUFFER_SIZE 8
-#define RUNAVE_BUFFER_BS 3
+
 #define absdiff(a,b) ((a)>(b)?(a-b):(b-a))
 
 class CvInput
@@ -34,19 +33,19 @@ private:
 	unsigned int moveTick_ = 0;
 	unsigned int value_ = 0;
 	unsigned int valueLast_ = 0;
-	unsigned int* runAveBuffer_;  
-	unsigned int runAveTotal_ = 0; //RELIES ON MAX VALUE = 4095
-	unsigned char runAveIndex_ = 0;
-	bool smooth_ = false;
 	bool lockOut_ = true;
+	unsigned char gain_ = 0xFF;
+	bool gainChanged_ = false;
 //functions
 public:
 	CvInput() {}
 	CvInput(unsigned int initValue);
 	~CvInput();
-	void setValue(unsigned int newValue);
+	void setValue(unsigned int newValue){value_ = newValue;}
 	unsigned int getValue(){return value_;}
-	void setSmooth(bool newValue);
+	void setGain(unsigned char newValue);
+	unsigned char getGain(){return gain_;}
+	unsigned int getOutput();
 	void setLockOut(bool newValue){lockOut_ = newValue;}
 	bool getMoving(){return moving_;}
 	bool hasChanged(unsigned char ticksPassed);

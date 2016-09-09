@@ -33,9 +33,9 @@ unsigned int AteOscPitch::getOutput()
 	{
 		output += 4096;
 	}
-	if(output>8128)
+	if(output>LIN_FREQ_MAX)  
 	{
-		return 8128;
+		return LIN_FREQ_MAX;
 	}
 	else
 	{

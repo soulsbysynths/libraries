@@ -27,7 +27,7 @@ class QuantizePitch
 	public:
 	QuantizePitch();
 	~QuantizePitch();
-	unsigned int processPitch(unsigned int sourcePitch);
+	unsigned int process(unsigned int linearFreq);
 	void setQntScale(unsigned char newValue){qntScale = newValue;}
 	unsigned char getQntScale(){return qntScale;}
 	void setQntKey(unsigned char newValue){qntKey = newValue;}

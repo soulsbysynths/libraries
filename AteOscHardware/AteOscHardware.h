@@ -52,7 +52,7 @@
 #endif
 
 
-#define CV_INPUTS 7
+#define INPUTS 8
 // #define CV_READ_ORDER_SIZE 12
 
 #define F_SCL 100000UL // SCL frequency
@@ -104,11 +104,19 @@ class AteOscHardware
 	static const unsigned char AUDIO_INPUT = 0;
 	static const unsigned char LED_FLASH_SCALE = 16;
 	static const unsigned int CV_HALF_SCALE = 2048;
-	static const unsigned int  EEPROM_QUANT_KEY = 1015;
-	static const unsigned int  EEPROM_PITCH_LOW = 1016; //1.25V
-	static const unsigned int  EEPROM_PITCH_HIGH = 1018; //3.75V
-	static const unsigned int  EEPROM_FILT_LOW = 1020;  //1.25V
-	static const unsigned int  EEPROM_FILT_HIGH = 1022;  //3.75V
+	static const unsigned int CV_HALF_SCALE_MASK = CV_HALF_SCALE - 1;
+	static const unsigned char CV_INPUTS = INPUTS;
+
+	enum EepromAddresses : unsigned int
+	{
+		EEPROM_CTRL_MODE = 1013,
+		EEPROM_CLOCK_MODE = 1014,
+		EEPROM_QUANT_KEY = 1015,
+		EEPROM_PITCH_LOW = 1016, //1.25V
+		EEPROM_PITCH_HIGH = 1018, //3.75V
+		EEPROM_FILT_LOW = 1020,  //1.25V
+		EEPROM_FILT_HIGH = 1022  //3.75V
+	};
 	enum AudioBufferStatus : unsigned char 
 	{
 		BUFFER_IDLE = 0,
@@ -116,6 +124,11 @@ class AteOscHardware
 		BUFFER_CAPTURING = 2,
 		BUFFER_OVERFLOW = 3,
 		BUFFER_CAPTURED = 4
+	};
+	enum InputMode : unsigned char
+	{
+		IP_CV = 0,
+		IP_GATE = 1
 	};
 	enum CvInputName : unsigned char
 	{
@@ -128,17 +141,26 @@ class AteOscHardware
 		CV_FLANGE = 6,
 		CV_CAPTURE = 7
 	};
+	enum CtrlMode : unsigned char
+	{
+		CT_NORMAL = 0,
+		CT_PITCHATT,
+		CT_FILTATT,
+		CT_BOTH
+	};
 	protected:
 	private:
 	AteOscHardwareBase* base_;
 	RotaryEncoder rotEncoder_[2];
-	CvInput cvInput_[CV_INPUTS];
-	bool gateInput_ = false;
+	InputMode inputMode_[INPUTS] = {IP_CV};
+	CvInput cvInput_[INPUTS];
+	bool gateInput_[INPUTS] = {false};
 	unsigned int cvCalib_[2][3] = {{0}};  //input (pitch, filt), low/high/high-low
 	Switch switch_[2];
 	LedCircular ledCircular_[2];
 	LedRgb ledSwitch_[2];
 	unsigned char ledFlashTickCnt = 0;
+	CtrlMode ctrlMode_ = CT_NORMAL;
 	//functions
 	
 	public:
@@ -159,6 +181,8 @@ class AteOscHardware
 	const LedCircular& getLedCircular(unsigned char index) const { return ledCircular_[index]; }
 	LedRgb& getLedSwitch(unsigned char index) { return ledSwitch_[index]; }
 	const LedRgb& getLedSwitch(unsigned char index) const { return ledSwitch_[index]; }
+	void setInputMode(unsigned char input, InputMode newMode) {inputMode_[input] = newMode; }
+	InputMode getInputMode(unsigned char input){return inputMode_[input]; }
 	void setCvCalib(unsigned int eepromAddress);
 	char getAudioBuffer(unsigned char sample);
 	unsigned char getAudioBufferLength();
@@ -166,13 +190,15 @@ class AteOscHardware
 	void setAudioMinLength(unsigned char newLength);
 	void setAudioBufferStatus(AudioBufferStatus newValue);
 	AudioBufferStatus getAudioBufferStatus();
-	unsigned char getQuantKey();
-	void setQuantKey(unsigned char newValue);
+	unsigned char readEepromByte(unsigned int address);
+	void writeEepromByte(unsigned int address, unsigned char newValue);
+	CtrlMode getCtrlMode(){return ctrlMode_;}
+	void setCtrlMode(CtrlMode newMode){ctrlMode_ = newMode;}
 	void refreshLeds();
 	void refreshFlash(unsigned char ticksPassed);
 	void pollCvInputs(unsigned char ticksPassed);
-	void pollCvPitch();
-	void pollGateInput();
+	void pollMappedCvInput(CvInputName input);
+	void pollGateInputs();
 	void pollSwitches(unsigned char ticksPassed);
 	void pollRotEncoders(unsigned char ticksPassed);
 	void pollAudioBufferStatus();

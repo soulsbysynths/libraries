@@ -23,10 +23,10 @@ class AteOscHardwareBase
 	public:
 	virtual void hardwareSwitchChanged(unsigned char sw, unsigned char newValue) = 0;
 	virtual void hardwareSwitchHeld(unsigned char sw) = 0;
-	virtual void hardwareCvInputChanged(unsigned char control, unsigned int newValue) = 0;
+	virtual void hardwareCvInputChanged(unsigned char input, unsigned int newValue) = 0;
 	virtual void hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise) = 0;
 	virtual void hardwareAudioBufferStatusChanged(unsigned char newStatus) = 0;
-	virtual void hardwareGateInputChanged(bool newValue) = 0;
+	virtual void hardwareGateInputChanged(unsigned char input, bool newValue) = 0;
 };
 
 #endif /* ATEOSCHARDWAREBASEH_ */

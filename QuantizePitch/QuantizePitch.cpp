@@ -19,10 +19,10 @@ QuantizePitch::~QuantizePitch()
 } //~QuantizePitch
 
 
-unsigned int QuantizePitch::processPitch(unsigned int sourcePitch)
+unsigned int QuantizePitch::process(unsigned int linearFreq)
 {
 	unsigned int offset = LIN_FREQS_PER_OCT - ((unsigned int)qntKey * LIN_FREQS_PER_NOTE);
-	unsigned int offsetPitch = sourcePitch + offset;
+	unsigned int offsetPitch = linearFreq + offset;
 	unsigned int pitch = offsetPitch % LIN_FREQS_PER_OCT;
 	unsigned int oct = offsetPitch - pitch;
 	return getClosest(pitch) + oct - offset;
