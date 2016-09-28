@@ -45,8 +45,8 @@ class AteOsc : public AteOscHardwareBase, AteOscEngineBase
 	AteOscEngine& engine_;
 	const unsigned char IS_SHIFT_HOLD = 0x8E;//0x8E;  //0xA6 proto
 	const unsigned char LED_FLASH_TICKS = 4;
-	const AteOscEngine::Ctrl cvInputToCtrl[AteOscHardware::CV_INPUTS] = {AteOscEngine::CTRL_SAMPLE,AteOscEngine::CTRL_Q,AteOscEngine::CTRL_PITCHFINE, AteOscEngine::CTRL_FILTOFF,AteOscEngine::CTRL_SAMPLE,AteOscEngine::CTRL_PWM,AteOscEngine::CTRL_FX,AteOscEngine::CTRL_SAMPLE};
-	const AteOscEngine::Func clockModeToFunc[6] = {AteOscEngine::FUNC_WAVE, AteOscEngine::FUNC_WAVELEN, AteOscEngine::FUNC_PITCHCOARSE, AteOscEngine::FUNC_PORTA, AteOscEngine::FUNC_FILT, AteOscEngine::FUNC_BITCRUSH};
+	const AteOscEngine::Ctrl CV_INPUT_TO_CTRL[AteOscHardware::CV_INPUTS] = {AteOscEngine::CTRL_SAMPLE,AteOscEngine::CTRL_Q,AteOscEngine::CTRL_PITCHFINE, AteOscEngine::CTRL_FILTOFF,AteOscEngine::CTRL_SAMPLE,AteOscEngine::CTRL_PWM,AteOscEngine::CTRL_FX,AteOscEngine::CTRL_SAMPLE};
+	const AteOscEngine::Func CLOCK_MODE_TO_FUNC[6] = {AteOscEngine::FUNC_WAVE, AteOscEngine::FUNC_WAVELEN, AteOscEngine::FUNC_PITCHCOARSE, AteOscEngine::FUNC_PORTA, AteOscEngine::FUNC_FILT, AteOscEngine::FUNC_BITCRUSH};
 	unsigned char testNote_ = 60;
 	bool valueSecondaryMode_ = false;
 	bool heldFuncAndValue_ = false;

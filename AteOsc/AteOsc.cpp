@@ -128,7 +128,7 @@ void AteOsc::hardwareCvInputChanged(unsigned char input, unsigned int newValue)
 	{
 		if(clockMode_>=CM_WAVE_CV && clockMode_<=CM_BITCRUSH_CV)
 		{
-			AteOscEngine::Func f = clockModeToFunc[clockMode_ - CM_WAVE_CV];
+			AteOscEngine::Func f = CLOCK_MODE_TO_FUNC[clockMode_ - CM_WAVE_CV];
 			oldOpt = engine_.getPatchPtr()->getOptionValue(f);
 			oldVal = engine_.getPatchPtr()->getFunctionValue(f);
 			switch(clockMode_)
@@ -184,7 +184,7 @@ void AteOsc::hardwareCvInputChanged(unsigned char input, unsigned int newValue)
 	else
 	{
 		//engine_.getPatchPtr()->setCtrlValue((unsigned char)cHardToEngCtrl((AteOscHardware::CvInputName)input),newValue>>4);
-		engine_.getPatchPtr()->setCtrlValue((unsigned char)cvInputToCtrl[input],newValue>>4);
+		engine_.getPatchPtr()->setCtrlValue((unsigned char)CV_INPUT_TO_CTRL[input],newValue>>4);
 	}
 }
 void AteOsc::hardwareGateInputChanged(unsigned char input, bool newValue)

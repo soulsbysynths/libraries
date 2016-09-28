@@ -117,7 +117,7 @@ void AteOscPatch::readPatch(unsigned char patchNum)
 	{
 		setOptionValue(i,(bool)bitRead(data[addr],i));
 	}
-	addr++;
+	addr++;  //not needed
 }
 void AteOscPatch::easterEgg(unsigned int seed)
 {
