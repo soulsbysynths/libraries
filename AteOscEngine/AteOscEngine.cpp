@@ -67,19 +67,23 @@ void AteOscEngine::initialize()
 	unsigned char i;
 
 	audio_->initialize();
-	//load vanilla
-	for(i=0;i<CTRLS;++i)
-	{
-		patchCtrlChanged(i,patch_->getCtrlValue(i));
-	}
-	for(i=0;i<FUNCS;++i)
-	{
-		patchValueChanged(i,patch_->getFunctionValue(i));
-		patchOptionChanged(i,patch_->getOptionValue(i));
-	}
-	pitch_.setInput(110<<1);
+	
+	////load vanilla
+	//for(i=0;i<CTRLS;++i)
+	//{
+		//patchCtrlChanged(i,patch_->getCtrlValue(i));
+	//}
+	//for(i=0;i<FUNCS;++i)
+	//{
+		//patchValueChanged(i,patch_->getFunctionValue(i));
+		//patchOptionChanged(i,patch_->getOptionValue(i));
+	//}
+	//pitch_.setInput(110<<1);
+
+
 	pwm_->setEnvAmount(255);
 	flanger_->setEnvAmount(255);
+	//portamento_.setProportional(true);
 	setFunction(FUNC_WAVE);
 }
 void AteOscEngine::pollPitch(unsigned char ticksPassed)
@@ -91,7 +95,7 @@ void AteOscEngine::pollPitch(unsigned char ticksPassed)
 		//portamento_.setInput(pitch_.calcFrequency(pitch_.getOutput()));
 		//portamento_.refresh(ticksPassed);
 		//scaledPitch_ = portamento_.getOutput();
-		portamento_.setInput(pitch_.getOutput());
+		portamento_.setInput(quantize_.process(pitch_.getOutput()));
 		portamento_.refresh(ticksPassed);
 		linearFreq_ = portamento_.getOutput();
 	}
@@ -103,7 +107,8 @@ void AteOscEngine::pollPitch(unsigned char ticksPassed)
 	{
 		linearFreq_ = pitch_.getOutput();
 	}
-	sf = (unsigned long)pitch_.calcFrequency (linearFreq_) * (waveLength_ >> 2);
+	freqScaled_ = pitch_.calcFrequency (linearFreq_);
+	sf = (unsigned long)freqScaled_ * (waveLength_ >> 2);
 	if(sf!=audio_->getSampleFreq())
 	{
 		audio_->setSampleFreq(sf);
@@ -137,7 +142,7 @@ void AteOscEngine::pollWave()
 		filter_->setFc(filterFc_.calcFrequency((unsigned int)fc));  
 		filter_->refresh(audio_->getSampleFreq()); 
 	}
-	filter_->processWavetable(workingBuffer);  //does events inside function
+	filter_->processWavetable(workingBuffer, freqScaled_ >> 2);  //does events inside function
 	if(patch_->getCtrlValue(CTRL_FX)>0)  //not nice as flanger buffer isn't updated when 0
 	{
 		flanger_->processWavetable(workingBuffer,flangeValue_,NULL);
@@ -200,8 +205,14 @@ void AteOscEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 		updateFilter_ = true;
 		break;
 		case FUNC_PORTA:
-		portamento_.setSpeed(pgm_read_word(&(PORTA_SPEED[newValue])));
-		quantize_.setQntScale(newValue);
+		if(patch_->getOptionValue(FUNC_PORTA)==true)
+		{
+			portamento_.setSpeed(pgm_read_word(&(PORTA_SPEED[newValue])));
+		}
+		else
+		{
+			quantize_.setQntScale(newValue);
+		}
 		break;
 		case FUNC_BITCRUSH:
 		wavecrusher_.setType(newValue);
@@ -230,6 +241,16 @@ void AteOscEngine::patchOptionChanged(unsigned char func, bool newOpt)
 		break;
 		case FUNC_PORTA:
 		portaMode_ = newOpt;
+		if(portaMode_==true)
+		{
+			quantize_.setQntScale(1);
+			portamento_.setSpeed(pgm_read_word(&(PORTA_SPEED[patch_->getFunctionValue(FUNC_PORTA)])));
+		}
+		else
+		{
+			quantize_.setQntScale(patch_->getFunctionValue(FUNC_PORTA));
+			portamento_.setSpeed(pgm_read_word(&(PORTA_SPEED[0])));
+		}
 		break;
 		case FUNC_MINLENGTH:
 		base_->engineStartCapture(newOpt);

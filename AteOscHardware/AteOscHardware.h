@@ -109,6 +109,7 @@ class AteOscHardware
 
 	enum EepromAddresses : unsigned int
 	{
+		EEPROM_CURRENT_PATCH = 1012,
 		EEPROM_CTRL_MODE = 1013,
 		EEPROM_CLOCK_MODE = 1014,
 		EEPROM_QUANT_KEY = 1015,

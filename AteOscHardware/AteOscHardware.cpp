@@ -150,7 +150,42 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 
 	for(a=0;a<INPUTS;++a)
 	{
-		cvInput_[a] = CvInput(0);
+		if(inputMode_[a]==IP_CV)
+		{
+			if(a==CV_PITCH || a==CV_FILT)
+			{
+				i = ((a == CV_PITCH) ? 0 : 1);
+				long mapped = (((long)readMCP3208input(a) - cvCalib_[i][0]) << 11) / cvCalib_[i][2] + 1024;  //outmax = 3072 = 3.75V, outmin = 1024 = 1.25V, max-min = 2048 (<<11)
+				if(mapped<0)
+				{
+					cvInput_[a] = CvInput(0);
+				}
+				else if (mapped>4095)
+				{
+					cvInput_[a] = CvInput(4095);
+				}
+				else
+				{
+					cvInput_[a] = CvInput((unsigned int)mapped);
+				}
+			}
+			else
+			{
+				cvInput_[a] = CvInput(readMCP3208input(a));
+			}
+		}
+		else
+		{
+			cvInput_[a] = CvInput(0);
+		}
+		if(inputMode_[a]==IP_GATE)
+		{
+			gateInput_[a] = readMCP3208input(a) > CV_HALF_SCALE ? true : false;
+		}
+		else
+		{
+			gateInput_[a] = 0;  //already done in header in fact
+		}
 	}
 	cvInput_[CV_PITCH].setLockOut(false);
 	cvInput_[CV_FILT].setLockOut(false);

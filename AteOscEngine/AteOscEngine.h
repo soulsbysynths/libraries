@@ -97,6 +97,7 @@ class AteOscEngine : public AteOscPatchBase, BiquadFilterFMBase
 	unsigned char waveLength_ = 128;
 	bool updateFilter_ = false;
 	unsigned int linearFreq_ = 4416; //=440
+	unsigned int freqScaled_ = 440 << 2; 
 	char pwmValue_ = 0;
 	char flangeValue_ = 0;
 	bool portaMode_ = false;

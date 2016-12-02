@@ -40,9 +40,118 @@ void AteOscHardwareTester::init()
 	refreshSineWave();
 	//Serial.begin(9600);
 }
+void AteOscHardwareTester::initMemory()
+{
+	
+	unsigned int addr = 0;
+	unsigned char framBuffer[OSC_WAVELEN] = {0};
+	unsigned char eepromBuffer[PATCH_SIZE] = {0};
+	unsigned char i,j,k;
+
+	for(i=0;i<2;++i)
+	{
+		hardware_.getLedCircular(i).setState(0);
+		hardware_.getLedSwitch(i).setColour(LedRgb::OFF);
+	}
+	hardware_.refreshLeds();
+
+	//init fram
+	hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::YELLOW);
+	hardware_.refreshLeds();
+	for(i=0;i<OSC_BANKS;++i)
+	{
+		hardware_.getLedCircular(AteOscHardware::FUNCTION).select(i);
+		for (j=0;j<OSC_TABLES;++j)
+		{
+			hardware_.getLedCircular(AteOscHardware::VALUE).select(j);
+			hardware_.refreshLeds();
+			for(k=0;k<OSC_WAVELEN;++k)
+			{
+				framBuffer[k] = pgm_read_byte(&(OSC_WAVETABLE[i][j][k]));
+			}
+			writeFram((const void*)framBuffer, addr, sizeof(framBuffer));
+			readFram((void*)framBuffer, addr, sizeof(framBuffer));
+			for(k=0;k<OSC_WAVELEN;++k)
+			{
+				if(framBuffer[k]!=pgm_read_byte(&(OSC_WAVETABLE[i][j][k])))
+				{
+					hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
+					hardware_.refreshLeds();
+					for(;;){}  //STOP
+				}
+			}
+			addr += OSC_WAVELEN;
+		}
+	}
+
+	hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::GREEN);
+	//init eeprom
+	hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::YELLOW);
+	hardware_.refreshLeds();
+	addr = 0;
+	hardware_.getLedCircular(AteOscHardware::FUNCTION).select(0);
+	for(i=0;i<PATCHES;++i)
+	{
+		hardware_.getLedCircular(AteOscHardware::VALUE).select(i);
+		hardware_.refreshLeds();
+		for(j=0;j<PATCH_SIZE;++j)
+		{
+			eepromBuffer[j] = pgm_read_byte(&(PATCH_DATA[i][j]));
+		}
+		writeMemory((const void*)eepromBuffer, (void*)addr, sizeof(eepromBuffer));
+		readMemory((void*)eepromBuffer,(const void*)addr, sizeof(eepromBuffer));
+		for(j=0;j<PATCH_SIZE;++j)
+		{
+			if(eepromBuffer[j]!=pgm_read_byte(&(PATCH_DATA[i][j])))
+			{
+				hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
+				hardware_.refreshLeds();
+				for(;;){}  //STOP
+			}
+		}
+		addr += PATCH_SIZE;
+	}
+	hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::GREEN);
+	hardware_.getLedCircular(AteOscHardware::FUNCTION).select(1);
+	hardware_.refreshLeds();
+
+	//global settings
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_CURRENT_PATCH, 0);
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_CTRL_MODE, 0);
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_CLOCK_MODE, 0);
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_QUANT_KEY, 0);
+	//stick zeros in for all of this so don't think it's calibrated when it isn't
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_LOW, 0x00);    //1024 1.25V 77.8Hz msb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_LOW+1, 0x00);  //1024 1.25V 77.8Hz lsb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_HIGH, 0x00);   //3072 3.75V 440Hz msb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_HIGH+1, 0x00); //3072 3.75V 440Hz lsb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_LOW, 0x00);    //1024 1.25V 77.8Hz msb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_LOW+1, 0x00);  //1024 1.25V 77.8Hz lsb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_HIGH, 0x00);   //3072 3.75V 440Hz msb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_HIGH+1, 0x00); //3072 3.75V 440Hz lsb
+
+
+	//hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_LOW, 0x04);    //1024 1.25V 77.8Hz msb
+	//hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_LOW+1, 0x00);  //1024 1.25V 77.8Hz lsb
+	//hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_HIGH, 0x0C);   //3072 3.75V 440Hz msb
+	//hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_HIGH+1, 0x00); //3072 3.75V 440Hz lsb
+	//hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_LOW, 0x04);    //1024 1.25V 77.8Hz msb
+	//hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_LOW+1, 0x00);  //1024 1.25V 77.8Hz lsb
+	//hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_HIGH, 0x0C);   //3072 3.75V 440Hz msb
+	//hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_HIGH+1, 0x00); //3072 3.75V 440Hz lsb
+	//
+	for(i=0;i<2;++i)
+	{
+		hardware_.getLedCircular(i).setState(0);
+		hardware_.getLedSwitch(i).setColour(LedRgb::OFF);
+	}
+	hardware_.refreshLeds();
+
+}
+
 void AteOscHardwareTester::refreshAudioTest()
 {
-	//hardware_.getLedCircular(AteOscHardware::VALUE).select(hardware_.getAudioCurrent()>>4);
+	//hardware_.getLedCircular(AteOscHardware::VALUE).select(hardware_.getAudioCurrent()>>4);  //no longer exists, would involve a volatile global variable
 	if(hardware_.getAudioBufferStatus()==AteOscHardware::BUFFER_CAPTURED)
 	{
 		//see excel sheet for proof of this interpolation
@@ -55,10 +164,6 @@ void AteOscHardwareTester::refreshAudioTest()
 		}
 		audio_->pasteWavetable(wavetable_);
 		hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_IDLE);
-	}
-	if(hardware_.getAudioBufferStatus()!=AteOscHardware::BUFFER_CAPTURING && hardware_.getAudioBufferStatus()!=AteOscHardware::BUFFER_WAITZCROSS)
-	{
-		hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
 	}
 }
 void AteOscHardwareTester::refreshSineWave()
@@ -100,7 +205,9 @@ void AteOscHardwareTester::tick()
 
 void AteOscHardwareTester::poll(unsigned char ticksPassed)
 {
-	
+	static unsigned char waveIndex = 0;
+	static unsigned char waveTick = 0;
+	unsigned char waveLed = 0;
 	hardware_.pollSwitches(ticksPassed);
 	hardware_.pollRotEncoders(ticksPassed);
 	hardware_.pollCvInputs(ticksPassed);
@@ -127,123 +234,78 @@ void AteOscHardwareTester::poll(unsigned char ticksPassed)
 		}
 		//Serial.println("");
 	}
-	
-	hardware_.refreshFlash(ticksPassed);
-	hardware_.refreshLeds();
 	if(test_==TEST_AUDIO)
 	{
 		refreshAudioTest();
+		waveTick += ticksPassed;
+		if(waveTick>7)
+		{
+			waveTick -= 8;
+			waveLed = (hardware_.getAudioBuffer(waveIndex) + 128) >> 4;
+			hardware_.getLedCircular(AteOscHardware::FUNCTION).select(waveIndex>>5);
+			hardware_.getLedCircular(AteOscHardware::VALUE).select(waveLed);
+			waveIndex++;
+			if(waveIndex>hardware_.getAudioBufferLength())
+			{
+				waveIndex = 0;
+			}
+		}
 	}
-}
-
-void AteOscHardwareTester::writeCvCalib(unsigned char cvIp, unsigned int addr)
-{
-	const unsigned char CV_READS = 8;
-	unsigned char calibVal[2] = {0};
-	unsigned long calibRead = 0;
-	for(unsigned char i=0;i<CV_READS;++i)
-	{
-		hardware_.pollCvInputs(0);
-		calibRead += hardware_.getCvInput(cvIp).getValue();
-	}
-	calibRead = calibRead / CV_READS;
-	calibVal[0] = (unsigned char)((calibRead >> 8) & 0xFF);  //msb
-	calibVal[1] = (unsigned char)(calibRead & 0xFF);  //lsb
-	writeMemory((const void*)calibVal,(void*)addr,sizeof(calibVal));
+	audio_->setSampleFreq((unsigned long)pitch_.calcFrequency(pitch_.getOutput()) * (WAVE_LEN>>2));
+	hardware_.refreshFlash(ticksPassed);
+	hardware_.refreshLeds();
 }
 
 //***************** Hardware Events *******************************************
 void AteOscHardwareTester::hardwareCvInputChanged(unsigned char control, unsigned int newValue)
 {
-	if(test_==TEST_POTS)
+	if(test_==TEST_POTS && !(control==AteOscHardware::CV_PITCH || control==AteOscHardware::CV_FILT))
 	{
-		hardware_.getLedCircular(1).fill(newValue>>8);
+		hardware_.getLedCircular(AteOscHardware::VALUE).fill(newValue>>8);
 	}
-	if(control==2)  //2 = pitch knob
+	if(control==AteOscHardware::CV_PITCHPOT)  //2 = pitch knob
 	{
-		audio_->setSampleFreq((unsigned long)newValue*WAVE_LEN);
+		pitch_.setCoarseOffset(newValue<<1);
 	}
-	
+	if(control==AteOscHardware::CV_PITCH)
+	{
+		pitch_.setInput((newValue * 15)>>4);
+	}
 }
 
 void AteOscHardwareTester::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 {
-	static const unsigned char MEMTEST_SIZE = 128;
-	static const unsigned int MEMTEST_ADDR = 1024;
 	unsigned char i;
-	unsigned char writetest[MEMTEST_SIZE] = {0};
-	unsigned char readtest[MEMTEST_SIZE] = {0};
 	static unsigned char lastLed = 255;
 	unsigned char curLed = 0;
 	if(newValue==HIGH)
 	{
-		if(sw==0)
+		for(i=0;i<2;++i)
 		{
-			hardware_.getLedSwitch(sw).setColour(LedRgb::GREEN);
-			if(test_!=TEST_POTS)
+			hardware_.getLedCircular(i).setState(0);
+			hardware_.getLedSwitch(i).setColour(LedRgb::OFF);
+		}
+		hardware_.getLedSwitch(sw).setColour(LedRgb::YELLOW);
+		if(sw==AteOscHardware::FUNCTION)
+		{
+			if(test_==TEST_TICK)
 			{
 				test_ = TEST_POTS;
-				for(i=0;i<2;++i)
-				{
-					hardware_.getLedCircular(i).setState(0);
-					hardware_.getLedSwitch(i).setColour(LedRgb::OFF);
-				}
 				refreshSineWave();
-				//Serial.println("Writing");
-				for (i=0;i<MEMTEST_SIZE;++i)
-				{
-					writetest[i]  = MEMTEST_SIZE-i;
-					curLed = ((unsigned int)i<<3)/MEMTEST_SIZE;
-					if(curLed!=lastLed)
-					{
-						lastLed = curLed;
-						hardware_.getLedCircular(AteOscHardware::FUNCTION).setSegment(curLed,true);
-						hardware_.refreshLeds();
-					}
-
-				}
-				writeFram((const void*)writetest,MEMTEST_ADDR,MEMTEST_SIZE);
-				//Serial.println("Reading");
-				readFram((void*)readtest,MEMTEST_ADDR,MEMTEST_SIZE);
-				lastLed = 255;
-				for (i=0;i<MEMTEST_SIZE;++i)
-				{
-					//Serial.println(readtest[i],DEC);
-					if(readtest[i]==writetest[i])
-					{
-						curLed = ((unsigned int)i<<4)/MEMTEST_SIZE;
-						if(curLed!=lastLed)
-						{
-							lastLed = curLed;
-							hardware_.getLedCircular(AteOscHardware::VALUE).setSegment(curLed,true);
-							hardware_.refreshLeds();
-						}
-					}
-					else
-					{
-						hardware_.getLedCircular(AteOscHardware::VALUE).setSegment(curLed,false);
-						hardware_.refreshLeds();
-					}
-				}
 			}
-
-			//Serial.println("Finished");
+			else
+			{
+				test_ = TEST_TICK;
+			}
 		}
 		else
 		{
 			test_ = TEST_AUDIO;
 			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
 		}
-		
-	}
-	else
-	{
-		if(test_==TEST_POTS)
-		{
-			hardware_.getLedSwitch(sw).setColour(LedRgb::RED);
-		}
 	}
 }
+
 void AteOscHardwareTester::hardwareSwitchHeld(unsigned char sw)
 {
 	if(test_==TEST_POTS)
@@ -252,20 +314,16 @@ void AteOscHardwareTester::hardwareSwitchHeld(unsigned char sw)
 		switch(hardware_.getRotEncoder(AteOscHardware::FUNCTION).getValue())
 		{
 			case 0:
-			writeCvCalib(AteOscHardware::CV_PITCH,AteOscHardware::EEPROM_PITCH_LOW);
-			audio_->setSampleFreq(78L*WAVE_LEN);   //MIDI NOTE 15
+			hardware_.setCvCalib(AteOscHardware::EEPROM_PITCH_LOW);
 			break;
 			case 1:
-			writeCvCalib(AteOscHardware::CV_PITCH,AteOscHardware::EEPROM_PITCH_HIGH);
-			audio_->setSampleFreq(440L*WAVE_LEN);  //MIDI NOTE 45
+			hardware_.setCvCalib(AteOscHardware::EEPROM_PITCH_HIGH);
 			break;
 			case 2:
-			writeCvCalib(AteOscHardware::CV_FILT,AteOscHardware::EEPROM_FILT_LOW);
-			audio_->setSampleFreq(78L*WAVE_LEN);   //MIDI NOTE 15
+			hardware_.setCvCalib(AteOscHardware::EEPROM_FILT_LOW);
 			break;
 			case 3:
-			writeCvCalib(AteOscHardware::CV_FILT,AteOscHardware::EEPROM_FILT_HIGH);
-			audio_->setSampleFreq(440L*WAVE_LEN);  //MIDI NOTE 45
+			hardware_.setCvCalib(AteOscHardware::EEPROM_FILT_HIGH);
 			break;
 		}
 	}
@@ -280,24 +338,28 @@ void AteOscHardwareTester::hardwareRotaryEncoderChanged(unsigned char rotary, un
 }
 void AteOscHardwareTester::hardwareAudioBufferStatusChanged(unsigned char newStatus)
 {
-	switch (newStatus)
+	if(test_==TEST_AUDIO)
 	{
-		case AteOscHardware::BUFFER_IDLE:
-		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::OFF);
-		break;
-		case AteOscHardware::BUFFER_WAITZCROSS:
-		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::YELLOW);
-		break;
-		case AteOscHardware::BUFFER_CAPTURING:
-		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::RED);
-		break;
-		case AteOscHardware::BUFFER_OVERFLOW:
-		hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
-		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::OFF);
-		break;
-		case AteOscHardware::BUFFER_CAPTURED:
-		hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::GREEN);
-		hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::OFF);
-		break;
+		switch (newStatus)
+		{
+			case AteOscHardware::BUFFER_IDLE:
+			hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::OFF);
+			break;
+			case AteOscHardware::BUFFER_WAITZCROSS:
+			hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::YELLOW);
+			break;
+			case AteOscHardware::BUFFER_CAPTURING:
+			hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::RED);
+			break;
+			case AteOscHardware::BUFFER_OVERFLOW:
+			hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
+			hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::OFF);
+			break;
+			case AteOscHardware::BUFFER_CAPTURED:
+			hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::GREEN);
+			hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::OFF);
+			break;
+		}
 	}
+
 }

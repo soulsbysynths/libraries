@@ -27,6 +27,7 @@ void AteOsc::initialize()
 	engine_.getQuantize().setQntKey(hardware_.readEepromByte(AteOscHardware::EEPROM_QUANT_KEY));
 	setClockMode((ClockMode)hardware_.readEepromByte(AteOscHardware::EEPROM_CLOCK_MODE));
 	hardware_.setCtrlMode((AteOscHardware::CtrlMode)hardware_.readEepromByte(AteOscHardware::EEPROM_CTRL_MODE));
+	engine_.getPatchPtr()->readPatch(hardware_.readEepromByte(AteOscHardware::EEPROM_CURRENT_PATCH) & 0x0F);
 	hardware_.getLedSwitch(AteOscHardware::FUNCTION).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::GREEN,true);
 	hardware_.getLedSwitch(AteOscHardware::VALUE).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::GREEN,LedRgb::RED,true);
 }
@@ -81,6 +82,10 @@ void AteOsc::engineFunctionChanged(unsigned char func, unsigned char val)
 }
 void AteOsc::engineOptionChanged(unsigned char func, bool opt)
 {
+	if(valueSecondaryMode_==true)
+	{
+		return;
+	}
 	if(opt==true)
 	{
 		hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::GREEN);
@@ -299,6 +304,22 @@ void AteOsc::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 				case AteOscEngine::FUNC_FILT:
 				if(valueSecondaryMode_==true)
 				{
+					unsigned char val = hardware_.getRotEncoder(AteOscHardware::VALUE).getValue();
+					switch (f)
+					{
+						case AteOscEngine::FUNC_PORTA:
+						engine_.getQuantize().setQntKey(val);
+						hardware_.writeEepromByte(AteOscHardware::EEPROM_QUANT_KEY, val);
+						break;
+						case AteOscEngine::FUNC_MINLENGTH:
+						setClockMode((ClockMode)val);
+						hardware_.writeEepromByte(AteOscHardware::EEPROM_CLOCK_MODE, val);
+						break;
+						case AteOscEngine::FUNC_FILT:
+						hardware_.setCtrlMode((AteOscHardware::CtrlMode)val);
+						hardware_.writeEepromByte(AteOscHardware::EEPROM_CTRL_MODE, val);
+						break;
+					}
 					valueSecondaryMode_ = false;
 					engineFunctionChanged(f,engine_.getPatchPtr()->getFunctionValue(f)); //force circ LED through and RE max value
 					engineOptionChanged(f,engine_.getPatchPtr()->getOptionValue(f)); //force sw LED through
@@ -353,13 +374,14 @@ void AteOsc::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 				{
 					engine_.getPatchPtr()->readPatch(engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_MEM));
 				}
+				hardware_.writeEepromByte(AteOscHardware::EEPROM_CURRENT_PATCH,engine_.getPatchPtr()->getFunctionValue(AteOscEngine::FUNC_MEM));
 				break;
 			}
 		}
 	}
 	if (sw==AteOscHardware::VALUE)
 	{
-		if(newValue==HIGH && hardware_.getSwitch(AteOscHardware::FUNCTION).getState()==LOW)
+		if(newValue==HIGH && hardware_.getSwitch(AteOscHardware::FUNCTION).getState()==LOW && valueSecondaryMode_==false)
 		{
 			hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
 			if(hardware_.getSwitch(AteOscHardware::FUNCTION).getHoldTime()>AteOscHardware::HOLD_EVENT_TICKS)
@@ -417,21 +439,6 @@ void AteOsc::hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char ne
 		}
 		else
 		{
-			switch (engine_.getFunction())
-			{
-				case AteOscEngine::FUNC_PORTA:
-				engine_.getQuantize().setQntKey(newValue);
-				hardware_.writeEepromByte(AteOscHardware::EEPROM_QUANT_KEY, newValue);
-				break;
-				case AteOscEngine::FUNC_MINLENGTH:
-				setClockMode((ClockMode)newValue);
-				hardware_.writeEepromByte(AteOscHardware::EEPROM_CLOCK_MODE, newValue);
-				break;
-				case AteOscEngine::FUNC_FILT:
-				hardware_.setCtrlMode((AteOscHardware::CtrlMode)newValue);
-				hardware_.writeEepromByte(AteOscHardware::EEPROM_CTRL_MODE, newValue);
-				break;
-			}
 			hardware_.getLedCircular(AteOscHardware::VALUE).select(newValue);
 		}
 	}

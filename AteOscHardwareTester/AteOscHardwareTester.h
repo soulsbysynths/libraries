@@ -23,8 +23,9 @@
 #include <AtmAudio.h>
 #include <Wavetable.h>
 #include <avr/pgmspace.h>
-
-
+#include <AteOscOscillatorProgmem.h>
+#include <AteOscHardwareTesterProgmem.h>
+#include <AteOscPitch/AteOscPitch.h>
 
 class AteOscHardwareTester : public AteOscHardwareBase
 {
@@ -59,11 +60,13 @@ private:
 	bool lastMoving_[6] = {false};
 	bool sinewave_ = false;
 	Wavetable wavetable_;
+	AteOscPitch pitch_;
 //functions
 public:
 	AteOscHardwareTester();
 	~AteOscHardwareTester();
 	void init();
+	void initMemory();
 	void tick();
 	void poll(unsigned char ticksPassed);
 	void hardwareSwitchChanged(unsigned char sw, unsigned char newValue);
@@ -71,14 +74,13 @@ public:
 	void hardwareCvInputChanged(unsigned char control, unsigned int newValue);
 	void hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise);
 	void hardwareAudioBufferStatusChanged(unsigned char newStatus);
-	void hardwareGateInputChanged(bool newValue){}
+	void hardwareGateInputChanged(unsigned char input, bool newValue){}
 protected:
 private:
 	AteOscHardwareTester( const AteOscHardwareTester &c );
 	AteOscHardwareTester& operator=( const AteOscHardwareTester &c );
 	void refreshAudioTest();
 	void refreshSineWave();
-	void writeCvCalib(unsigned char cvIp, unsigned int addr);
 }; //AteOscHardwareTester
 
 #endif //__ATEOSCHARDWARETESTER_H__

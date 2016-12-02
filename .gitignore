@@ -4,12 +4,15 @@ Ade33Hardware/*
 Ade33HwTester/*
 Ade33LogicEngine/*
 Ade33Patch/*
+Ade33ProbEngine/*
 Ade33TimingEngine/*
+Ade33GateEngine/*
 FM24C64B/*
 avrfix/*
 CD4051/*
 MCP3208/*
 mozz_rand/*
+Mozzi-1.0.2/*
 SimpleSDAudio/*
 MCP23S17/*
 Adafruit_FRAM_I2C-master/*
