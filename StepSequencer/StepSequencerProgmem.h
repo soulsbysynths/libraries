@@ -16,7 +16,9 @@
 
 #ifndef STEPSEQUENCER_PROGMEM_H_
 #define STEPSEQUENCER_PROGMEM_H_
-
+#define MINI 0
+#define XMAS 1
+#define SEQUENCE XMAS
 #include <avr/pgmspace.h>
 
 static const unsigned char REST = 128;
@@ -26,6 +28,7 @@ static const unsigned char SEQ_BS[16] PROGMEM = {12,11,10,16,11,9,15,10,8,16,7,1
 static const unsigned char SEQ_BIT_MASK = 15;
 static const unsigned char SEQ_LENGTH = 16;
 
+#if SEQUENCE==MINI
 static const unsigned char seqPatterns[16][16] PROGMEM =
 {
 	
@@ -47,6 +50,58 @@ static const unsigned char seqPatterns[16][16] PROGMEM =
 	{24,23,26,21,26,19,24,18,24,16,24,14,24,12,24,11}
 
 };
+#elif SEQUENCE==XMAS
+static const unsigned char seqPatterns[16][16] PROGMEM =
+{
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{
+		7,9,HOLD,7,4,HOLD,12,HOLD,9,HOLD,7,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,12,HOLD,11,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		5,7,HOLD,5,2,HOLD,11,HOLD,9,HOLD,7,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,9,HOLD,4,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,HOLD,7,4,HOLD,12,HOLD,9,HOLD,7,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,12,HOLD,11,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		5,7,HOLD,5,2,HOLD,11,HOLD,9,HOLD,7,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,14,HOLD,12,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		9,REST,9,HOLD,12,HOLD,9,HOLD,7,	HOLD,4,7,7,HOLD,HOLD,REST
+	},
+	{
+		5,HOLD,9,HOLD,7,HOLD,5,HOLD,4,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		2,HOLD,4,HOLD,7,HOLD,9,HOLD,11,REST,11,REST,11,HOLD,HOLD,REST
+	},
+	{
+		12,REST,12,REST,11,HOLD,9,HOLD,7,HOLD,5,2,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,HOLD,7,4,HOLD,12,HOLD,9,HOLD,7,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,12,HOLD,11,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,14,HOLD,12,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	}
+};
+#endif
+
 
 //0,0,0,4,0,0,5,0,0,7,0,0,10,0,10,12
 

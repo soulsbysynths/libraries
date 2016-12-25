@@ -49,14 +49,16 @@ private:
 	unsigned char division_ = 2;
 	unsigned int divMult_ = 1;
 	unsigned char divBs_ = 8;
-	unsigned char indexLast_ = 0;
-	unsigned char stepLast_ = REST;
+	unsigned char stepLast_ = 0;
+	unsigned char step_ = 15;
+	unsigned char noteLast_ = REST;
 //functions
 public:
 	StepSequencer(StepSequencerBase* base);
 	~StepSequencer();
 	void setPattern(unsigned char new_pattern);
 	unsigned char getPattern(){return pattern_;}
+	unsigned char getStep(){return step_;}
 	void setDivision(unsigned char newDiv);
 	unsigned char getDivision(){return division_;}
 	void refresh(unsigned int cycleTick);

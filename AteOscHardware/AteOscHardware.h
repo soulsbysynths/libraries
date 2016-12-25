@@ -184,7 +184,8 @@ class AteOscHardware
 	const LedRgb& getLedSwitch(unsigned char index) const { return ledSwitch_[index]; }
 	void setInputMode(unsigned char input, InputMode newMode) {inputMode_[input] = newMode; }
 	InputMode getInputMode(unsigned char input){return inputMode_[input]; }
-	void setCvCalib(unsigned int eepromAddress);
+	void calcCvCalib(unsigned int eepromAddress);
+	void readCvCalib(unsigned int eepromAddress);
 	char getAudioBuffer(unsigned char sample);
 	unsigned char getAudioBufferLength();
 	unsigned char getAudioMinLength();

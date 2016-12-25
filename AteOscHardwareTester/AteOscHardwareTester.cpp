@@ -33,6 +33,221 @@ AteOscHardwareTester::~AteOscHardwareTester()
 {
 } //~AteOscHardwareTester
 
+#ifdef _DEBUG==1
+
+void AteOscHardwareTester::init()
+{
+	audio_->initialize();
+	audio_->setSampleFreq((unsigned long)WAVE_LEN * 440);
+	refreshSineWave();
+	//Serial.begin(9600);
+}
+void AteOscHardwareTester::initMemory()
+{
+	
+	unsigned int addr = 0;
+	unsigned char framBuffer[OSC_WAVELEN] = {0};
+	unsigned char eepromBuffer[PATCH_SIZE] = {0};
+	unsigned char i,j,k;
+
+	clearLeds();
+
+	//init fram
+	hardware_.refreshLeds();
+	for(i=0;i<OSC_BANKS;++i)
+	{
+		hardware_.getLedCircular(AteOscHardware::FUNCTION).select(i);
+		for (j=0;j<OSC_TABLES;++j)
+		{
+			hardware_.getLedCircular(AteOscHardware::VALUE).select(j);
+			hardware_.refreshLeds();
+			for(k=0;k<OSC_WAVELEN;++k)
+			{
+				framBuffer[k] = pgm_read_byte(&(OSC_WAVETABLE[i][j][k]));
+			}
+			writeFram((const void*)framBuffer, addr, sizeof(framBuffer));
+			readFram((void*)framBuffer, addr, sizeof(framBuffer));
+			for(k=0;k<OSC_WAVELEN;++k)
+			{
+				if(framBuffer[k]!=pgm_read_byte(&(OSC_WAVETABLE[i][j][k])))
+				{
+					hardware_.refreshLeds();
+					for(;;){}  //STOP
+				}
+			}
+			addr += OSC_WAVELEN;
+		}
+	}
+
+	//init eeprom
+	hardware_.refreshLeds();
+	addr = 0;
+	hardware_.getLedCircular(AteOscHardware::FUNCTION).select(0);
+	for(i=0;i<PATCHES;++i)
+	{
+		hardware_.getLedCircular(AteOscHardware::VALUE).select(i);
+		hardware_.refreshLeds();
+		for(j=0;j<PATCH_SIZE;++j)
+		{
+			eepromBuffer[j] = pgm_read_byte(&(PATCH_DATA[i][j]));
+		}
+		writeMemory((const void*)eepromBuffer, (void*)addr, sizeof(eepromBuffer));
+		readMemory((void*)eepromBuffer,(const void*)addr, sizeof(eepromBuffer));
+		for(j=0;j<PATCH_SIZE;++j)
+		{
+			if(eepromBuffer[j]!=pgm_read_byte(&(PATCH_DATA[i][j])))
+			{
+				hardware_.refreshLeds();
+				for(;;){}  //STOP
+			}
+		}
+		addr += PATCH_SIZE;
+	}
+
+	hardware_.getLedCircular(AteOscHardware::FUNCTION).select(1);
+	hardware_.refreshLeds();
+
+	//global settings
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_CURRENT_PATCH, 0);
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_CTRL_MODE, 0);
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_CLOCK_MODE, 0);
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_QUANT_KEY, 0);
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_LOW, 0x04);    //1024 1.25V 77.8Hz msb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_LOW+1, 0x00);  //1024 1.25V 77.8Hz lsb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_HIGH, 0x0C);   //3072 3.75V 440Hz msb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_HIGH+1, 0x00); //3072 3.75V 440Hz lsb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_LOW, 0x04);    //1024 1.25V 77.8Hz msb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_LOW+1, 0x00);  //1024 1.25V 77.8Hz lsb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_HIGH, 0x0C);   //3072 3.75V 440Hz msb
+	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_HIGH+1, 0x00); //3072 3.75V 440Hz lsb
+
+	hardware_.readCvCalib(AteOscHardware::EEPROM_PITCH_LOW);
+	hardware_.readCvCalib(AteOscHardware::EEPROM_PITCH_HIGH);
+	hardware_.readCvCalib(AteOscHardware::EEPROM_FILT_LOW);
+	hardware_.readCvCalib(AteOscHardware::EEPROM_FILT_HIGH);
+
+	clearLeds();
+
+}
+void AteOscHardwareTester::clearLeds()
+{
+	for(unsigned char i=0;i<2;++i)
+	{
+		hardware_.getLedCircular(i).setState(0);
+	}
+	hardware_.refreshLeds();
+}
+void AteOscHardwareTester::refreshSineWave()
+{
+	Wavetable wavetable_;
+	wavetable_ = Wavetable(WAVE_LEN);
+	for(unsigned char i=0;i<WAVE_LEN;++i)
+	{
+		wavetable_.setSample(i,sine_wave[i]);
+	}
+	audio_->pasteWavetable(wavetable_);
+}
+
+void AteOscHardwareTester::poll(unsigned char ticksPassed)
+{
+	static unsigned char waveIndex = 0;
+	static unsigned char waveTick = 0;
+	unsigned char waveLed = 0;
+
+	if(allIpLedsZero() && audio_->getSampleFreq()!= TESTFREQ_AUDIO)
+	{
+		audio_->setSampleFreq(TESTFREQ_AUDIO);
+		hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
+		clearLeds();
+	}
+	if(!allIpLedsZero() && audio_->getSampleFreq()!= WAVE_LEN)
+	{
+		audio_->setSampleFreq(WAVE_LEN);
+		clearLeds();
+	}
+
+	hardware_.pollCvInputs(ticksPassed);
+	hardware_.pollAudioBufferStatus();
+	
+	if (allIpLedsZero())
+	{
+		waveTick += ticksPassed;
+		if(waveTick>31)
+		{
+			waveTick -= 32;
+			waveLed = (hardware_.getAudioBuffer(waveIndex) + 128) >> 4;
+			hardware_.getLedCircular(AteOscHardware::FUNCTION).select(((unsigned int)waveIndex<<3) / (hardware_.getAudioBufferLength()+1));
+			hardware_.getLedCircular(AteOscHardware::VALUE).select(waveLed);
+			waveIndex++;
+			if(waveIndex>hardware_.getAudioBufferLength())
+			{
+				waveIndex = 0;
+				hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
+			}
+		}
+	}
+	else
+	{
+		hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
+	}
+
+
+	hardware_.refreshFlash(ticksPassed);
+	hardware_.refreshLeds();
+}
+bool AteOscHardwareTester::allIpLedsZero()
+{
+	for(unsigned char i=0;i<AteOscHardware::CV_INPUTS;++i)
+	{
+		if(ipLed_[i]>0)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+//***************** Hardware Events *******************************************
+void AteOscHardwareTester::hardwareCvInputChanged(unsigned char control, unsigned int newValue)
+{
+	unsigned char newLed = newValue >> 8;
+	if(newLed!=ipLed_[control])
+	{
+		ipLed_[control] = newLed;
+		hardware_.getLedCircular(AteOscHardware::VALUE).fill(newLed);
+		if(newLed>0)
+		{
+			hardware_.getLedCircular(AteOscHardware::FUNCTION).setSegment(control,true);
+		}
+		else
+		{
+			hardware_.getLedCircular(AteOscHardware::FUNCTION).setSegment(control,false);
+		}
+	}
+}
+
+void AteOscHardwareTester::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
+{
+
+}
+
+void AteOscHardwareTester::hardwareSwitchHeld(unsigned char sw)
+{
+	
+}
+void AteOscHardwareTester::hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise)
+{
+
+}
+void AteOscHardwareTester::hardwareAudioBufferStatusChanged(unsigned char newStatus)
+{
+
+
+}
+
+#else
+
+//**** NORMAL HARDWARE TESTER**********************************************************************************************
+
 void AteOscHardwareTester::init()
 {
 	wavetable_ = Wavetable(WAVE_LEN);
@@ -129,16 +344,6 @@ void AteOscHardwareTester::initMemory()
 	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_LOW+1, 0x00);  //1024 1.25V 77.8Hz lsb
 	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_HIGH, 0x00);   //3072 3.75V 440Hz msb
 	hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_HIGH+1, 0x00); //3072 3.75V 440Hz lsb
-
-
-	//hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_LOW, 0x04);    //1024 1.25V 77.8Hz msb
-	//hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_LOW+1, 0x00);  //1024 1.25V 77.8Hz lsb
-	//hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_HIGH, 0x0C);   //3072 3.75V 440Hz msb
-	//hardware_.writeEepromByte(AteOscHardware::EEPROM_PITCH_HIGH+1, 0x00); //3072 3.75V 440Hz lsb
-	//hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_LOW, 0x04);    //1024 1.25V 77.8Hz msb
-	//hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_LOW+1, 0x00);  //1024 1.25V 77.8Hz lsb
-	//hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_HIGH, 0x0C);   //3072 3.75V 440Hz msb
-	//hardware_.writeEepromByte(AteOscHardware::EEPROM_FILT_HIGH+1, 0x00); //3072 3.75V 440Hz lsb
 	//
 	for(i=0;i<2;++i)
 	{
@@ -363,3 +568,4 @@ void AteOscHardwareTester::hardwareAudioBufferStatusChanged(unsigned char newSta
 	}
 
 }
+#endif

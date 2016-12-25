@@ -135,18 +135,10 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	
 	//setup analogue controls
 	//init variables
-	unsigned char data[2] = {0};
-	unsigned int addr = EEPROM_PITCH_LOW;
-	for(i=0;i<2;++i)
-	{
-		for(j=0;j<2;++j)
-		{
-			readMemory((void*)data,(const void*)addr,sizeof(data));
-			cvCalib_[i][j] = ((unsigned int)data[0]<<8) + data[1];
-			addr += 2;
-		}
-		cvCalib_[i][2] = cvCalib_[i][1] - cvCalib_[i][0];  //used in mapping equation
-	}
+	readCvCalib(EEPROM_PITCH_LOW);
+	readCvCalib(EEPROM_PITCH_HIGH);
+	readCvCalib(EEPROM_FILT_LOW);
+	readCvCalib(EEPROM_FILT_HIGH);
 
 	for(a=0;a<INPUTS;++a)
 	{
@@ -224,6 +216,7 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	unsigned char invPind = ~PIND;
 	switchState[2] = bitRead(invPind,PIND6);
 	switch_[2] = Switch(bitRead(invPind,PIND6),HOLD_EVENT_TICKS);
+	#ifndef _DEBUG!=1
 	//PCINT0 = function, PCINT1 = value, PCINT22 = bank, PCINT20 = func rotEncoder_ A, PCINT21 = func rotEncoder_ B, PCINT23 = val rotEncoder_ A, PCINT18 = val rotEncoder_ B
 	bitSet(PCMSK0,PCINT0);
 	bitSet(PCMSK0,PCINT1);
@@ -236,6 +229,8 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	bitSet(PCMSK2,PCINT23);
 	bitSet(PCIFR,PCIF2);
 	bitSet(PCICR,PCIE2);
+	#endif
+
 	
 	rotEncoder_[FUNCTION].setMaxValue(8);
 	
@@ -249,7 +244,7 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	}
 
 }
-void AteOscHardware::setCvCalib(unsigned int eepromAddress)
+void AteOscHardware::calcCvCalib(unsigned int eepromAddress)
 {
 	const unsigned char CV_READS = 8;
 	unsigned char calibVal[2] = {0};
@@ -275,7 +270,16 @@ void AteOscHardware::setCvCalib(unsigned int eepromAddress)
 	writeMemory((const void*)calibVal,(void*)eepromAddress,sizeof(calibVal));
 	cvCalib_[i][j] = (unsigned int)calibRead;
 	cvCalib_[i][2] = cvCalib_[i][1] - cvCalib_[i][0];  //used in mapping equation
-	
+}
+void AteOscHardware::readCvCalib(unsigned int eepromAddress)
+{
+	unsigned char i,j;
+	unsigned char data[2] = {0};
+	i = (eepromAddress - EEPROM_PITCH_LOW) >> 2;
+	j = (eepromAddress - EEPROM_PITCH_LOW - (i<<2)) >> 1;
+	readMemory((void*)data,(const void*)eepromAddress,sizeof(data));
+	cvCalib_[i][j] = ((unsigned int)data[0]<<8) + data[1];
+	cvCalib_[i][2] = cvCalib_[i][1] - cvCalib_[i][0];  //used in mapping equation
 }
 unsigned char AteOscHardware::readEepromByte(unsigned int address)
 {
@@ -396,7 +400,7 @@ void AteOscHardware::refreshLeds()
 void AteOscHardware::pollMappedCvInput(CvInputName input)
 {
 	unsigned char i = ((input == CV_PITCH) ? 0 : 1);
-	long mapped = (((long)readMCP3208input(input) - cvCalib_[i][0]) << 11) / cvCalib_[i][2] + 1024;  //outmax = 3072 = 3.75V, outmin = 1024 = 1.25V, max-min = 2048 (<<11)   
+	long mapped = (((long)readMCP3208input(input) - cvCalib_[i][0]) << 11) / cvCalib_[i][2] + 1024;  //outmax = 3072 = 3.75V, outmin = 1024 = 1.25V, max-min = 2048 (<<11)
 	if(mapped<0)
 	{
 		cvInput_[input].setValue(0);
