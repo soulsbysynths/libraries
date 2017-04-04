@@ -48,10 +48,23 @@ void RotaryEncoder::setMaxValue(char newValue)
 		value_ = maxValue_ - 1;
 	}
 }
+void RotaryEncoder::setCount(int new_count)
+{
+	if(debounceCount_>=debounceTicks_)
+	{
+		count_ = new_count;
+		debounceCount_ = 0;
+	}
+}
 bool RotaryEncoder::hasChanged(unsigned char ticksPassed)
 {
 	bool changed = false;
 	
+	if(debounceCount_<debounceTicks_)
+	{
+		debounceCount_ += ticksPassed;
+	}
+
 	int value_change = (count_-countLast_)/4;
 	if(value_change!=0)
 	{

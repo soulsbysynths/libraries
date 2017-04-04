@@ -49,6 +49,7 @@ public:
 	unsigned char getWaveLength(){return waveLength_;}
 	void setUserWavetableSample(unsigned char index,char newSample);
 	char getUserWavetableSample(unsigned char index);
+	char getSample(unsigned char index);
 	unsigned int getUserWaveStartAddress(){return userWaveStartAddress_;}
 	void writeUserWave(unsigned char waveNum);
 	void readUserWave(unsigned char waveNum);

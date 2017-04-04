@@ -84,7 +84,8 @@ class AteOscHardwareTester : public AteOscHardwareBase
 	{
 		TEST_TICK = 0,
 		TEST_POTS = 1,
-		TEST_AUDIO = 2
+		TEST_AUDIO = 2,
+		TEST_CALIB = 3
 	};
 	protected:
 	private:

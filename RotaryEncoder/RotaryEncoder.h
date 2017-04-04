@@ -32,14 +32,18 @@ class RotaryEncoder
 	char maxValue_ = 16;
 	bool continuous_ = true;
 	bool direction_ = false;
+	unsigned char debounceTicks_ = 0;
+	unsigned char debounceCount_ = 0;
 	//functions
 	public:
 	RotaryEncoder();
 	~RotaryEncoder();
-	void setCount(int new_count){count_ = new_count;}
+	void setCount(int new_count);
 	int getCount(){return count_;}
 	void setValue(char newValue);
 	char getValue(){return value_;}
+	void setDebounceTicks(unsigned char newValue){debounceTicks_ = newValue;}
+	unsigned char getDebounceTicks(){return debounceTicks_;}
 	void setMaxValue(char newValue);
 	void setContinuous(bool newValue){continuous_ = newValue;}
 	bool getContinuous(){return continuous_;}
