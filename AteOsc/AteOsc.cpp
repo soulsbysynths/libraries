@@ -281,16 +281,16 @@ void AteOsc::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 					switch(hardware_.getRotEncoder(AteOscHardware::VALUE).getValue())
 					{
 						case 0:
-						hardware_.setCvCalib(AteOscHardware::EEPROM_PITCH_LOW);
+						hardware_.calcCvCalib(AteOscHardware::EEPROM_PITCH_LOW);
 						break;
 						case 1:
-						hardware_.setCvCalib(AteOscHardware::EEPROM_PITCH_HIGH);
+						hardware_.calcCvCalib(AteOscHardware::EEPROM_PITCH_HIGH);
 						break;
 						case 2:
-						hardware_.setCvCalib(AteOscHardware::EEPROM_FILT_LOW);
+						hardware_.calcCvCalib(AteOscHardware::EEPROM_FILT_LOW);
 						break;
 						case 3:
-						hardware_.setCvCalib(AteOscHardware::EEPROM_FILT_HIGH);
+						hardware_.calcCvCalib(AteOscHardware::EEPROM_FILT_HIGH);
 						break;
 					}
 				}

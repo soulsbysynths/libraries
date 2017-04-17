@@ -53,7 +53,7 @@ AtmAudio::~AtmAudio()
 	#endif
 } //~AtmAudio
 
-void AtmAudio::initialize()
+static void AtmAudio::initialize()
 {
 	//use internal clock
 	bitClear(ASSR,EXCLK);    //disable external clock
@@ -157,6 +157,7 @@ void AtmAudio::pasteWavetable(Wavetable& sourceWavetable)
 	#endif
 }
 
+#ifndef TIMER1_COMPA_vect
 ISR(TIMER1_COMPA_vect)
 {
 	static unsigned char jump = 1;
@@ -199,3 +200,4 @@ ISR(TIMER1_COMPA_vect)
 	bufferIndex += jump;
 	bufferIndex &= audioWaveLengthMask;
 }
+#endif

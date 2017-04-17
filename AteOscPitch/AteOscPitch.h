@@ -36,7 +36,7 @@ public:
 	~AteOscPitch();
 	void setInput(unsigned int newInp){input_ = newInp;}
 	unsigned int getOutput();
-	unsigned int calcFrequency(unsigned int linearFreq);  //outputs real freq << 2  (standard Atmegatron pitch res)
+	static unsigned int calcFrequency(unsigned int linearFreq);  //outputs real freq << 2  (standard Atmegatron pitch res)
 	void setFineOffset(unsigned char newOffset){fineOffset_ = newOffset;}
 	void setCoarseOffset(unsigned int newOffset){coarseOffset_ = newOffset;}
 	void setTopHalf(bool newValue){topHalf_ = newValue;}

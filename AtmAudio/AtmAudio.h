@@ -53,7 +53,7 @@ public:
 	unsigned long getSampleFreq(){return sampleFreq_;}
 	void pasteWavetable(Wavetable& sourceWavetable);
 	void resizeWavetable(unsigned char newWaveLen);
-	void initialize();
+	static void initialize();
 protected:
 private:
 	AtmAudio() {}

@@ -42,6 +42,8 @@ private:
 	unsigned char note_ = 0;
 	unsigned char noteOrderUp_[16] = {0};
 	unsigned char noteOrderDown_[16] = {0};
+	char userPattern_[ARP_LENGTH] = {0};
+	bool userMode_ = false;
 //functions
 public:
 	Arpeggiator(ArpeggiatorBase* base, bool* noteOn);
@@ -50,6 +52,11 @@ public:
 	bool getPingPong(){return pingPong_;}
 	void setType(unsigned char newType);
 	unsigned char getType(){return type_;}
+	void setUserMode(bool newMode);
+	bool getUserMode(){return userMode_;}
+	void resetUserPattern(unsigned char resetToType);
+	unsigned char getUserPattern(unsigned char step){return userPattern_[step];}
+	void setUserPattern(unsigned char step, char newValue);
 	void setDivision(unsigned char newDiv);
 	unsigned char getDivision(){return division_;}
 	void refresh(unsigned int cycleTick);

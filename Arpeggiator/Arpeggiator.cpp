@@ -45,7 +45,32 @@ void Arpeggiator::setType(unsigned char newType)
 	type_ = newType;
 
 }
-
+void Arpeggiator::resetUserPattern(unsigned char resetToType)
+{
+	for(unsigned char i=0;i<ARP_LENGTH;++i)
+	{
+		userPattern_[i] = pgm_read_byte(&(ARP_TYPES[resetToType][i]));
+	}
+}
+void Arpeggiator::setUserPattern(unsigned char step, char newValue)
+{
+	if(newValue>16 || newValue<-16 || newValue==0)
+	{
+		userPattern_[step] = 1;
+	}
+	else
+	{
+		userPattern_[step] = newValue;
+	}
+}
+void Arpeggiator::setUserMode(bool newMode)
+{
+	if(type_==0 && newMode==true)
+	{
+		buildNoteOrder();
+	}
+	userMode_ = newMode;
+}
 void Arpeggiator::setDivision(unsigned char newDiv)
 {
 	division_ = newDiv;
@@ -98,7 +123,14 @@ unsigned char Arpeggiator::findNote()
 	}
 	for(unsigned char i=0;i<l;++i)
 	{
-		note =  getNoteOrder(pgm_read_byte(&(ARP_TYPES[type_][pos_])));
+		if(userMode_)
+		{
+			note =  getNoteOrder(userPattern_[pos_]);
+		}
+		else
+		{
+			note =  getNoteOrder(pgm_read_byte(&(ARP_TYPES[type_][pos_])));
+		}
 		incrementPos();
 		if(note>0)
 		{

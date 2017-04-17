@@ -43,7 +43,7 @@ unsigned int AteOscPitch::getOutput()
 	}
 }
 
-unsigned int AteOscPitch::calcFrequency(unsigned int linearFreq)
+static unsigned int AteOscPitch::calcFrequency(unsigned int linearFreq)
 {
 	unsigned int mult = linearFreq / LIN_FREQS_PER_OCT;
 	unsigned int ind = linearFreq - (mult * LIN_FREQS_PER_OCT);

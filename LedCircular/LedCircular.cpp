@@ -80,6 +80,11 @@ void LedCircular::flashStop(unsigned char segment)
 	flashCnt_[segment] = 0;
 	setSegment(segment,false);
 }
+void LedCircular::flashStopAll()
+{
+	memset(flashCnt_,0,sizeof(flashCnt_));
+	led_c_ = 0;
+}
 void LedCircular::refreshFlash(unsigned char tick_inc)
 {
 	unsigned char j;

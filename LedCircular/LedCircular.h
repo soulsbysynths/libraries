@@ -18,6 +18,7 @@
 #define __LedCIRCULAR_H__
 
 #include "SsHelpers.h"
+#include <string.h>
 
 #ifndef bitRead
 #define bitRead(value, bit) (((value) >> (bit)) & 0x01)
@@ -48,22 +49,22 @@ public:
 	~LedCircular();
 	void select(unsigned char value);
 	void fill(unsigned char value);
+	void setState(unsigned int leds){led_c_ = leds;}
 	unsigned int getState(){return led_c_;}
 	void setSegment(unsigned char segment, bool led_on);
-	void setState(unsigned int leds){led_c_ = leds;}
+	bool getSegment(unsigned char segment);
 	void flash(unsigned char segment, unsigned char flashes, unsigned char onTicks, unsigned char offTicks, bool startOn);
 	void flashStop(unsigned char segment);
+	void flashStopAll();
 	void refreshFlash(unsigned char tick_inc);
 protected:
 private:
 	LedCircular( const LedCircular &c );
 	LedCircular& operator=( const LedCircular &c );
-	bool getSegment(unsigned char segment);
 	void setFlashOnTicks(unsigned char segment, unsigned char onticks);
 	unsigned char getFlashOnticks(unsigned char segment);
 	void setFlashOffTicks(unsigned char segment, unsigned char offticks);
 	unsigned char getFlashOffTicks(unsigned char segment);
-
 }; //LedCircular
 
 #endif //__LedCIRCULAR_H__

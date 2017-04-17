@@ -718,17 +718,18 @@ ISR(TWI_vect)
 		case TW_MR_DATA_ACK: // data received, ack sent
 		// put byte into buffer
 		i2cBuffer[i2cReadPos] = TWDR;
-		i2cReadPos++;  //****NO BREAK HERE - IT SENDS THE ACK
+		i2cReadPos++;
+		//****NO BREAK HERE - IT SENDS THE ACK
 		case TW_MR_SLA_ACK:  // address sent, ack received
 		// ack if more bytes are expected, otherwise nack
 		if(i2cReadPos<i2cWritePos)
 		{
-		// copy data to output register and ack
-		TWCR = TW_TX_ACK;
+			// copy data to output register and ack
+			TWCR = TW_TX_ACK;
 		}
 		else
 		{
-		TWCR = TW_TX_NACK;
+			TWCR = TW_TX_NACK;
 		}
 		break;
 		case TW_MR_DATA_NACK: // data received, nack sent
@@ -745,5 +746,5 @@ ISR(TWI_vect)
 		// All
 		case TW_NO_INFO:   // no state information
 		break;
-		}
-		}
+	}
+}
