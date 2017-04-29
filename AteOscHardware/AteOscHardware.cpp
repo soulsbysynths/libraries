@@ -135,13 +135,52 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	
 	//setup analogue controls
 	//init variables
-	for(a=0;a<CV_INPUTS;++a)
+	readCvCalib(EEPROM_PITCH_LOW);
+	readCvCalib(EEPROM_PITCH_HIGH);
+	readCvCalib(EEPROM_FILT_LOW);
+	readCvCalib(EEPROM_FILT_HIGH);
+
+	for(a=0;a<INPUTS;++a)
 	{
-		cvInput_[a] = CvInput(readMCP3208input(a));
-		//cvInput_[a].setLockOut(false);
+		if(inputMode_[a]==IP_CV)
+		{
+			if(a==CV_PITCH || a==CV_FILT)
+			{
+				i = ((a == CV_PITCH) ? 0 : 1);
+				long mapped = (((long)readMCP3208input(a) - cvCalib_[i][0]) << 11) / cvCalib_[i][2] + 1024;  //outmax = 3072 = 3.75V, outmin = 1024 = 1.25V, max-min = 2048 (<<11)
+				if(mapped<0)
+				{
+					cvInput_[a] = CvInput(0);
+				}
+				else if (mapped>4095)
+				{
+					cvInput_[a] = CvInput(4095);
+				}
+				else
+				{
+					cvInput_[a] = CvInput((unsigned int)mapped);
+				}
+			}
+			else
+			{
+				cvInput_[a] = CvInput(readMCP3208input(a));
+			}
+		}
+		else
+		{
+			cvInput_[a] = CvInput(0);
+		}
+		if(inputMode_[a]==IP_GATE)
+		{
+			gateInput_[a] = readMCP3208input(a) > CV_HALF_SCALE ? true : false;
+		}
+		else
+		{
+			gateInput_[a] = 0;  //already done in header in fact
+		}
 	}
-	//cvInput_[CV_PITCH].setLockOut(false);
-	//cvInput_[CV_PITCH].setSmooth(true);
+	cvInput_[CV_PITCH].setLockOut(false);
+	cvInput_[CV_FILT].setLockOut(false);
 	
 	//Start_ADC interuupt and first conversion.;
 	ADMUX = AUDIO_INPUT;  // set the analog reference (high two bits of ADMUX) and select the channel (low 4 bits).  this also sets ADLAR (left-adjust result) to 0 (the default).
@@ -177,6 +216,7 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	unsigned char invPind = ~PIND;
 	switchState[2] = bitRead(invPind,PIND6);
 	switch_[2] = Switch(bitRead(invPind,PIND6),HOLD_EVENT_TICKS);
+	#ifndef _DEBUG!=1
 	//PCINT0 = function, PCINT1 = value, PCINT22 = bank, PCINT20 = func rotEncoder_ A, PCINT21 = func rotEncoder_ B, PCINT23 = val rotEncoder_ A, PCINT18 = val rotEncoder_ B
 	bitSet(PCMSK0,PCINT0);
 	bitSet(PCMSK0,PCINT1);
@@ -189,6 +229,8 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	bitSet(PCMSK2,PCINT23);
 	bitSet(PCIFR,PCIF2);
 	bitSet(PCICR,PCIE2);
+	#endif
+
 	
 	rotEncoder_[FUNCTION].setMaxValue(8);
 	
@@ -202,6 +244,55 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	}
 
 }
+void AteOscHardware::calcCvCalib(unsigned int eepromAddress)
+{
+	const unsigned char CV_READS = 8;
+	unsigned char calibVal[2] = {0};
+	unsigned long calibRead = 0;
+	unsigned char cvIp, i, j;
+	if(eepromAddress==EEPROM_PITCH_LOW || eepromAddress==EEPROM_PITCH_HIGH)
+	{
+		cvIp = CV_PITCH;
+	}
+	else
+	{
+		cvIp = CV_FILT;
+	}
+	i = (eepromAddress - EEPROM_PITCH_LOW) >> 2;
+	j = (eepromAddress - EEPROM_PITCH_LOW - (i<<2)) >> 1;
+	for(unsigned char i=0;i<CV_READS;++i)
+	{
+		calibRead += readMCP3208input(cvIp);
+	}
+	calibRead = calibRead / CV_READS;
+	calibVal[0] = (unsigned char)((calibRead >> 8) & 0xFF);  //msb
+	calibVal[1] = (unsigned char)(calibRead & 0xFF);  //lsb
+	writeMemory((const void*)calibVal,(void*)eepromAddress,sizeof(calibVal));
+	cvCalib_[i][j] = (unsigned int)calibRead;
+	cvCalib_[i][2] = cvCalib_[i][1] - cvCalib_[i][0];  //used in mapping equation
+}
+void AteOscHardware::readCvCalib(unsigned int eepromAddress)
+{
+	unsigned char i,j;
+	unsigned char data[2] = {0};
+	i = (eepromAddress - EEPROM_PITCH_LOW) >> 2;
+	j = (eepromAddress - EEPROM_PITCH_LOW - (i<<2)) >> 1;
+	readMemory((void*)data,(const void*)eepromAddress,sizeof(data));
+	cvCalib_[i][j] = ((unsigned int)data[0]<<8) + data[1];
+	cvCalib_[i][2] = cvCalib_[i][1] - cvCalib_[i][0];  //used in mapping equation
+}
+unsigned char AteOscHardware::readEepromByte(unsigned int address)
+{
+	unsigned char data[1];
+	readMemory((void*)data,(const void*)address,sizeof(data));
+	return data[0];
+}
+void AteOscHardware::writeEepromByte(unsigned int address, unsigned char newValue)
+{
+	unsigned char data[1] = {newValue};
+	writeMemory((const void*)data,(void*)address,sizeof(data));
+}
+
 char AteOscHardware::getAudioBuffer(unsigned char sample)
 {
 	return audioBuffer[sample];
@@ -306,23 +397,78 @@ void AteOscHardware::refreshLeds()
 	}
 }
 
+void AteOscHardware::pollMappedCvInput(CvInputName input)
+{
+	unsigned char i = ((input == CV_PITCH) ? 0 : 1);
+	long mapped = (((long)readMCP3208input(input) - cvCalib_[i][0]) << 11) / cvCalib_[i][2] + 1024;  //outmax = 3072 = 3.75V, outmin = 1024 = 1.25V, max-min = 2048 (<<11)
+	if(mapped<0)
+	{
+		cvInput_[input].setValue(0);
+	}
+	else if (mapped>4095)
+	{
+		cvInput_[input].setValue(4095);
+	}
+	else
+	{
+		cvInput_[input].setValue((unsigned int)mapped);
+	}
+	if(cvInput_[input].hasChanged(0)==true)  //ticks not used coz lockout off
+	{
+		base_->hardwareCvInputChanged(input,cvInput_[input].getOutput());
+	}
+}
 void AteOscHardware::pollCvInputs(unsigned char ticksPassed)
 {
-	unsigned char a;
-	//unsigned char pin = 0;
-	
-	for(a=0;a<CV_INPUTS;++a)
-	//for(a=0;a<1;++a)
+	unsigned char a,i;
+
+	for(a=0;a<INPUTS;++a)
 	{
-		//pin = pgm_read_byte(&(pinReadOrder[a]));
-		cvInput_[a].setValue(readMCP3208input(a));
-		if(cvInput_[a].hasChanged(ticksPassed)==true)
+		if(inputMode_[a]==IP_CV)
 		{
-			base_->hardwareCvInputChanged(a,cvInput_[a].getValue());
+			if(a==CV_PITCH || a==CV_FILT)
+			{
+				pollMappedCvInput((CvInputName)a);
+			}
+			else
+			{
+				cvInput_[a].setValue(readMCP3208input(a));
+				if(cvInput_[a].hasChanged(ticksPassed)==true)
+				{
+					if(a==CV_PWM && bitRead(ctrlMode_,0))
+					{
+						cvInput_[CV_PITCH].setGain(cvInput_[a].getValue() >> 4);
+					}
+					else if(a==CV_FLANGE && bitRead(ctrlMode_,1))
+					{
+						cvInput_[CV_FILT].setGain(cvInput_[a].getValue() >> 4);
+					}
+					else
+					{
+						base_->hardwareCvInputChanged(a,cvInput_[a].getValue());
+					}
+					
+				}
+			}
 		}
 	}
 }
-
+void AteOscHardware::pollGateInputs()
+{
+	bool newValue;
+	for(unsigned char a=0;a<INPUTS;++a)
+	{
+		if(inputMode_[a]==IP_GATE)
+		{
+			newValue = readMCP3208input(a) > CV_HALF_SCALE ? true : false;
+			if(newValue!=gateInput_[a])
+			{
+				gateInput_[a] = newValue;
+				base_->hardwareGateInputChanged(a,newValue);
+			}
+		}
+	}
+}
 void AteOscHardware::pollSwitches(unsigned char ticksPassed)
 {
 	for(unsigned char i=0;i<2;++i)
@@ -431,7 +577,7 @@ unsigned char AteOscHardware::writeSpi(unsigned char cData)
 unsigned int AteOscHardware::readMCP3208input(unsigned char input)
 {
 	unsigned char h,l,addr;
-	unsigned int out;
+	int out;
 	PORTB &= 0xFB;                                 // Direct port manipulation speeds taking Slave select LOW before SPI action
 	addr = bitRead(input,2);
 	h = writeSpi(MCP3208_SINGLE | addr);
@@ -442,7 +588,18 @@ unsigned int AteOscHardware::readMCP3208input(unsigned char input)
 	out = h & 0x0F;
 	out <<= 8;
 	out |= l;
-	return out;
+	if(out<0)
+	{
+		return 0;
+	}
+	else if(out>4095)
+	{
+		return 4095;
+	}
+	else
+	{
+		return out;
+	}
 }
 
 
@@ -561,7 +718,8 @@ ISR(TWI_vect)
 		case TW_MR_DATA_ACK: // data received, ack sent
 		// put byte into buffer
 		i2cBuffer[i2cReadPos] = TWDR;
-		i2cReadPos++;  //****NO BREAK HERE - IT SENDS THE ACK 
+		i2cReadPos++;
+		//****NO BREAK HERE - IT SENDS THE ACK
 		case TW_MR_SLA_ACK:  // address sent, ack received
 		// ack if more bytes are expected, otherwise nack
 		if(i2cReadPos<i2cWritePos)

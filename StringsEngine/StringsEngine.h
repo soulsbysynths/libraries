@@ -87,6 +87,7 @@ public:
 protected:
 private:
 	static const unsigned char SYSEX_PROD_ID = 0;
+	static const unsigned int MIDI_TICKSPERCYCLE = 1536;
 	const float MAX_PITCH = 0.1155245298177;  //ln 12root2 , -1. *2
 	const unsigned char MULT_PITCH = 228;  
 	//const unsigned char BS_PITCH = 7;  
@@ -133,8 +134,8 @@ public:
 	void midiControlChangeReceived(unsigned char cc, unsigned char val);
 	void midiNoteOnReceived(unsigned char note, unsigned char velocity);
 	void midiNoteOffReceived(unsigned char note);
-	void midiClockStartReceived(void){}
-	void midiClockStopReceived(void){}
+	void midiClockStartReceived(void);
+	void midiClockStopReceived(void);
 	void midiSysexStartReceived(void){}
 	void midiSysexDataReceived(unsigned char index, unsigned char data){}
 	void midiSysexStopReceived(void){}

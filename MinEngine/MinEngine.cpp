@@ -130,7 +130,7 @@ void MinEngine::poll(unsigned char ticksPassed)
 	frequency_ = portamento_.getOutput();
 	pitch_.setInput(frequency_);
 	pitch_.refresh(lfo,env,pitchBend_);
-	audio_->setSampleFreq((unsigned long)pitch_.getOutput() * WAVE_LENGTH);
+	audio_->setSampleFreq((unsigned long)pitch_.getOutput() * (WAVE_LENGTH >> 2));
 	
 	Wavetable working_buffer_(WAVE_LENGTH);
 	oscillator_->copyWavetable(working_buffer_);
@@ -222,6 +222,10 @@ void MinEngine::midiNoteOnReceived(unsigned char note, unsigned char velocity)
 			triggerNote(note);
 			#endif
 		}
+		else
+		{
+			seqBaseNote_ = note;  //allow seq transpose by midi
+		}
 	}
 }
 
@@ -301,12 +305,15 @@ void MinEngine::midiClockStopReceived()
 	setIntBpm(intBpm_);
 	sequencer_->reset();
 }
-void MinEngine::midiControlChangeReceived(unsigned char anlControl_, unsigned char val)
+void MinEngine::midiControlChangeReceived(unsigned char ctrl, unsigned char val)
 {
-	switch ((MidiCC)anlControl_)
+	switch ((MidiCC)ctrl)
 	{
-		case CC_PITCHLFO:
+		case CC_PITCHLFOMOD:
 		patch_->setCtrlValue(HIGH,CTRL_LFO,val>>1);
+		break;
+		case CC_FX:
+		patch_->setFunctionValue(FUNC_CRUSHPORTA, val>>3);
 		break;
 		case CC_FILTERENV:
 		patch_->setCtrlValue(LOW,CTRL_ENV,val<<1);
@@ -314,17 +321,38 @@ void MinEngine::midiControlChangeReceived(unsigned char anlControl_, unsigned ch
 		case CC_DISTORTION:
 		patch_->setCtrlValue(LOW,CTRL_FX,val<<1);
 		break;
+		case CC_WAVEFORM:
+		patch_->setFunctionValue(FUNC_WAVE,val>>3);
+		break;
+		case CC_FILTTYPE:
+		patch_->setFunctionValue(FUNC_FILT,val>>3);
+		break;
+		case CC_FILTENVSHAPE:
+		patch_->setFunctionValue(FUNC_FENV,val>>3);
+		break;
+		case CC_AMPENVSHAPE:
+		patch_->setFunctionValue(FUNC_AENV,val>>3);
+		break;
+		case CC_SEQUENCE:
+		patch_->setFunctionValue(FUNC_PATTERN,val>>3);
+		break;
 		case CC_FILTCUTOFF:
 		patch_->setCtrlValue(LOW,CTRL_FILT,val<<1);
 		break;
 		case CC_FILTRES:
 		patch_->setCtrlValue(HIGH,CTRL_FILT,val<<1);
 		break;
+		case CC_LFOSHAPE:
+		patch_->setFunctionValue(FUNC_LFOTYPE,val>>3);
+		break;
+		case CC_PITCHLFO:
+		patch_->setCtrlValue(HIGH,CTRL_LFO,val<<1);
+		break;
 		case CC_LFOCLOCKDIV:
 		patch_->setFunctionValue(FUNC_LFOSPEED,val>>3);
 		break;
 		case CC_PWM:
-		patch_->setCtrlValue(HIGH,CTRL_FX,val<<1);
+		patch_->setCtrlValue(HIGH,CTRL_AMP,val<<1);
 		break;
 		case CC_AMPLFO:
 		patch_->setCtrlValue(LOW,CTRL_AMP,val<<1);
@@ -420,9 +448,9 @@ void MinEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 	}
 }
 
-void MinEngine::patchCtrlChanged(unsigned char bank, unsigned char anlControl_, unsigned char newValue)
+void MinEngine::patchCtrlChanged(unsigned char bank, unsigned char ctrl, unsigned char newValue)
 {
-	switch (anlControl_)
+	switch (ctrl)
 	{
 		case CTRL_VOLUME:
 		if(bank==LOW)
@@ -431,17 +459,18 @@ void MinEngine::patchCtrlChanged(unsigned char bank, unsigned char anlControl_, 
 		}
 		else
 		{
-			bool testNoteOn = false;
-			if(noteOn_[testNote_]==true)
+			bool testNoteOn = noteOn_[testNote_];
+			unsigned char newTestNote = (newValue>>2) + 24;
+			if(testNote_!=newTestNote)
 			{
-				testNoteOn = true;
+				testNote_ = newTestNote;
+				seqBaseNote_ = testNote_;
+				if(testNoteOn==true)
+				{
+					midiNoteOnReceived(testNote_,127);
+				}
 			}
-			testNote_ = (newValue>>2) + 24;
-			seqBaseNote_ = testNote_;
-			if(testNoteOn==true)
-			{
-				midiNoteOnReceived(testNote_,127);
-			}
+
 		}
 		break;
 		case CTRL_FILT:

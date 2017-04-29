@@ -16,7 +16,9 @@
 
 #ifndef STEPSEQUENCER_PROGMEM_H_
 #define STEPSEQUENCER_PROGMEM_H_
-
+#define MINI 0
+#define XMAS 1
+#define ODY 2
 #include <avr/pgmspace.h>
 
 static const unsigned char REST = 128;
@@ -26,6 +28,7 @@ static const unsigned char SEQ_BS[16] PROGMEM = {12,11,10,16,11,9,15,10,8,16,7,1
 static const unsigned char SEQ_BIT_MASK = 15;
 static const unsigned char SEQ_LENGTH = 16;
 
+#if SEQUENCE==MINI
 static const unsigned char seqPatterns[16][16] PROGMEM =
 {
 	
@@ -47,6 +50,110 @@ static const unsigned char seqPatterns[16][16] PROGMEM =
 	{24,23,26,21,26,19,24,18,24,16,24,14,24,12,24,11}
 
 };
+#elif SEQUENCE==ODY
+static const unsigned char seqPatterns[16][16] PROGMEM =
+{
+	
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{
+	0,7,12,19,7,12,19,24,36,31,24,19,24,19,12,7
+	},
+	{
+	0,REST,3,1,0,REST,7,5,0,3,12,10,0,12,10,8
+	},
+	{
+		12,24,0,HOLD,24,0,24,HOLD,12,24,0,HOLD,24,12,24,12
+	},
+	{
+		0,7,10,12,0,5,10,12,2,7,10,12,2,5,10,12
+	},
+	{
+		0,HOLD,REST,0,REST,REST,12,0,5,HOLD,REST,7,REST,REST,12,7
+	},
+	{
+		36,34,31,29,31,29,27,26,24,22,19,17,12,7,3,0
+	},
+	{
+		0,12,7,0,12,24,0,12,17,0,12,17,0,12,19,24
+	},
+	{
+		0,REST,0,REST,0,HOLD,REST,0,3,HOLD,REST,3,HOLD,HOLD,REST,1
+	},
+	{
+		0,12,0,12,36,24,12,24,0,12,0,12,36,24,36,12
+	},
+	{
+		0,4,HOLD,REST,5,REST,5,7,REST,5,HOLD,REST,7,9,5,2
+	},
+	{
+		4,7,9,7,14,12,14,16,4,7,9,7,14,12,14,16
+	},
+	{
+		2,0,3,2,0,7,5,3,2,0,10,7,5,3,2,0
+	},
+	{
+		19,17,19,17,12,10,12,10,7,5,7,5,2,0,2,0
+	},
+	{
+		0,7,3,10,7,12,10,15,12,19,15,22,19,24,22,27
+	},
+	{
+		12,HOLD,0,HOLD,12,14,0,HOLD,10,HOLD,0,HOLD,8,HOLD,0,HOLD
+	}
+
+};
+#elif SEQUENCE==XMAS
+static const unsigned char seqPatterns[16][16] PROGMEM =
+{
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{
+		7,9,HOLD,7,4,HOLD,12,HOLD,9,HOLD,7,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,12,HOLD,11,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		5,7,HOLD,5,2,HOLD,11,HOLD,9,HOLD,7,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,9,HOLD,4,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,HOLD,7,4,HOLD,12,HOLD,9,HOLD,7,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,12,HOLD,11,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		5,7,HOLD,5,2,HOLD,11,HOLD,9,HOLD,7,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,14,HOLD,12,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		9,REST,9,HOLD,12,HOLD,9,HOLD,7,	HOLD,4,7,7,HOLD,HOLD,REST
+	},
+	{
+		5,HOLD,9,HOLD,7,HOLD,5,HOLD,4,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		2,HOLD,4,HOLD,7,HOLD,9,HOLD,11,REST,11,REST,11,HOLD,HOLD,REST
+	},
+	{
+		12,REST,12,REST,11,HOLD,9,HOLD,7,HOLD,5,2,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,HOLD,7,4,HOLD,12,HOLD,9,HOLD,7,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,12,HOLD,11,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	},
+	{
+		7,9,7,9,7,HOLD,14,HOLD,12,HOLD,HOLD,HOLD,HOLD,HOLD,HOLD,REST
+	}
+};
+#endif
+
 
 //0,0,0,4,0,0,5,0,0,7,0,0,10,0,10,12
 

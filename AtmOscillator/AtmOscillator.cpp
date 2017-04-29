@@ -65,6 +65,17 @@ void AtmOscillator::copyWavetable(Wavetable& destWavetable)
 		}
 	}
 }
+char AtmOscillator::getSample(unsigned char index)
+{
+	if(table_==15 && bank_==0)
+	{
+		return (char)(rand()>>7);
+	}
+	else
+	{
+		return (char)pgm_read_byte(&(OSC_WAVETABLE[bank_][table_][index]));
+	}
+}
 void AtmOscillator::setTable(unsigned char newTable)
 {
 	table_ = newTable;

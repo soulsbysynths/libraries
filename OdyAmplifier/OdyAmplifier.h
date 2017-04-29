@@ -43,6 +43,8 @@ public:
 	void refresh(char am);
 	void setLevel(unsigned char newLevel){level_ = newLevel;}
 	unsigned char getLevel(){return level_;}
+	void setAmAmount(unsigned char newLevel){amAmount_ = newLevel;}
+	unsigned char getAmAmount(){return amAmount_;}
 	void setClip(unsigned char newCip);
 	unsigned char getClip(){return clip_;}
 	void setAmSource(AmpAmSource newSource){amSource_ = newSource;}

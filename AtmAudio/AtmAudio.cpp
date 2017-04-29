@@ -53,7 +53,7 @@ AtmAudio::~AtmAudio()
 	#endif
 } //~AtmAudio
 
-void AtmAudio::initialize()
+static void AtmAudio::initialize()
 {
 	//use internal clock
 	bitClear(ASSR,EXCLK);    //disable external clock
@@ -112,7 +112,7 @@ void AtmAudio::setSampleFreq(unsigned long newSf)
 		for(i=0;i<8;++i)
 		{
 			ocr = (F_CPU<<i)/sampleFreq_;
-			if(ocr>1280)  //5120
+			if(ocr>255)  //1280 //5120  ****VERY TENTATIVELY 255, ORIG=100, def too low, but why so high as 1280???
 			{
 				bufferJump = 1 << i;
 				break;
@@ -157,12 +157,14 @@ void AtmAudio::pasteWavetable(Wavetable& sourceWavetable)
 	#endif
 }
 
+#ifndef CUSTOM_TIMER1
 ISR(TIMER1_COMPA_vect)
 {
 	static unsigned char jump = 1;
 	static unsigned char bufferIndex = 0;
 
-	if(updateOcr && !bufferIndex)
+	//if(updateOcr && !bufferIndex)
+	if(updateOcr && !(bufferIndex%bufferJump))
 	{
 		OCR1A = ocr1a;
 		jump = bufferJump;
@@ -198,3 +200,4 @@ ISR(TIMER1_COMPA_vect)
 	bufferIndex += jump;
 	bufferIndex &= audioWaveLengthMask;
 }
+#endif

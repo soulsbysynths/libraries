@@ -36,8 +36,8 @@ void StepSequencer::setPattern(unsigned char new_pattern)
 	pattern_ = new_pattern;
 	if(pattern_==0)
 	{
-		base_->stepseqNoteEvent(stepLast_,REST);
-		stepLast_ = REST;
+		base_->stepseqNoteEvent(noteLast_,REST);
+		noteLast_ = REST;
 	}
 }
 
@@ -50,22 +50,22 @@ void StepSequencer::setDivision(unsigned char newDiv)
 
 void StepSequencer::reset()
 {
-	indexLast_ = SEQ_LENGTH;
-	stepLast_ = REST;
+	stepLast_ = SEQ_LENGTH;
+	noteLast_ = REST;
 }
 void StepSequencer::refresh(unsigned int cycleTick)
 {
 	if(pattern_!=0)
 	{
-		unsigned char index = ((unsigned long)cycleTick * divMult_) >> divBs_;
-		index &= SEQ_BIT_MASK;
+		step_ = ((unsigned long)cycleTick * divMult_) >> divBs_;
+		step_ &= SEQ_BIT_MASK;
 		
-		if(index!=indexLast_)
+		if(step_!=stepLast_)
 		{
-			unsigned char step = pgm_read_byte(&(seqPatterns[pattern_][index]));
-			base_->stepseqNoteEvent(stepLast_,step);
-			stepLast_ = step;
-			indexLast_ = index;
+			unsigned char note = pgm_read_byte(&(seqPatterns[pattern_][step_]));
+			base_->stepseqNoteEvent(noteLast_,note);
+			noteLast_ = note;
+			stepLast_ = step_;
 		}	
 	}
 

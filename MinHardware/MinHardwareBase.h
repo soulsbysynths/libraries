@@ -21,8 +21,8 @@
 class MinHardwareBase
 {
 	public:
-	virtual void hardwareSwitchChanged(unsigned char switch_, unsigned char newValue) = 0;
-	virtual void hardwareSwitchHeld(unsigned char switch_) = 0;
+	virtual void hardwareSwitchChanged(unsigned char sw, unsigned char newValue) = 0;
+	virtual void hardwareSwitchHeld(unsigned char sw) = 0;
 	virtual void hardwareAnalogueControlChanged(unsigned char control, unsigned char newValue) = 0;
 	virtual void hardwareMidiReceived(unsigned char data) = 0;
 	virtual void hardwareMidiError(unsigned char errorType) = 0;

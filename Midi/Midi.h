@@ -127,6 +127,7 @@ class Midi
 	bool getSysexEnable(){return sysexEnable_;}
 	unsigned char getChannel(){return channel_;}
 	void setChannel(unsigned char new_channel);
+	void setNoteOn(unsigned char note, bool on){noteOn_[note] = on;}
 	bool getNoteOn(unsigned char note){return noteOn_[note];}
 	const bool* getNoteOnPtr() const { return  noteOn_; }
 	bool* getNoteOnPtr() { return noteOn_; }

@@ -28,21 +28,15 @@ static const char EXP_CONVERT_BIPOLAR[256] PROGMEM = {-127,-127,-127,-127,-127,-
 static const unsigned char COMPRESS_FOUR_BIT_MASK[2] PROGMEM = {0x0F,0xF0};
 static const unsigned char COMPRESS_TWO_BIT_MASK[4] PROGMEM = {0x03,0x0C,0x30,0xC0};
 
-//static const float CV_TO_FREQ_EXP = 0.00086295;
-//static const float CV_TO_FREQ_MULT = 258.6643068;
-//static const float CV_TO_FREQ_EXP = 0.000846127;
-//static const float CV_TO_FREQ_MULT = 261.6255653;
-//static const float CV_TO_FREQ_EXP = 0.00086295;
-//static const float CV_TO_FREQ_MULT = 64.66607669;
-static const float CV_TO_FREQ_EXP = 0.00162456;
-static const float CV_TO_FREQ_MULT = 45.61257502;
-
-inline
-unsigned int convertCvFreq(unsigned int cv)
-{
-	float out = CV_TO_FREQ_MULT * exp(CV_TO_FREQ_EXP * (float)cv);
-	return (unsigned int)out;
-}
+//static const float CV_TO_FREQ_EXP = 0.00162456;
+//static const float CV_TO_FREQ_MULT = 45.61257502;
+//
+//inline
+//unsigned int convertCvFreq(unsigned int cv)
+//{
+	//float out = CV_TO_FREQ_MULT * exp(CV_TO_FREQ_EXP * (float)cv);
+	//return (unsigned int)out;
+//}
 
 inline
 char convertExponential(char input)

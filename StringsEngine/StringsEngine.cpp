@@ -583,7 +583,19 @@ void StringsEngine::midiNoteOnReceived(unsigned char note, unsigned char velocit
 	}
 	totNotesOnLast_ = midi_->getTotNotesOn();
 }
+void StringsEngine::midiClockStartReceived()
+{
+	masterClock_.reset();
+	masterClock_.setTicksPerCycle(MIDI_TICKSPERCYCLE);
+	arpeggiator_->reset();
 
+}
+void StringsEngine::midiClockStopReceived()
+{
+	masterClock_.reset();
+	masterClock_.setTicksPerCycle(BPM_TICKS);
+	arpeggiator_->reset();
+}
 void StringsEngine::midiNoteOffReceived(unsigned char note)
 {
 	releaseNote(note);

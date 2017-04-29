@@ -27,47 +27,33 @@ CvInput::CvInput(unsigned int initValue)
 CvInput::~CvInput()
 {
 } //~CvInput
-
-void CvInput::setValue(unsigned int newValue)
+unsigned int CvInput::getOutput()
 {
-	if(smooth_==false)
+	if(gain_==0xFF)
 	{
-		value_ = newValue;
+		return value_;
 	}
 	else
 	{
-		runAveTotal_ -= runAveBuffer_[runAveIndex_];
-		runAveBuffer_[runAveIndex_] = newValue;
-		runAveTotal_ += runAveBuffer_[runAveIndex_];
-		runAveIndex_++;
-		runAveIndex_ &= (RUNAVE_BUFFER_SIZE-1);
-		value_ = runAveTotal_ >> RUNAVE_BUFFER_BS;
+		return  ((value_ >> 4) * (gain_+1)) >> 4;  //slightly weird maths to stop use of ulong. scale value down first.
 	}
 }
-
-void CvInput::setSmooth(bool newValue)
+void CvInput::setGain(unsigned char newValue)
 {
-	smooth_ = newValue;
-	if(smooth_==true)
+	if(newValue!=gain_)
 	{
-		runAveBuffer_ = new unsigned int [RUNAVE_BUFFER_SIZE];
-		for(unsigned char i=0;i<RUNAVE_BUFFER_SIZE;++i)
-		{
-			runAveBuffer_[i] = value_;
-			runAveTotal_ += value_;
-		}
-	}
-	else
-	{
-		delete[] runAveBuffer_;
-		runAveTotal_ = 0;
+		gainChanged_ = true;
+		gain_ = newValue;
 	}
 }
-
 bool CvInput::hasChanged(unsigned char ticksPassed)
 {
 	bool changed = false;
-
+	if(gainChanged_)
+	{
+		gainChanged_ = false;
+		changed = true;
+	}
 	unsigned int diff = absdiff(value_,valueLast_);
 	if(lockOut_==true)
 	{
