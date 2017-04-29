@@ -343,6 +343,7 @@ ISR (PCINT2_vect)
 	switchState[4] = bitRead(inv_pind,PIND7);
 	switchState[5] = bitRead(inv_pind,PIND4);
 }
+
 ISR(USART_RX_vect){
 
 	unsigned char error = UCSR0A; //have to check for error before

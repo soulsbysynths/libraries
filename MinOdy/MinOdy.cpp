@@ -366,9 +366,17 @@ void MinOdy::hardwareSwitchHeld(unsigned char switch_)
 	unsigned char invcol = ~col & 0x07;
 	if(switch_==MinHardware::SW_FUNC_DEC)
 	{
-		engine_.getPatchPtr()->writePatch(MinOdyEngine::PATCH_NUM);
-		hardware_.getLed(MinHardware::LED_FUNC).flash(4,FLASH_TICKS,FLASH_TICKS,(LedRgb::LedRgbColour)col,(LedRgb::LedRgbColour)invcol,true);
-		hardware_.setFirstBoot(false);
+		if(hardware_.getSwitch(MinHardware::SW_FUNC_INC).getState()==HIGH)
+		{
+			engine_.initPatch();
+			hardware_.getLed(MinHardware::LED_FUNC).flash(2,FLASH_TICKS,FLASH_TICKS,(LedRgb::LedRgbColour)col,(LedRgb::LedRgbColour)invcol,true);
+		}
+		else
+		{
+			engine_.getPatchPtr()->writePatch(MinOdyEngine::PATCH_NUM);
+			hardware_.getLed(MinHardware::LED_FUNC).flash(4,FLASH_TICKS,FLASH_TICKS,(LedRgb::LedRgbColour)col,(LedRgb::LedRgbColour)invcol,true);
+			hardware_.setFirstBoot(false);
+		}
 	}
 }
 

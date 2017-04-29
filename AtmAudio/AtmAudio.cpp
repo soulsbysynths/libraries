@@ -157,7 +157,7 @@ void AtmAudio::pasteWavetable(Wavetable& sourceWavetable)
 	#endif
 }
 
-#ifndef TIMER1_COMPA_vect
+#ifndef CUSTOM_TIMER1
 ISR(TIMER1_COMPA_vect)
 {
 	static unsigned char jump = 1;

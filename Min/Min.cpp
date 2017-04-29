@@ -120,7 +120,7 @@ void Min::hardwareAnalogueControlChanged(unsigned char control, unsigned char ne
 	engine_.getPatchPtr()->setCtrlValue(engine_.getBank(),control,newValue);
 }
 
-void Min::hardwareSwitchChanged(unsigned char switch_, unsigned char newValue)
+void Min::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 {
 	bool opt;
 	unsigned char func = (unsigned char)engine_.getFunction();
@@ -128,7 +128,7 @@ void Min::hardwareSwitchChanged(unsigned char switch_, unsigned char newValue)
 	
 	if(newValue==HIGH)
 	{
-		if(switch_==MinHardware::SW_FUNC_DEC)
+		if(sw==MinHardware::SW_FUNC_DEC)
 		{
 			if(func==0)
 			{
@@ -140,7 +140,7 @@ void Min::hardwareSwitchChanged(unsigned char switch_, unsigned char newValue)
 			}
 		}
 
-		if(switch_==MinHardware::SW_FUNC_INC)
+		if(sw==MinHardware::SW_FUNC_INC)
 		{
 			if(func==7)
 			{
@@ -152,7 +152,7 @@ void Min::hardwareSwitchChanged(unsigned char switch_, unsigned char newValue)
 			}
 		}
 
-		if(switch_==MinHardware::SW_VAL_DEC)
+		if(sw==MinHardware::SW_VAL_DEC)
 		{
 			if(hardware_.getSwitch(MinHardware::SW_FUNC_INC).getState()==HIGH)
 			{
@@ -177,7 +177,7 @@ void Min::hardwareSwitchChanged(unsigned char switch_, unsigned char newValue)
 			}
 		}
 
-		if(switch_==MinHardware::SW_VAL_INC)
+		if(sw==MinHardware::SW_VAL_INC)
 		{
 			if(hardware_.getSwitch(MinHardware::SW_FUNC_INC).getState()==HIGH)
 			{
@@ -203,7 +203,7 @@ void Min::hardwareSwitchChanged(unsigned char switch_, unsigned char newValue)
 		}
 	}
 
-	if(switch_==MinHardware::SW_PLAY)
+	if(sw==MinHardware::SW_PLAY)
 	{
 		if(newValue==HIGH)
 		{
@@ -215,20 +215,29 @@ void Min::hardwareSwitchChanged(unsigned char switch_, unsigned char newValue)
 		}
 	}
 	
-	if(switch_==MinHardware::SW_BANK)
+	if(sw==MinHardware::SW_BANK)
 	{
 		engine_.setBank(newValue);
 	}
 }
-void Min::hardwareSwitchHeld(unsigned char switch_)
+void Min::hardwareSwitchHeld(unsigned char sw)
 {
 	unsigned char col = (unsigned char)hardware_.getLed(MinHardware::LED_FUNC).getColour();
 	unsigned char invcol = ~col & 0x07;
-	if(switch_==MinHardware::SW_FUNC_DEC)
+	if(sw==MinHardware::SW_FUNC_DEC)
 	{
-		engine_.getPatchPtr()->writePatch(PATCH_NUM);
-		hardware_.getLed(MinHardware::LED_FUNC).flash(4,FLASH_TICKS,FLASH_TICKS,(LedRgb::LedRgbColour)col,(LedRgb::LedRgbColour)invcol,true);
-		hardware_.setFirstBoot(false);
+		if(hardware_.getSwitch(MinHardware::SW_FUNC_INC).getState()==HIGH)
+		{
+			engine_.initPatch();
+			hardware_.getLed(MinHardware::LED_FUNC).flash(2,FLASH_TICKS,FLASH_TICKS,(LedRgb::LedRgbColour)col,(LedRgb::LedRgbColour)invcol,true);
+		}
+		else
+		{
+			engine_.getPatchPtr()->writePatch(PATCH_NUM);
+			hardware_.getLed(MinHardware::LED_FUNC).flash(4,FLASH_TICKS,FLASH_TICKS,(LedRgb::LedRgbColour)col,(LedRgb::LedRgbColour)invcol,true);
+			hardware_.setFirstBoot(false);
+		}
+
 	}
 }
 

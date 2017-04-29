@@ -71,6 +71,7 @@ void MinOdyEngine::initialize()
 	pitch_[0].setFmBSource(OdyPitch::ADSR);
 	pitch_[1].setFmBSource(OdyPitch::ADSR);
 	filter_.setFmASource(OdyFilter::SINE);
+	oscillator_[1].setPwmSource(OdyOscillator::LFO);
 }
 void MinOdyEngine::initPatch()
 {
@@ -235,6 +236,10 @@ void MinOdyEngine::midiNoteOnReceived(unsigned char note, unsigned char velocity
 		triggerNote(note);
 		#endif
 	}
+	else
+	{
+		seqBaseNote_ = note;
+	}
 }
 
 void MinOdyEngine::midiNoteOffReceived(unsigned char note)
@@ -279,16 +284,35 @@ void MinOdyEngine::midiNoteOffReceived(unsigned char note)
 
 void MinOdyEngine::midiControlChangeReceived(unsigned char ctrl, unsigned char val)
 {
+
 	switch ((MidiCC)ctrl)
 	{
-		case CC_PITCHLFO:
+		case CC_PITCHLFOMOD:
 		patch_->setCtrlValue(HIGH,CTRL_LFO,val>>1);
+		break;
+		case CC_PORTAMENTO:
+		patch_->setFunctionValue(FUNC_CRUSHPORTA, val>>3);
 		break;
 		case CC_FILTERENV:
 		patch_->setCtrlValue(LOW,CTRL_ENV,val<<1);
 		break;
-		case CC_DISTORTION:
+		case CC_OSC1FREQ:
 		patch_->setCtrlValue(LOW,CTRL_FX,val<<1);
+		break;
+		case CC_WAVEFORM:
+		patch_->setFunctionValue(FUNC_WAVE,val>>3);
+		break;
+		case CC_FILTTYPE:
+		patch_->setFunctionValue(FUNC_FILT,val>>3);
+		break;
+		case CC_FILTENVSHAPE:
+		patch_->setFunctionValue(FUNC_FENV,val>>3);
+		break;
+		case CC_AMPENVSHAPE:
+		patch_->setFunctionValue(FUNC_AENV,val>>3);
+		break;
+		case CC_SEQUENCE:
+		patch_->setFunctionValue(FUNC_PATTERN,val>>3);
 		break;
 		case CC_FILTCUTOFF:
 		patch_->setCtrlValue(LOW,CTRL_FILT,val<<1);
@@ -296,13 +320,19 @@ void MinOdyEngine::midiControlChangeReceived(unsigned char ctrl, unsigned char v
 		case CC_FILTRES:
 		patch_->setCtrlValue(HIGH,CTRL_FILT,val<<1);
 		break;
-		case CC_LFOCLOCKDIV:
+		case CC_MODPRESET:
+		patch_->setFunctionValue(FUNC_LFOTYPE,val>>3);
+		break;
+		case CC_PITCHLFO:
+		patch_->setCtrlValue(HIGH,CTRL_LFO,val<<1);
+		break;
+		case CC_LFOSPEED:
 		patch_->setFunctionValue(FUNC_LFOSPEED,val>>3);
 		break;
 		case CC_PWM:
-		patch_->setCtrlValue(HIGH,CTRL_FX,val<<1);
+		patch_->setCtrlValue(HIGH,CTRL_AMP,val<<1);
 		break;
-		case CC_AMPLFO:
+		case CC_GAIN:
 		patch_->setCtrlValue(LOW,CTRL_AMP,val<<1);
 		break;
 		case CC_FILTLFO:
@@ -311,13 +341,14 @@ void MinOdyEngine::midiControlChangeReceived(unsigned char ctrl, unsigned char v
 		case CC_PITCHENV:
 		patch_->setCtrlValue(HIGH,CTRL_ENV,val<<1);
 		break;
-		case CC_FLANGE:
+		case CC_OSC2FREQ:
 		patch_->setCtrlValue(HIGH,CTRL_FX,val<<1);
 		break;
 		case CC_ALLNOTESOFF:
 		midi_->reset();
 		break;
 	}
+
 }
 
 void MinOdyEngine::midiPitchBendReceived(char bend)
@@ -535,6 +566,7 @@ void MinOdyEngine::stepseqNoteEvent(unsigned char lastStep, unsigned char newSte
 			triggerNote(note);
 		}
 	}
+	#if SEQUENCE==XMAS
 	if(sequencer_->getStep()==15 && sequencer_->getPattern()!=0)
 	{
 		if(sequencer_->getPattern()==15)
@@ -546,4 +578,5 @@ void MinOdyEngine::stepseqNoteEvent(unsigned char lastStep, unsigned char newSte
 			patch_->setFunctionValue(FUNC_PATTERN,sequencer_->getPattern()+1);
 		}
 	}
+	#endif
 }

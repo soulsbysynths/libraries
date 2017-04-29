@@ -39,8 +39,8 @@ public:
 	~Min();
 	void initialize();
 	void poll(unsigned char ticksPassed);
-	void hardwareSwitchChanged(unsigned char switch_, unsigned char newValue);
-	void hardwareSwitchHeld(unsigned char switch_);
+	void hardwareSwitchChanged(unsigned char sw, unsigned char newValue);
+	void hardwareSwitchHeld(unsigned char sw);
 	void hardwareAnalogueControlChanged(unsigned char control, unsigned char newValue);
 	void hardwareMidiReceived(unsigned char data);
 	void hardwareMidiError(unsigned char errorType){}

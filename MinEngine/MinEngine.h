@@ -74,11 +74,19 @@ class MinEngine : public MidiBase, StepSequencerBase, AtmPatchBase
 	};
 	enum MidiCC : unsigned char
 	{
-		CC_PITCHLFO = 1,
+		CC_PITCHLFOMOD = 1,
+		CC_FX = 5,
 		CC_FILTERENV = 16,
 		CC_DISTORTION = 17,
+		CC_WAVEFORM = 32,
+		CC_FILTTYPE = 33,
+		CC_FILTENVSHAPE = 34,
+		CC_AMPENVSHAPE = 35,
+		CC_SEQUENCE = 36,
 		CC_FILTCUTOFF = 74,
 		CC_FILTRES = 71,
+		CC_PITCHLFO = 77,
+		CC_LFOSHAPE = 78,
 		CC_LFOCLOCKDIV = 79,
 		CC_PWM = 91,
 		CC_AMPLFO = 92,
@@ -152,9 +160,9 @@ class MinEngine : public MidiBase, StepSequencerBase, AtmPatchBase
 	unsigned char getBank(){return bank_;}
 	void initPatch();
 	void patchValueChanged(unsigned char func, unsigned char newValue);
-	void patchCtrlChanged(unsigned char bank, unsigned char anlControl_, unsigned char newValue);
+	void patchCtrlChanged(unsigned char bank, unsigned char ctrl, unsigned char newValue);
 	void patchOptionChanged(unsigned char func, bool new_opt){}
-	void midiControlChangeReceived(unsigned char anlControl_, unsigned char val);
+	void midiControlChangeReceived(unsigned char ctrl, unsigned char val);
 	void midiNoteOnReceived(unsigned char note, unsigned char velocity);
 	void midiNoteOffReceived(unsigned char note);
 	void midiClockStartReceived(void);
