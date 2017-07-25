@@ -1,9 +1,18 @@
-/* 
-* ArpAtarp.h
-*
-* Created: 12/04/2017 20:08:39
-* Author: paulsoulsby
-*/
+//ArpAtarp.h  AT-ARP main class
+//Copyright (C) 2015  Paul Soulsby info@soulsbysynths.com
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #ifndef __ARPATARP_H__
@@ -28,8 +37,10 @@ public:
 protected:
 private:
 	static const unsigned char MIDI_UBRR = 63; //(F_CPU / (MIDI_BAUD*8)) - 1
-	const char FUNC_DISPLAY[ArpAtarpEngine::FUNCS] = {'P','G','D','N','C','M','R','E'};
-	const unsigned char FUNC_MASK[ArpAtarpEngine::FUNCS] = {31,1,15,1,1,15,15,2};
+	const char FUNC_DISPLAY[ArpAtarpEngine::FUNCS] = {'P','G','D','O','C','M','R','E'};
+	const unsigned char FUNC_MAX[ArpAtarpEngine::FUNCS] = {31,1,15,5,2,15,15,2};
+	const unsigned char PPQN_DISPLAY[3] = {1,2,4};
+	const unsigned char PPQN_VALUE[3] = {4,24,48};
 	static const char LED_FLASH_TICKS = 4;
 	static const char LED_SHORT_FLASH_TICKS = 2;
 	static const unsigned int EEPROM_PATCH_OFFSET = 256;
@@ -43,12 +54,11 @@ public:
 	ArpAtarp();
 	~ArpAtarp();
 	void init();
-	void poll(unsigned char ticksPassed);
+	void poll();
 protected:
 private:
 	ArpAtarp( const ArpAtarp &c );
 	ArpAtarp& operator=( const ArpAtarp &c );
-	void refreshNoteSource();
 	void hardwareSwitchChanged(unsigned char sw, unsigned char newValue);
 	void hardwareSwitchHeld(unsigned char sw);
 	void hardwareJackDetectChanged(unsigned char jack, bool newValue);

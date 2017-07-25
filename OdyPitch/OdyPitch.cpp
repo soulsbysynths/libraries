@@ -48,7 +48,7 @@ void OdyPitch::refresh(char pbend, char fmA, char fmB)
 	}
 	if(offset_!=128)
 	{
-		f = f * offset_ >> 7;  //offset is pre-shaped (128 = x0)
+		f = f * offset_ >> 7;  //offset is pre-shaped (128 = x1)
 	}
 
 	if(f>16383)  //4095 << 2  cap to stop seizing up

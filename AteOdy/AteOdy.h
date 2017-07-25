@@ -1,8 +1,19 @@
-/* 
-* AteOdy.h
-*
-* Created: 27/09/2016 14:42:01
-* Author: paulsoulsby
+/*
+//AteOdy.h  Odytron for Oscitron main class
+//Copyright (C) 2017  Paul Soulsby info@soulsbysynths.com
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
@@ -21,10 +32,31 @@ class AteOdy : public AteOscHardwareBase, AteOdyEngineBase
 public:
 protected:
 private:
+	enum ClockMode : unsigned char
+	{
+		CM_OSC0FM_TOG = 0,
+		CM_OSC1FM_TOG,
+		CM_OSC1PWM_TOG,
+		CM_OSCLEVELFX_TOG,
+		CM_OSCLEVEL0_TOG,
+		CM_OSCLEVEL1_TOG,
+		CM_FILTFM_TOG,
+		CM_PATCH_INC,
+		CM_OSC0FM_CV,
+		CM_OSC1FM_CV,
+		CM_OSC1PWM_CV,
+		CM_OSCLEVELFX_CV,
+		CM_OSCLEVEL0_CV,
+		CM_OSCLEVEL1_CV,
+		CM_FILTFM_CV,
+		CM_QUANT_CV
+	};
 	AteOscHardware& hardware_;
 	AteOdyEngine& engine_;
 	const unsigned char LED_FLASH_TICKS = 4;
 	const AteOdyEngine::Ctrl CV_INPUT_TO_CTRL[AteOscHardware::CV_INPUTS] = {AteOdyEngine::CTRL_NULL,AteOdyEngine::CTRL_MODA,AteOdyEngine::CTRL_VCO1, AteOdyEngine::CTRL_VCO2,AteOdyEngine::CTRL_NULL,AteOdyEngine::CTRL_Q,AteOdyEngine::CTRL_MODB,AteOdyEngine::CTRL_NULL};
+	bool valueSecondaryMode_ = false;
+	ClockMode clockMode_ = CM_OSC0FM_TOG;
 //functions
 public:
 	AteOdy();
@@ -43,6 +75,8 @@ protected:
 private:
 	AteOdy( const AteOdy &c );
 	AteOdy& operator=( const AteOdy &c );
+	void toggleOption(AteOdyEngine::Func func);
+	void setClockMode(ClockMode newMode);
 }; //AteOdy
 
 #endif //__ATEODY_H__

@@ -1,8 +1,19 @@
 /*
-* AteOdy.cpp
-*
-* Created: 27/09/2016 14:42:01
-* Author: paulsoulsby
+//AteOdy.cpp  Odytron for Oscitron main class
+//Copyright (C) 2017  Paul Soulsby info@soulsbysynths.com
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 
@@ -121,13 +132,21 @@ AteOdy::~AteOdy()
 
 void AteOdy::initialize()
 {
-	
 	hardware_.getRotEncoder(AteOscHardware::FUNCTION).setContinuous(true);
 	hardware_.getRotEncoder(AteOscHardware::VALUE).setContinuous(false);
-
 	engine_.initialize();
-	hardware_.getLedSwitch(0).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::YELLOW,LedRgb::RED,true);
-
+	engine_.getQuantize().setQntKey(hardware_.readEepromByte(AteOscHardware::EEPROM_QUANT_KEY) & 0x0F);
+	engine_.getPatchPtr()->readPatchFram(hardware_.readEepromByte(AteOscHardware::EEPROM_CURRENT_PATCH) & 0x07);
+	setClockMode((ClockMode)hardware_.readEepromByte(AteOscHardware::EEPROM_CLOCK_MODE));
+	if(engine_.getPatchPtr()->getOptionValue(AteOdyEngine::FUNC_OSC0FM)==true)
+	{
+		hardware_.getLedSwitch(0).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::YELLOW,LedRgb::RED,true);
+	}
+	else
+	{
+		hardware_.getLedSwitch(0).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::YELLOW,true);
+	}
+	engine_.setFunction(AteOdyEngine::FUNC_OSC0FM);
 }
 
 void AteOdy::poll()
@@ -163,10 +182,33 @@ void AteOdy::poll()
 	ticksPassed -= ticks;
 }
 
+void AteOdy::toggleOption(AteOdyEngine::Func func)
+{
+	bool opt;
+	opt = !engine_.getPatchPtr()->getOptionValue(func);
+	engine_.getPatchPtr()->setOptionValue(func,opt);
+}
+
+void AteOdy::setClockMode(ClockMode newMode)
+{
+	clockMode_ = newMode;
+	if(newMode<CM_OSC0FM_CV)
+	{
+		hardware_.setInputMode(AteOscHardware::CV_CAPTURE, AteOscHardware::IP_GATE);
+	}
+	else
+	{
+		hardware_.setInputMode(AteOscHardware::CV_CAPTURE, AteOscHardware::IP_CV);
+	}
+}
+
 //***********engine events*********************
 void AteOdy::engineFunctionChanged(unsigned char func, unsigned char val)
 {
-
+	if(valueSecondaryMode_==true)
+	{
+		return;
+	}
 	if(func==AteOdyEngine::FUNC_FILTTYPE)
 	{
 		switch (val)
@@ -199,6 +241,10 @@ void AteOdy::engineFunctionChanged(unsigned char func, unsigned char val)
 }
 void AteOdy::engineOptionChanged(unsigned char func, bool opt)
 {
+	if(valueSecondaryMode_==true)
+	{
+		return;
+	}
 	if(opt==true)
 	{
 		hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
@@ -212,18 +258,27 @@ void AteOdy::engineOptionChanged(unsigned char func, bool opt)
 void AteOdy::hardwareCvInputChanged(unsigned char input, unsigned int newValue)
 {
 	unsigned char oldVal, newVal;
-	bool oldOpt, newOpt;
+
 	if(input==AteOscHardware::CV_PITCH)
 	{
-		engine_.getCvPitch(0).setInput((newValue * 15)>>4);  //see excel for why * 0.9367
+		engine_.getCvPitch(0).setInput((newValue * 15)>>4);//see excel for why * 0.9367
 	}
 	else if(input==AteOscHardware::CV_FILT)
 	{
-		engine_.getCvPitch(1).setInput((newValue * 15)>>4);  //see excel for why * 0.9367
+		engine_.getCvPitch(1).setInput((newValue * 15)>>4);//see excel for why * 0.9367
 	}
 	else if(input==AteOscHardware::CV_CAPTURE)
 	{
-
+		if(clockMode_>=CM_OSC0FM_CV && clockMode_<=CM_QUANT_CV)
+		{
+			AteOdyEngine::Func f = clockMode_ - CM_OSC0FM_CV;
+			oldVal = engine_.getPatchPtr()->getFunctionValue(f);
+			newVal = newValue >> 8;
+			if(newVal!=oldVal)
+			{
+				engine_.getPatchPtr()->setFunctionValue(f,newVal);
+			}
+		}
 	}
 	else
 	{
@@ -231,20 +286,110 @@ void AteOdy::hardwareCvInputChanged(unsigned char input, unsigned int newValue)
 		engine_.getPatchPtr()->setCtrlValue((unsigned char)CV_INPUT_TO_CTRL[input],newValue>>4);
 	}
 }
+
 void AteOdy::hardwareGateInputChanged(unsigned char input, bool newValue)
 {
-
+	if (clockMode_>CM_PATCH_INC)  //safety
+	{
+		return;
+	}
+	unsigned char p;
+	if(newValue==true)
+	{
+		switch(clockMode_)
+		{
+			case CM_PATCH_INC:
+			p = engine_.getPatchPtr()->getFunctionValue(AteOdyEngine::FUNC_MEM) + 1;
+			p &= 0x0F;
+			engine_.getPatchPtr()->readPatch(p);
+			break;
+			default:
+			toggleOption((AteOdyEngine::Func)clockMode_);
+			break;
+		}
+	}
 }
 void AteOdy::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 {
 	bool opt;
+	AteOdyEngine::Func f = engine_.getFunction();
+	bool funcHeld = ((hardware_.getSwitch(AteOscHardware::FUNCTION).getHoldTime()>AteOscHardware::HOLD_EVENT_TICKS) ? true : false);
 
-
-	if(sw==AteOscHardware::FUNCTION && newValue==HIGH)
+	if(sw==AteOscHardware::FUNCTION)
 	{
-		opt = !engine_.getPatchPtr()->getOptionValue(engine_.getFunction());
-		engine_.getPatchPtr()->setOptionValue(engine_.getFunction(),opt);  //the LEDs are set by engine call back
+		if(newValue==HIGH)
+		{
+			hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::RED);
+		}
+		else
+		{
+			hardware_.getLedSwitch(AteOscHardware::FUNCTION).flashStop();
+			hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::YELLOW);
+			switch (f)
+			{
+				case AteOdyEngine::FUNC_OSCLEVELFX:
+				case AteOdyEngine::FUNC_OSCLEVEL0:
+				if(valueSecondaryMode_==true)
+				{
+					unsigned char val = hardware_.getRotEncoder(AteOscHardware::VALUE).getValue();
+					switch (f)
+					{
+						case AteOdyEngine::FUNC_OSCLEVELFX:
+						engine_.getQuantize().setQntKey(val);
+						hardware_.writeEepromByte(AteOscHardware::EEPROM_QUANT_KEY, val);
+						break;
+						case AteOdyEngine::FUNC_OSCLEVEL0:
+						setClockMode((ClockMode)val);
+						hardware_.writeEepromByte(AteOscHardware::EEPROM_CLOCK_MODE, val);
+						break;
+					}
+					valueSecondaryMode_ = false;
+					engineFunctionChanged(f,engine_.getPatchPtr()->getFunctionValue(f)); //force circ LED through and RE max value
+					engineOptionChanged(f,engine_.getPatchPtr()->getOptionValue(f)); //force sw LED through
+				}
+				else
+				{
+					if(funcHeld)
+					{
+						valueSecondaryMode_ = true;
+						hardware_.getLedSwitch(AteOscHardware::FUNCTION).setColour(LedRgb::GREEN);
+						switch(f)
+						{
+							case AteOdyEngine::FUNC_OSCLEVELFX:
+							hardware_.getRotEncoder(AteOscHardware::VALUE).setMaxValue(12);
+							hardware_.getRotEncoder(AteOscHardware::VALUE).setValue((char)engine_.getQuantize().getQntKey());
+							hardware_.getLedCircular(AteOscHardware::VALUE).select(engine_.getQuantize().getQntKey());
+							break;
+							case AteOdyEngine::FUNC_OSCLEVEL0:
+							hardware_.getRotEncoder(AteOscHardware::VALUE).setMaxValue(16);
+							hardware_.getRotEncoder(AteOscHardware::VALUE).setValue((char)clockMode_);
+							hardware_.getLedCircular(AteOscHardware::VALUE).select(clockMode_);
+							break;
+							default:
+							toggleOption(engine_.getFunction());
+							break;
+						}
+					}
+					else
+					{
+						toggleOption(engine_.getFunction());
+					}
+				}
+				break;
+				default:
+				toggleOption(engine_.getFunction());
+				break;
+			}
+		}
 	}
+
+
+	//from atm code
+	//if(sw==AteOscHardware::FUNCTION && newValue==HIGH)
+	//{
+		//opt = !engine_.getPatchPtr()->getOptionValue(engine_.getFunction());
+		//engine_.getPatchPtr()->setOptionValue(engine_.getFunction(),opt);  //the LEDs are set by engine call back
+	//}
 
 	if(sw==AteOscHardware::VALUE)
 	{
@@ -252,20 +397,21 @@ void AteOdy::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 		{
 			if(newValue==HIGH)
 			{
-				hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::RED);
+				hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::YELLOW);
 			}
 			else
 			{
 				hardware_.getLedSwitch(AteOscHardware::VALUE).flashStop();
-				hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::YELLOW);
 				if(hardware_.getSwitch(sw).getHoldTime()>AteOscHardware::HOLD_EVENT_TICKS)
 				{
-					engine_.getPatchPtr()->writePatch(engine_.getPatchPtr()->getFunctionValue(AteOdyEngine::FUNC_MEM));
+					engine_.getPatchPtr()->writePatchFram(engine_.getPatchPtr()->getFunctionValue(AteOdyEngine::FUNC_MEM));
+					hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(engine_.getPatchPtr()->getFunctionValue(AteOdyEngine::FUNC_FILTTYPE));
 				}
 				else
 				{
-					engine_.getPatchPtr()->readPatch(engine_.getPatchPtr()->getFunctionValue(AteOdyEngine::FUNC_MEM));
+					engine_.getPatchPtr()->readPatchFram(engine_.getPatchPtr()->getFunctionValue(AteOdyEngine::FUNC_MEM));
 				}
+				hardware_.writeEepromByte(AteOscHardware::EEPROM_CURRENT_PATCH,engine_.getPatchPtr()->getFunctionValue(AteOdyEngine::FUNC_MEM));
 			}
 		}
 		else
@@ -287,62 +433,60 @@ void AteOdy::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 
 void AteOdy::hardwareSwitchHeld(unsigned char sw)
 {
-
+	if(sw==AteOscHardware::FUNCTION && valueSecondaryMode_==false && (engine_.getFunction()==AteOdyEngine::FUNC_OSCLEVELFX || engine_.getFunction()==AteOdyEngine::FUNC_OSCLEVEL0))
+	{
+		if(hardware_.getLedSwitch(AteOscHardware::FUNCTION).getColour()==LedRgb::RED)
+		{
+			hardware_.getLedSwitch(AteOscHardware::FUNCTION).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::GREEN,LedRgb::RED,true);
+		}
+		else
+		{
+			hardware_.getLedSwitch(AteOscHardware::FUNCTION).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::GREEN,LedRgb::YELLOW,true);
+		}
+	}
 	if(sw==AteOscHardware::VALUE && engine_.getFunction()==AteOdyEngine::FUNC_MEM)
 	{
-		hardware_.getLedSwitch(AteOscHardware::VALUE).flash(8,LED_FLASH_TICKS,LED_FLASH_TICKS,hardware_.getLedSwitch(AteOscHardware::VALUE).getColour(),LedRgb::YELLOW,true);
+		hardware_.getLedSwitch(AteOscHardware::VALUE).flash(7,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::OFF,LedRgb::YELLOW,true);
 	}
 }
 void AteOdy::hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newValue, bool clockwise)
 {
 	if(rotary==AteOscHardware::FUNCTION)
 	{
-		engine_.setFunction((AteOdyEngine::Func)newValue);
+		if(!valueSecondaryMode_)
+		{
+			engine_.setFunction((AteOdyEngine::Func)newValue);
+		}
+		else
+		{
+			hardware_.getRotEncoder(AteOscHardware::FUNCTION).setValue(engine_.getFunction());
+		}
 	}
 
 	if(rotary==AteOscHardware::VALUE)
 	{
-		engine_.getPatchPtr()->setFunctionValue(engine_.getFunction(),newValue);
+		if(!valueSecondaryMode_)
+		{
+			engine_.getPatchPtr()->setFunctionValue(engine_.getFunction(),newValue);
+		}
+		else
+		{
+			hardware_.getLedCircular(AteOscHardware::VALUE).select(newValue);
+		}
 	}
+//old atm code
+	//if(rotary==AteOscHardware::FUNCTION)
+	//{
+		//engine_.setFunction((AteOdyEngine::Func)newValue);
+	//}
+//
+	//if(rotary==AteOscHardware::VALUE)
+	//{
+		//engine_.getPatchPtr()->setFunctionValue(engine_.getFunction(),newValue);
+	//}
 }
 
 void AteOdy::hardwareAudioBufferStatusChanged(unsigned char newStatus)
 {
-
-	//switch (newStatus)
-	//{
-	//case AteOscHardware::BUFFER_WAITZCROSS:
-	//hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::YELLOW);
-	//break;
-	//case AteOscHardware::BUFFER_CAPTURING:
-	//hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::RED);
-	//break;
-	//case AteOscHardware::BUFFER_OVERFLOW:
-	//hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::RED);
-	//if(engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_MINLENGTH))
-	//{
-	//hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
-	//}
-	//break;
-	//case AteOscHardware::BUFFER_IDLE:
-	//hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::GREEN);
-	//if(engine_.getPatchPtr()->getOptionValue(AteOscEngine::FUNC_MINLENGTH))
-	//{
-	//hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_WAITZCROSS);
-	//}
-	//break;
-	//case AteOscHardware::BUFFER_CAPTURED:
-	//hardware_.getLedSwitch(AteOscHardware::VALUE).setColour(LedRgb::GREEN);
-	////see excel sheet for proof of this interpolation
-	//unsigned int pos = 0;
-	//unsigned int jump = (unsigned int)hardware_.getAudioBufferLength() << 1;  //0-255
-	//for(unsigned char i=0;i<engine_.getOscillator().getWaveLength();++i)
-	//{
-	//engine_.getOscillator().setWavetableSample(i,hardware_.getAudioBuffer(pos >> 8));
-	//pos += jump;
-	//}
-	//hardware_.setAudioBufferStatus(AteOscHardware::BUFFER_IDLE);
-	//break;
-	//}
 
 }

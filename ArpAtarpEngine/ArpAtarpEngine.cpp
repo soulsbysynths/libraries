@@ -1,9 +1,18 @@
-/*
-* ArpAtarpEngine.cpp
-*
-* Created: 12/04/2017 20:09:11
-* Author: paulsoulsby
-*/
+//ArpAtarpEngine.cpp  AT-ARP data processing engine
+//Copyright (C) 2017  Paul Soulsby info@soulsbysynths.com
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #include "ArpAtarpEngine.h"
@@ -26,25 +35,30 @@ ArpAtarpEngine::~ArpAtarpEngine()
 void ArpAtarpEngine::construct(ArpAtarpEngineBase* base)
 {
 	base_ = base;
-	masterClock_.setTicksPerCycle(BPM_TICKS);
 	midi_ = new Midi(this,SYSEX_PROD_ID);
 	arpeggiator_ = new Arpeggiator(this,midi_->getNoteOnPtr());
 }
 void ArpAtarpEngine::initialize()
 {
+	masterClock_.setTicksPerCycle(MIDI_TICKSPERCYCLE);
 	setFunction(FUNC_PATTERN);
 	setValue(FUNC_DIV,8);
 	setValue(FUNC_PATTERN,1);
 }
-void ArpAtarpEngine::poll(unsigned char ticksPassed)
+void ArpAtarpEngine::poll(unsigned int midiClksPassed)
 {
-	if(clockSource_==CS_INTERNAL)
+	if (midiClksPassed>255)  //ridic scenario for 1ppqn and 30bpm!
 	{
-		masterClock_.refresh(ticksPassed);
+		while(midiClksPassed>255)
+		{
+			masterClock_.refresh(255);
+			midiClksPassed -= 255;
+		}
+		masterClock_.refresh(midiClksPassed);
 	}
 	else
 	{
-		masterClock_.refresh(midi_->getClockTicksPassed());
+		masterClock_.refresh((unsigned char)midiClksPassed);
 	}
 	arpeggiator_->refresh(masterClock_.getOutput());
 }
@@ -52,9 +66,13 @@ void ArpAtarpEngine::poll(unsigned char ticksPassed)
 void ArpAtarpEngine::triggerNote(unsigned char note)
 {
 	unsigned int newOut;
-	if(note >= 36 && note < 96)
+	char shift = ((char)value_[FUNC_CVOCTAVE] - 3) * 12;
+	unsigned char min = ROOT_NOTE_OFFSET + shift;
+	unsigned char max = min + 60;
+
+	if(note >= min && note <= max)
 	{
-		newOut = (((unsigned long)note - 36) << 10) / 15;
+		newOut = (((unsigned long)note - min) << 10) / 15;
 		if(newOut!=output_)
 		{
 			output_ = newOut;
@@ -110,19 +128,11 @@ void ArpAtarpEngine::setValue(Function func, unsigned char newValue)
 		case FUNC_DIV:
 		arpeggiator_->setDivision(newValue);
 		break;
-		case FUNC_NOTESOURCE:
-		noteSource_ = newValue;
-		if(noteSource_==NS_CV)
-		{
-			txChordGenMidi();
-		}
-		else
-		{
-			midi_->reset();
-		}
+		case FUNC_CVOCTAVE:
 		break;
-		case FUNC_CLOCKSOURCE:
-		clockSource_ = newValue;
+		
+		case FUNC_CLOCKPPQN:
+
 		break;
 		case FUNC_MIDICHANNEL:
 		midi_->setChannel(newValue);
@@ -134,16 +144,44 @@ void ArpAtarpEngine::setValue(Function func, unsigned char newValue)
 	}
 }
 
+void ArpAtarpEngine::setRootSource(InputSource newSource)
+{
+
+}
+
+void ArpAtarpEngine::setChordSource(InputSource newSource)
+{
+
+}
+
+void ArpAtarpEngine::setRootNote(unsigned char newNote)
+{
+	if(newNote!=chordGen_.getRootNote())
+	{
+		chordGen_.setRootNote(newNote);
+		txChordGenMidi();
+	}
+}
+
+void ArpAtarpEngine::setChordNote(unsigned char newNote)
+{
+	if(newNote!=chordGen_.getChordNote())
+	{
+		chordGen_.setChordNote(newNote);
+		txChordGenMidi();
+	}
+}
+
 void ArpAtarpEngine::txChordGenMidi()
 {
-	if (noteSource_==NS_MIDI || func_==FUNC_RECORD)
+	if ((rootSource_==IS_MIDI && chordSource_==IS_MIDI)  || func_==FUNC_RECORD)
 	{
 		return;
 	}
 	unsigned char i;
 	unsigned char c = midi_->getChannel();
-	unsigned char off = Midi::NOTE_OFF | c;
-	unsigned char on = Midi::NOTE_ON | c;
+	const unsigned char off = Midi::NOTE_OFF | c;
+	const unsigned char on = Midi::NOTE_ON | c;
 	for(i=0;i<127;++i)
 	{
 		if(midi_->getNoteOn(i)==true)
@@ -180,17 +218,28 @@ void ArpAtarpEngine::midiNoteOnReceived(unsigned char note, unsigned char veloci
 	}
 	else
 	{
-		if(arpeggiator_->getType()==0)
+		if(rootSource_==IS_MIDI && chordSource_==IS_MIDI)
 		{
-			triggerNote(note);
+			if(arpeggiator_->getType()==0)
+			{
+				triggerNote(note);
+			}
+			arpeggiator_->buildNoteOrder();
+			//if (arpeggiator_->getType()>0 && totNotesOnLast_==0 && midi_->getTotNotesOn()==1 && midi_->getClockRunning()==false)
+			//{
+			//masterClock_.reset();
+			//arpeggiator_->reset();
+			//}
+			//totNotesOnLast_ = midi_->getTotNotesOn();
 		}
-		arpeggiator_->buildNoteOrder();
-		if (arpeggiator_->getType()>0 && totNotesOnLast_==0 && midi_->getTotNotesOn()==1 && midi_->getClockRunning()==false)
+		else if (rootSource_==IS_MIDI)
 		{
-			masterClock_.reset();
-			arpeggiator_->reset();
+			setRootNote(note);
 		}
-		totNotesOnLast_ = midi_->getTotNotesOn();
+		else if (chordSource_==IS_MIDI)
+		{
+			setChordNote(note);
+		}
 	}
 }
 void ArpAtarpEngine::midiNoteOffReceived(unsigned char note)
@@ -201,15 +250,12 @@ void ArpAtarpEngine::midiNoteOffReceived(unsigned char note)
 
 void ArpAtarpEngine::midiClockStartReceived()
 {
-	clockSource_ = CS_EXTERNAL;
 	masterClock_.reset();
-	masterClock_.setTicksPerCycle(MIDI_TICKSPERCYCLE);
 	arpeggiator_->reset();
 }
 void ArpAtarpEngine::midiClockStopReceived()
 {
 	masterClock_.reset();
-	masterClock_.setTicksPerCycle(BPM_TICKS);
 	arpeggiator_->reset();
 }
 void ArpAtarpEngine::midiControlChangeReceived(unsigned char cc, unsigned char val)

@@ -1,10 +1,18 @@
-/*
-* ArpAtarp.cpp
-*
-* Created: 12/04/2017 20:08:39
-* Author: paulsoulsby
-*/
-
+//ArpAtarp.h  AT-ARP main class
+//Copyright (C) 2015  Paul Soulsby info@soulsbysynths.com
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ArpAtarp.h"
 
@@ -24,27 +32,26 @@ void ArpAtarp::init()
 {
 	unsigned char val;
 	hardware_.beginMidi(MIDI_UBRR);
+	hardware_.beginTick();
 	engine_.initialize();
 	for (unsigned char i=0;i<ArpAtarpEngine::FUNCS;++i)
 	{
 		val = hardware_.readEepromByte(i+EEPROM_PATCH_OFFSET);
-		if(val>FUNC_MASK[i])
+		if(val>FUNC_MAX[i])
 		{
-			val = FUNC_MASK[i];
+			val = FUNC_MAX[i];
 		}
 		engine_.setValue(i,val);
 	}
 }
 
-void ArpAtarp::poll(unsigned char ticksPassed)
+void ArpAtarp::poll()
 {
-	hardware_.pollMidi();
-	hardware_.pollCalibCvInputs();
+	unsigned char ticksPassed = hardware_.pollTickCount();
 	hardware_.pollSwitches(ticksPassed);
 	hardware_.pollDigiPins(ticksPassed);
 	hardware_.refreshFlash(ticksPassed);
 	hardware_.refreshLeds();
-	engine_.poll(ticksPassed);
 	if(hardware_.getJackDetect(ArpHardware::CV_CLOCK)==true && engine_.getMidiPtr()->getClockRunning()==true)
 	{
 		gateTimeOut_++;
@@ -53,60 +60,28 @@ void ArpAtarp::poll(unsigned char ticksPassed)
 			engine_.getMidiPtr()->read(Midi::STOP);
 		}
 	}
-
-}
-void ArpAtarp::refreshNoteSource()
-{
-	ArpAtarpEngine::NoteSource ns;
-	if(engine_.getFunction()==ArpAtarpEngine::FUNC_RECORD || (hardware_.getJackDetect(ArpHardware::CV_ROOT)==false && hardware_.getJackDetect(ArpHardware::CV_CHORD)==false))
-	{
-		ns = ArpAtarpEngine::NS_MIDI;
-	}
-	else
-	{
-		ns = ArpAtarpEngine::NS_CV;
-	}
-	if(engine_.getValue(ArpAtarpEngine::FUNC_NOTESOURCE)!=ns)
-	{
-		engine_.setValue(ArpAtarpEngine::FUNC_NOTESOURCE,ns);
-	}
+	hardware_.pollMidi();
+	hardware_.pollCalibCvInputs();
+	engine_.poll(hardware_.pollMidiCount());
 }
 
 //*********** HARDWARE EVENTS ************
 void ArpAtarp::hardwareCvInputChanged(unsigned char input, unsigned int newValue)
 {
-	if(engine_.getValue(ArpAtarpEngine::FUNC_NOTESOURCE)==ArpAtarpEngine::NS_MIDI)
-	{
-		return;
-	}
 	unsigned long midiNote = newValue + 34;  //want to round 50cent below and above to midi note.  Therefore add 50cent.  68.26666667 per note = 34
 	midiNote = (midiNote * 15) >> 10;  // = (CV * 12) / (4096 / 5)
 	if(input==ArpHardware::CV_ROOT)
 	{
-		if(engine_.getChordGen().getChordNote()==0)
+		if(engine_.getRootSource()==ArpAtarpEngine::IS_CV)
 		{
-			hardware_.setOutput(newValue);
-		}
-		else
-		{
-			midiNote += 36;
-			if(midiNote!=engine_.getChordGen().getRootNote())
-			{
-				engine_.getChordGen().setRootNote(midiNote);
-				engine_.txChordGenMidi();
-			}
+			engine_.setRootNote(midiNote + ArpAtarpEngine::ROOT_NOTE_OFFSET);
 		}
 	}
 	else
 	{
-		if(midiNote!=engine_.getChordGen().getChordNote())
+		if (engine_.getChordSource()==ArpAtarpEngine::IS_CV)
 		{
-			engine_.getChordGen().setChordNote(midiNote);
-			engine_.txChordGenMidi();
-			if(midiNote==0)
-			{
-				hardware_.setOutput(hardware_.getCvInput(ArpHardware::CV_ROOT).getValue());
-			}
+			engine_.setChordNote(midiNote);
 		}
 	}
 }
@@ -127,18 +102,27 @@ void ArpAtarp::hardwareJackDetectChanged(unsigned char jack, bool newValue)
 	switch(jack)
 	{
 		case ArpHardware::CV_CLOCK:
-		if(newValue==true)
+		// nothing to do here
+		break;
+		case ArpHardware::CV_CHORD:
+		if (newValue==true)
 		{
-			engine_.setValue(ArpAtarpEngine::FUNC_CLOCKSOURCE,ArpAtarpEngine::CS_EXTERNAL);
+			engine_.setChordSource(ArpAtarpEngine::IS_CV);
 		}
 		else
 		{
-			engine_.setValue(ArpAtarpEngine::FUNC_CLOCKSOURCE,ArpAtarpEngine::CS_INTERNAL);
+			engine_.setChordSource(ArpAtarpEngine::IS_MIDI);
 		}
 		break;
-		case ArpHardware::CV_CHORD:
 		case ArpHardware::CV_ROOT:
-		refreshNoteSource();
+		if (newValue==true)
+		{
+			engine_.setRootSource(ArpAtarpEngine::IS_CV);
+		}
+		else
+		{
+			engine_.setRootSource(ArpAtarpEngine::IS_MIDI);
+		}
 		break;
 	}
 }
@@ -152,10 +136,6 @@ void ArpAtarp::hardwareMidiError(unsigned char errorType)
 }
 void ArpAtarp::hardwareMidiReceived(unsigned char data)
 {
-	if(engine_.getValue(ArpAtarpEngine::FUNC_NOTESOURCE)==ArpAtarpEngine::NS_CV && data<Midi::CLOCK)
-	{
-		return;
-	}
 	engine_.getMidiPtr()->read(data);
 }
 void ArpAtarp::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
@@ -206,8 +186,8 @@ void ArpAtarp::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 			{
 				unsigned char val = engine_.getValue(func);
 				if(sw==ArpHardware::SW_UP)
-				{	
-					if(val==FUNC_MASK[func])
+				{
+					if(val==FUNC_MAX[func])
 					{
 						val = 0;
 					}
@@ -221,7 +201,7 @@ void ArpAtarp::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 				{
 					if(val==0)
 					{
-						val = FUNC_MASK[func];
+						val = FUNC_MAX[func];
 					}
 					else
 					{
@@ -264,7 +244,6 @@ void ArpAtarp::engineFunctionChanged(unsigned char newFunction)
 	{
 		engineValueChanged(engine_.getValue(newFunction));
 	}
-	refreshNoteSource();
 }
 void ArpAtarp::engineValueChanged(unsigned char newValue)
 {
@@ -300,27 +279,12 @@ void ArpAtarp::engineValueChanged(unsigned char newValue)
 			break;
 			case ArpAtarpEngine::FUNC_DIV:
 			case ArpAtarpEngine::FUNC_MIDICHANNEL:
+			case ArpAtarpEngine::FUNC_CVOCTAVE:
 			hardware_.getLed().displayHex(newValue);
 			break;
-			case ArpAtarpEngine::FUNC_NOTESOURCE:
-			if(newValue==0)
-			{
-				hardware_.getLed().displayChar('M');
-			}
-			else
-			{
-				hardware_.getLed().displayChar('C');
-			}
-			break;
-			case ArpAtarpEngine::FUNC_CLOCKSOURCE:
-			if(newValue==0)
-			{
-				hardware_.getLed().displayChar('I');
-			}
-			else
-			{
-				hardware_.getLed().displayChar('E');
-			}
+			case ArpAtarpEngine::FUNC_CLOCKPPQN:
+			hardware_.getLed().displayHex(PPQN_DISPLAY[newValue]);
+			hardware_.setMidiClksOutPerPulse(48 / PPQN_VALUE[newValue]);
 			break;
 		}
 	}

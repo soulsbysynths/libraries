@@ -1,10 +1,18 @@
-/*
-* ArpHardware.cpp
-*
-* Created: 11/04/2017 10:51:47
-* Author: paulsoulsby
-*/
-
+//ArpHardware.cpp  AT-ARP hardware class
+//Copyright (C) 2017  Paul Soulsby info@soulsbysynths.com
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ArpHardware.h"
 
@@ -12,6 +20,12 @@ static volatile unsigned char midiBuffer[MIDI_BUFFER_SIZE] = {0};
 static volatile unsigned char midiWritePos = 0;
 static volatile unsigned char midiReadPos = MIDI_BUFFER_MASK;
 static volatile ArpHardware::MidiError midiError = ArpHardware::MIDIERR_NONE;
+static volatile unsigned char midiClkCount = 0;
+static volatile unsigned char midiClksOutPerPulse = 2;
+static volatile unsigned char midiClksToAddToCount = 0;
+static volatile unsigned char midiTicksPerClkOut = 10;
+static volatile unsigned char midiTicksPerClkIn = 0;
+static volatile unsigned char midiTicksPerClkOutCount = 0;
 
 static volatile unsigned int cvState[INPUTS] = {0};
 
@@ -25,6 +39,12 @@ static volatile unsigned char i2cBuffer[I2C_BUFFER_SIZE] = {0};
 #define TW_TX_NACK (1 << TWINT) | (1 << TWEN) | (1 << TWIE)
 #define TW_TX_ACK (1 << TWINT) | (1 << TWEN) | (1 << TWIE) | (1 << TWEA)
 #define TW_STOP (1 << TWSTO) | (1 << TWINT) | (1 << TWEN)
+
+#define MIDI_CLOCK 0xF8
+#define MIDI_START 0xFA
+#define MIDI_CLKSOUT_PER_CLKSIN 2
+
+static volatile unsigned int tickCount = 0;
 
 void writeMemory(const void* data, void* startAddr, size_t size)
 {
@@ -139,7 +159,39 @@ void ArpHardware::construct(ArpHardwareBase* base)
 		switch_[i] = Switch(bitRead(sw ,i+SW_PINOFF),HOLD_EVENT_TICKS);
 	}
 }
+void ArpHardware::beginTick()
+{
 
+	cli();
+
+	//bitClear(TCCR0B, WGM02);
+	//bitSet(TCCR0A, WGM01);
+	//bitClear(TCCR0A, WGM00);
+	//
+	//// set timer 0 prescale factor to 8
+	//bitClear(TCCR0B, CS02);
+	//bitSet(TCCR0B, CS01);
+	//bitClear(TCCR0B, CS00);
+	//
+	//// enable timer 0 overflow interrupt
+	//bitSet(TIMSK0,OCIE0A);
+	//OCR0A = 199;
+
+		bitClear(TCCR0B, WGM02);
+		bitSet(TCCR0A, WGM01);
+		bitClear(TCCR0A, WGM00);
+		
+		// set timer 0 prescale factor to 8
+		bitClear(TCCR0B, CS02);
+		bitSet(TCCR0B, CS01);
+		bitSet(TCCR0B, CS00);
+		
+		// enable timer 0 overflow interrupt
+		bitSet(TIMSK0,OCIE0A);
+		OCR0A = 249;
+
+	sei();
+}
 unsigned int ArpHardware::readCvInput(unsigned char input)
 {
 	ADCSRA = 0;   //stop all conversions
@@ -157,6 +209,20 @@ unsigned int ArpHardware::readCvInput(unsigned char input)
 	bitSet(ADMUX,ADLAR);
 	ADCSRA = 0x8F;
 	bitSet(ADCSRA, ADSC);
+	return i;
+}
+
+unsigned char ArpHardware::pollTickCount()
+{
+	unsigned char i = tickCount;
+	tickCount = 0;
+	return i;
+}
+
+unsigned char ArpHardware::pollMidiCount()
+{
+	unsigned char i = midiClkCount;
+	midiClkCount = 0;
 	return i;
 }
 
@@ -276,6 +342,11 @@ void ArpHardware::refreshLeds()
 	{
 		writeI2cWord(0,MCP23017_GPIOA,newState);
 	}
+}
+
+void ArpHardware::setMidiClksOutPerPulse(unsigned char newValue)
+{
+	midiClksOutPerPulse = newValue;
 }
 
 void ArpHardware::beginI2c()
@@ -531,6 +602,19 @@ void ArpHardware::beginMidi(unsigned int ubrr)
 	bitClear(UCSR0B, UDRIE0);
 }
 
+ISR(TIMER0_COMPA_vect)
+{
+	tickCount++;
+	midiTicksPerClkIn++;
+	midiTicksPerClkOutCount++;
+	if (midiTicksPerClkOutCount>=midiTicksPerClkOut && midiClksToAddToCount>0)
+	{
+		midiTicksPerClkOutCount = 0;
+		midiClksToAddToCount--;
+		midiClkCount++;
+	}
+}
+
 ISR(ADC_vect)
 {
 	static volatile unsigned char anlControlReadNum = 0;
@@ -646,15 +730,32 @@ ISR(USART_RX_vect){
 	}
 	else
 	{
-		unsigned char nextPos = (midiWritePos+1) & MIDI_BUFFER_MASK;
-		if(nextPos==midiReadPos)
+		if (data==MIDI_CLOCK)
 		{
-			midiError = ArpHardware::MIDIERR_BUFFERFULL;
+			midiClkCount += midiClksToAddToCount;
+			midiClkCount++;
+			midiClksToAddToCount = MIDI_CLKSOUT_PER_CLKSIN - 1;
+			midiTicksPerClkOut = midiTicksPerClkIn / MIDI_CLKSOUT_PER_CLKSIN;
+			midiTicksPerClkIn = 0;
+			midiTicksPerClkOutCount = 0;
 		}
 		else
 		{
-			midiBuffer[midiWritePos] = data;
-			midiWritePos = nextPos;
+			unsigned char nextPos = (midiWritePos+1) & MIDI_BUFFER_MASK;
+			if(nextPos==midiReadPos)
+			{
+				midiError = ArpHardware::MIDIERR_BUFFERFULL;
+			}
+			else
+			{
+
+				midiBuffer[midiWritePos] = data;
+				midiWritePos = nextPos;
+				if(data==MIDI_START)
+				{
+					midiClkCount = 0;
+				}
+			}
 		}
 	}
 }

@@ -53,6 +53,7 @@
 
 
 #define INPUTS 8
+#define ENCODERS 2
 // #define CV_READ_ORDER_SIZE 12
 
 #define F_SCL 100000UL // SCL frequency
@@ -152,14 +153,14 @@ class AteOscHardware
 	protected:
 	private:
 	AteOscHardwareBase* base_;
-	RotaryEncoder rotEncoder_[2];
+	RotaryEncoder rotEncoder_[ENCODERS];
 	InputMode inputMode_[INPUTS] = {IP_CV};
 	CvInput cvInput_[INPUTS];
 	bool gateInput_[INPUTS] = {false};
 	unsigned int cvCalib_[2][3] = {{0}};  //input (pitch, filt), low/high/high-low
-	Switch switch_[2];
-	LedCircular ledCircular_[2];
-	LedRgb ledSwitch_[2];
+	Switch switch_[ENCODERS];
+	LedCircular ledCircular_[ENCODERS];
+	LedRgb ledSwitch_[ENCODERS];
 	unsigned char ledFlashTickCnt = 0;
 	CtrlMode ctrlMode_ = CT_NORMAL;
 	//functions

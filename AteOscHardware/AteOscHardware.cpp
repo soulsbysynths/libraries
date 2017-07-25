@@ -21,11 +21,11 @@
 static volatile unsigned char audioCurrent = 0;
 
 static const char rotEncoderIncrementAmount[16] PROGMEM = {0,1,-1,2,-1,0,-2,1,1,-2,0,-1,2,-1,1,0};
-static const unsigned char rotEncoderBitMask[2] PROGMEM = {0x30,0x84};
-static const unsigned char rotEncoderPins[2][2] PROGMEM = {{PIND4,PIND5},{PIND7,PIND2}};
+static const unsigned char rotEncoderBitMask[ENCODERS] PROGMEM = {0x30,0x84};
+static const unsigned char rotEncoderPins[ENCODERS][2] PROGMEM = {{PIND4,PIND5},{PIND7,PIND2}};
 
-static volatile int rotEncoderCount[2] = {0};
-static volatile unsigned char switchState[3] = {0};
+static volatile int rotEncoderCount[ENCODERS] = {0};
+static volatile unsigned char switchState[ENCODERS] = {0};
 static volatile char audioBuffer[AUDIO_BUFFER_SIZE] = {0};
 static volatile unsigned char audioWriteIndex = 0;
 static volatile unsigned char audioMinLength = 4;
@@ -188,7 +188,7 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	bitSet(ADMUX,ADLAR);
 
 	//setup rotary encoders
-	for(i=0;i<2;i++)
+	for(i=0;i<ENCODERS;i++)
 	{
 		for(j=0;j<2;j++)
 		{
@@ -209,13 +209,9 @@ void AteOscHardware::construct(AteOscHardwareBase* base)
 	//initialize variables
 	unsigned char invPinB = ~PINB;
 	switchState[0] = bitRead(invPinB,PINB0);
-	switch_[0] = Switch(bitRead(invPinB,PINB0),HOLD_EVENT_TICKS);
-	
+	switch_[0] = Switch(switchState[0],HOLD_EVENT_TICKS);
 	switchState[1] = bitRead(invPinB,PINB1);
-	switch_[1] = Switch(bitRead(invPinB,PINB1),HOLD_EVENT_TICKS);
-	unsigned char invPind = ~PIND;
-	switchState[2] = bitRead(invPind,PIND6);
-	switch_[2] = Switch(bitRead(invPind,PIND6),HOLD_EVENT_TICKS);
+	switch_[1] = Switch(switchState[1],HOLD_EVENT_TICKS);
 	#ifndef _DEBUG!=1
 	//PCINT0 = function, PCINT1 = value, PCINT22 = bank, PCINT20 = func rotEncoder_ A, PCINT21 = func rotEncoder_ B, PCINT23 = val rotEncoder_ A, PCINT18 = val rotEncoder_ B
 	bitSet(PCMSK0,PCINT0);
@@ -362,9 +358,9 @@ void AteOscHardware::refreshLeds()
 	unsigned char i;
 	LedRgb::LedRgbColour col;
 	unsigned int circ = 0;
-	static unsigned int mcpState[2];
+	static unsigned int mcpState[ENCODERS];
 
-	for(i=0;i<2;++i)
+	for(i=0;i<ENCODERS;++i)
 	{
 		circ = ledCircular_[i].getState();
 		if(i==0)
@@ -471,7 +467,7 @@ void AteOscHardware::pollGateInputs()
 }
 void AteOscHardware::pollSwitches(unsigned char ticksPassed)
 {
-	for(unsigned char i=0;i<2;++i)
+	for(unsigned char i=0;i<ENCODERS;++i)
 	{
 		switch_[i].setState(switchState[i]);
 		if(switch_[i].hasHeld(ticksPassed)==true)
@@ -488,7 +484,7 @@ void AteOscHardware::pollSwitches(unsigned char ticksPassed)
 void AteOscHardware::pollRotEncoders(unsigned char ticksPassed)
 {
 	unsigned char i;
-	for(i=0;i<2;++i)
+	for(i=0;i<ENCODERS;++i)
 	{
 		rotEncoder_[i].setCount(rotEncoderCount[i]);
 		if(rotEncoder_[i].hasChanged(ticksPassed)==true)
