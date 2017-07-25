@@ -1,10 +1,20 @@
-/* 
-* AteOdyEngine.h
-*
-* Created: 27/09/2016 14:46:35
-* Author: paulsoulsby
+/*
+//AteOdyEngine.h  Odytron for Oscitron audio engine
+//Copyright (C) 2017  Paul Soulsby info@soulsbysynths.com
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 
 #ifndef __ATEODYENGINE_H__
 #define __ATEODYENGINE_H__
@@ -87,6 +97,8 @@ public:
 	const OdyOscillator& getOsc(unsigned char oscNum) const { return oscillator_[oscNum]; }
 	AteOscPitch& getCvPitch(unsigned char index) { return cvPitch_[index]; }
 	const AteOscPitch& getCvPitch(unsigned char index) const { return cvPitch_[index]; }
+	QuantizePitch& getQuantize() { return quantize_; }
+	const QuantizePitch& getQuantize() const { return quantize_; }
 	void initialize();
 	void poll(unsigned char ticksPassed);
 	void setFunction(AteOdyEngine::Func new_func);

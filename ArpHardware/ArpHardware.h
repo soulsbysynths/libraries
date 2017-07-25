@@ -1,9 +1,18 @@
-/* 
-* ArpHardware.h
-*
-* Created: 11/04/2017 10:51:47
-* Author: paulsoulsby
-*/
+//ArpHardware.h  AT-ARP hardware class
+//Copyright (C) 2017  Paul Soulsby info@soulsbysynths.com
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 #ifndef __ARPHARDWARE_H__
@@ -129,7 +138,7 @@ private:
 	unsigned char ledFlashTickCnt = 0;
 	static const unsigned char LED_FLASH_SCALE = 16;
 	unsigned char midiChannel_ = 0;
-	unsigned char ppqn_ = 24;
+	unsigned char ppqnMultiply_ = 2;
 	unsigned int output_  = 0;
 //functions
 public:
@@ -147,7 +156,7 @@ public:
 	const Switch& getSwitch(unsigned char index) const { return switch_[index]; }
 	SevenSegLed& getLed() { return led_; }
 	const SevenSegLed& getLed() const { return led_; }
-	unsigned char getPpqn(){return ppqn_;}
+	void setMidiClksOutPerPulse(unsigned char newValue);
 	unsigned char getMidiChannel(){return midiChannel_;}
 	bool getJackDetect(unsigned char index){return jackDetect_[index];}
 	void setOutput(unsigned int newValue);
@@ -164,9 +173,12 @@ public:
 	void pollCalibCvInputs();
 	void pollDigiPins(unsigned char ticksPassed);
 	void pollSwitches(unsigned char ticksPassed);
+	unsigned char pollTickCount();
+	unsigned char pollMidiCount();
 	void refreshLeds();
 	void refreshFlash(unsigned char ticksPassed);
 	void beginMidi(unsigned int ubrr);
+	void beginTick();
 	void pollMidi();
 protected:
 private:

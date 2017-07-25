@@ -1,10 +1,18 @@
-/*
-* ArpAtarpEngine.h
-*
-* Created: 12/04/2017 20:09:11
-* Author: paulsoulsby
-*/
-
+//ArpAtarpEngine.h  AT-ARP data processing engine
+//Copyright (C) 2017  Paul Soulsby info@soulsbysynths.com
+//
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+//
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef __ARPATARPENGINE_H__
 #define __ARPATARPENGINE_H__
@@ -17,8 +25,6 @@
 #include "Arpeggiator/ArpeggiatorBase.h"
 #include "ChordGen/ChordGen.h"
 
-#define BPM 120
-#define BPM_TICKS 3840000UL/BPM
 
 class ArpAtarpEngine : MidiBase, ArpeggiatorBase
 {
@@ -33,21 +39,16 @@ class ArpAtarpEngine : MidiBase, ArpeggiatorBase
 		FUNC_PATTERN = 0,
 		FUNC_PINGPONG,
 		FUNC_DIV,
-		FUNC_NOTESOURCE,
-		FUNC_CLOCKSOURCE,
+		FUNC_CVOCTAVE,
+		FUNC_CLOCKPPQN,
 		FUNC_MIDICHANNEL,
 		FUNC_RECORD,
 		FUNC_RESET
 	};
-	enum ClockSource : unsigned char
+	enum InputSource : unsigned char
 	{
-		CS_INTERNAL = 0,
-		CS_EXTERNAL = 1
-	};
-	enum NoteSource : unsigned char
-	{
-		NS_MIDI = 0,
-		NS_CV = 1
+		IS_MIDI = 0,
+		IS_CV = 1
 	};
 	static ArpAtarpEngine& getInstance()
 	{
@@ -56,10 +57,12 @@ class ArpAtarpEngine : MidiBase, ArpeggiatorBase
 		return instance;
 	}
 	static const unsigned char FUNCS = 8;
+	static const unsigned char ROOT_NOTE_OFFSET = 36;   //so incoming CV is between midi note 36 and 96
 	protected:
 	private:
 	static const unsigned char SYSEX_PROD_ID = 0;
-	static const unsigned int MIDI_TICKSPERCYCLE = 1536;
+	static const unsigned int MIDI_TICKSPERCYCLE = 3072;  //  1536;  //for24ppqn
+	
 	ArpAtarpEngineBase* base_ = NULL;
 	MasterClock masterClock_;
 	Midi* midi_;
@@ -69,25 +72,31 @@ class ArpAtarpEngine : MidiBase, ArpeggiatorBase
 	unsigned char totNotesOnLast_ = 0;
 	Function func_ = FUNC_PATTERN;
 	unsigned char value_[FUNCS];
-	NoteSource noteSource_;
-	ClockSource clockSource_;
+	InputSource rootSource_;
+	InputSource chordSource_;
+	InputSource clockSource_;
 	//functions
 	public:
 	void construct(ArpAtarpEngineBase* base);
 	void initialize();
-	void poll(unsigned char ticksPassed);
+	void poll(unsigned int midiClksPassed);
 	const Arpeggiator* getArpeggiatorPtr() const { return  arpeggiator_; }
 	Arpeggiator* getArpeggiatorPtr() { return arpeggiator_; }
 	const Midi* getMidiPtr() const { return  midi_; }
 	Midi* getMidiPtr() { return midi_; }
 	MasterClock& getMasterClock() { return masterClock_; }
 	const MasterClock& getMasterClock() const { return masterClock_; }
-	ChordGen& getChordGen() {return chordGen_;}
-	const ChordGen& getChordGen() const {return chordGen_;}
 	void setFunction(Function newFunction);
 	Function getFunction(){return func_;}
 	void setValue(Function func, unsigned char newValue);
 	unsigned char getValue(Function func){return value_[func];}
+	void setRootNote(unsigned char newNote);
+	void setChordNote(unsigned char newNote);
+	void setRootSource(InputSource newSource);
+	InputSource getRootSource(){return rootSource_;}
+	void setChordSource(InputSource newSource);
+	InputSource getChordSource(){return chordSource_;}
+	InputSource getClockSource(){return clockSource_;}
 	void txChordGenMidi();
 	void midiControlChangeReceived(unsigned char cc, unsigned char val);
 	void midiNoteOnReceived(unsigned char note, unsigned char velocity);

@@ -18,6 +18,9 @@
 #include "OdyPatch.h"
 extern void writeMemory(const void* data, void* startAddr, size_t size);
 extern void readMemory(void* data, const void* startAddr, size_t size);
+extern void writeFram(const void* data, unsigned int startAddr, size_t size);
+extern void readFram(void* data, unsigned int startAddr, size_t size);
+
 // default constructor
 OdyPatch::OdyPatch(OdyPatchBase* base)
 {
@@ -102,6 +105,30 @@ void OdyPatch::writePatch(unsigned char patchNum)
 	}
 	writeMemory((const void*)data, (void*)startAddr, sizeof(data));
 }
+void OdyPatch::writePatchFram(unsigned char patchNum)
+{
+	unsigned int startAddr = ((unsigned int)PATCH_SIZE * patchNum) + FRAM_START_ADDR;
+	unsigned int addr = 0;
+	unsigned char i;
+	unsigned char data[PATCH_SIZE];
+	for(i=0;i<10;++i)
+	{
+		data[addr] = funcValue_c_[i];
+		addr++;
+	}
+	for(i=0;i<6;++i)
+	{
+		data[addr] = ctrlValue_[i];
+		addr++;
+	}
+	for(i=0;i<2;++i)   //no need to read/write last 3 func opts
+	{
+		data[addr] = optionValue_c_[i];
+		addr++;
+	}
+	//writeMemory((const void*)data, (void*)startAddr, sizeof(data));
+	writeFram((const void*)data,startAddr,sizeof(data));
+}
 void OdyPatch::readPatch(unsigned char patchNum)
 {
 	unsigned int startAddr = (unsigned int)PATCH_SIZE * patchNum;
@@ -127,5 +154,71 @@ void OdyPatch::readPatch(unsigned char patchNum)
 			setOptionValue((i*8)+j,(bool)bitRead(data[addr],j));
 		}
 		addr++;
+	}
+}
+void OdyPatch::readPatchFram(unsigned char patchNum)
+{
+	unsigned int startAddr = ((unsigned int)PATCH_SIZE * patchNum) + FRAM_START_ADDR;
+	unsigned int addr = 0;
+	unsigned char i,j;
+	unsigned char data[PATCH_SIZE];
+	bool blank = true;
+	readFram((void*)data,startAddr,sizeof(data));
+	for(i=0;i<10;++i)
+	{
+		if(data[addr]<0xFF)
+		{
+			blank = false;
+		}
+		setFunctionValue(i<<1,uncompressFourBit(data[addr],false));
+		setFunctionValue((i<<1)+1,uncompressFourBit(data[addr],true));
+		addr++;
+	}
+	for(i=0;i<6;++i)
+	{
+		if(data[addr]<0xFF)
+		{
+			blank = false;
+		}
+		setCtrlValue(i,data[addr]);
+		addr++;
+	}
+	for(i=0;i<2;++i)  //no need to read/write last 3 func opts
+	{
+		if(data[addr]<0xFF)
+		{
+			blank = false;
+		}
+		for(j=0;j<8;++j)
+		{
+			setOptionValue((i*8)+j,(bool)bitRead(data[addr],j));
+		}
+		addr++;
+	}
+	if(blank)
+	{
+		setFunctionValue(0,0);  //		FUNC_OSC0FM,
+		setFunctionValue(1,0);  // FUNC_OSC1FM,
+		setFunctionValue(2,15); // FUNC_OSC1PWM,
+		setFunctionValue(3,0);  // FUNC_OSCLEVELFX,
+		setFunctionValue(4,15);  // FUNC_OSCLEVEL0,
+		setFunctionValue(5,15);  // FUNC_OSCLEVEL1,
+		setFunctionValue(6,15);  // FUNC_FILTFM,
+		setFunctionValue(7,1);  // FUNC_QUANT,
+		setFunctionValue(8,patchNum);  // FUNC_QMEM,
+		setFunctionValue(9,1);  // FUNC_FILTTYPE
+		setCtrlValue(0,128);  // CTRL_VCO1,
+		setCtrlValue(1,0);  // CTRL_Q,
+		setCtrlValue(2,0);  // CTRL_VCO2,
+		setCtrlValue(3,128);  // CTRL_MODA,
+		setCtrlValue(4,255);  //CTRL_MODB,
+		setOptionValue(0,false);  //		FUNC_OSC0FM,
+		setOptionValue(1,false);  // FUNC_OSC1FM,
+		setOptionValue(2,false); // FUNC_OSC1PWM,
+		setOptionValue(3,false);  // FUNC_OSCLEVELFX,
+		setOptionValue(4,false);  // FUNC_OSCLEVEL0,
+		setOptionValue(5,true);  // FUNC_OSCLEVEL1,
+		setOptionValue(6,true);  // FUNC_FILTFM,
+		setOptionValue(7,false);  // FUNC_QUANT,
 	}
 }

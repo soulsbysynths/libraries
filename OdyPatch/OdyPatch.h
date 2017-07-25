@@ -51,6 +51,7 @@ private:
 	unsigned char funcValue_c_[10] = {0x00,0x00,0x00,0xF0,0x0F,0x08,0x40,0x00,0x04,0x20};
 	unsigned char optionValue_c_[3] = {0x80,0x00,0x00};
 	unsigned char ctrlValue_[6] = {0xFF,0x00,0xC0,0x80,0x00,0x00};
+	static const unsigned int FRAM_START_ADDR = 4352;
 	OdyPatchBase* base_ = NULL;
 //functions
 public:
@@ -65,6 +66,8 @@ public:
 	unsigned char getCtrlValue(unsigned char ctrl);
 	void readPatch(unsigned char patchNum);
 	void writePatch(unsigned char patchNum);
+	void readPatchFram(unsigned char patchNum);
+	void writePatchFram(unsigned char patchNum);
 protected:
 private:
 	OdyPatch( const OdyPatch &c );

@@ -41,8 +41,8 @@ private:
 	const float RANGE_MAX[3] = {0.693147180559945,1.386294361119891,2.0794415416798359282516963643745};
 	const unsigned char RANGE_MULT[3] = {128,64,32};
 	const unsigned char RANGE_BS[3] = {7,6,5};
-	unsigned int input_;
-	unsigned int output_;
+	unsigned int input_ = 1760;
+	unsigned int output_ = 1760;
 	unsigned char fmAAmount_ = 0;
 	unsigned char fmBAmount_ = 0;
 	float fmAAmountF_ = 0;
