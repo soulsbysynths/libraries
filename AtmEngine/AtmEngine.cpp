@@ -429,7 +429,7 @@ void AtmEngine::midiControlChangeReceived(unsigned char cc, unsigned char val)
 {
 	switch ((MidiCC)cc)
 	{
-		case CC_PITCHLFO:
+		case CC_PITCHLFOMOD:
 		patch_->setCtrlValue(HIGH,CTRL_LFO,val>>1);
 		break;
 		case CC_PORTAMENTO:
@@ -441,14 +441,29 @@ void AtmEngine::midiControlChangeReceived(unsigned char cc, unsigned char val)
 		case CC_DISTORTION:
 		patch_->setCtrlValue(LOW,CTRL_FX,val<<1);
 		break;
-		case CC_FILTCUTOFF:
-		patch_->setCtrlValue(LOW,CTRL_FILT,val<<1);
+		case CC_ARPTYPE:
+		patch_->setFunctionValue(FUNC_ARPTYPE,val>>3);
 		break;
+		case CC_ARPCLOCKDIV:
+		patch_->setFunctionValue(FUNC_ARPSPEED,val>>3);
+		break;
+		case CC_WAVECRUSH:
+		patch_->setFunctionValue(FUNC_BITCRUSH,val>>3);
+		break;
+		case CC_WAVEFORM:
+		patch_->setFunctionValue(FUNC_WAVE,val>>3);
+		break;		
+		case CC_FILTTYPE:
+		patch_->setFunctionValue(FUNC_FILT,val>>3);
+		break;		
 		case CC_AMPENVR:
 		patch_->setFunctionValue(FUNC_AENVR,val>>3);
 		break;
 		case CC_AMPENVA:
 		patch_->setFunctionValue(FUNC_AENVA,val>>3);
+		break;
+		case CC_FILTCUTOFF:
+		patch_->setCtrlValue(LOW,CTRL_FILT,val<<1);
 		break;
 		case CC_FILTRES:
 		patch_->setCtrlValue(LOW,CTRL_Q,val<<1);
@@ -456,8 +471,26 @@ void AtmEngine::midiControlChangeReceived(unsigned char cc, unsigned char val)
 		case CC_AMPENVD:
 		patch_->setFunctionValue(FUNC_AENVD,val>>3);
 		break;
+		case CC_PITCHLFO:
+		patch_->setCtrlValue(HIGH,CTRL_LFO,val<<1);
+		break;
+		case CC_LFOSHAPE:
+		patch_->setFunctionValue(FUNC_LFOTYPE,val>>3);
+		break;		
 		case CC_LFOCLOCKDIV:
 		patch_->setFunctionValue(FUNC_LFOSPEED,val>>3);
+		break;
+		case CC_AMPENVS:
+		patch_->setFunctionValue(FUNC_AENVS,val>>3);
+		break;
+		case CC_FENVA:
+		patch_->setFunctionValue(FUNC_FENVA,val>>3);
+		break;
+		case CC_FENVDR:
+		patch_->setFunctionValue(FUNC_FENVDR,val>>3);
+		break;
+		case CC_FENVS:
+		patch_->setFunctionValue(FUNC_FENVS,val>>3);
 		break;
 		case CC_PWM:
 		patch_->setCtrlValue(HIGH,CTRL_FX,val<<1);
@@ -477,6 +510,14 @@ void AtmEngine::midiControlChangeReceived(unsigned char cc, unsigned char val)
 		case CC_ALLNOTESOFF:
 		midi_->reset();
 		break;
+	}
+}
+
+void AtmEngine::midiProgramChangeReceived(unsigned char patchNum)
+{
+	if (patchNum<16)
+	{
+		patch_->readPatch(patchNum);
 	}
 }
 

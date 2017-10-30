@@ -117,6 +117,7 @@ class Midi
 	unsigned int clockTicksLast_ = 0;
 	unsigned char totNotesOn_ = 0;
 	bool noteOn_[128] = {false};
+	bool progChangeEnable_ = false;
 	//functions
 	public:
 	Midi(MidiBase* base, unsigned char sysex_prod_id);
@@ -126,14 +127,15 @@ class Midi
 	void setSysexEnable(bool newValue){sysexEnable_ = newValue;}
 	bool getSysexEnable(){return sysexEnable_;}
 	unsigned char getChannel(){return channel_;}
-	void setChannel(unsigned char new_channel);
+	void setChannel(unsigned char newChannel){channel_ = (newChannel & 0x0F);}
+	void setProgChangeEnable(bool way){progChangeEnable_ = way;}
 	void setNoteOn(unsigned char note, bool on){noteOn_[note] = on;}
 	bool getNoteOn(unsigned char note){return noteOn_[note];}
 	const bool* getNoteOnPtr() const { return  noteOn_; }
 	bool* getNoteOnPtr() { return noteOn_; }
 	unsigned char getTotNotesOn(){return totNotesOn_;}
 	void reset();
-	void writeSysex(unsigned char* sys_mess, unsigned int size);
+	void writeSysex(unsigned char* sysMess, unsigned int size);
 	unsigned char getClockTicksPassed();
 	protected:
 	private:

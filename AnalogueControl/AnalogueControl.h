@@ -26,17 +26,17 @@ class AnalogueControl
 public:
 protected:
 private:
-	AnalogueControlBase* base_;
+	AnalogueControlBase* base_ = NULL;
 	static const unsigned char kCtrlMoveThreshold = 4;
 	static const unsigned int kCtrlMoveTimeOut = 2000;
 	bool moving_ = false;
 	unsigned char valueLast_ = 0;
 	unsigned int moveTick_ = 0;
 	unsigned char value_ = 0;
-	bool latching_;
-	bool latched_;
-	unsigned char latchVal_;
-	unsigned char index_;
+	bool latching_ = false;
+	bool latched_ = false;
+	unsigned char latchVal_ = 0;
+	unsigned char index_ = 0;
 //functions
 public:
 	AnalogueControl() {}

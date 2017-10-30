@@ -54,7 +54,7 @@ bool Switch::hasHeld(unsigned char ticksPassed)
 			holdEventFired_ = true;
 		}
 		
-	}	
+	}
 	return held;
 }
 bool Switch::hasChanged(unsigned char ticksPassed)

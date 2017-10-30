@@ -20,16 +20,13 @@
 #include <stdlib.h>
 #include "SwitchBase.h"
 
-//#define HIGH 0x1
-//#define LOW  0x0
-
 class Switch
 {
 //variables
 public:
 protected:
 private:
-	SwitchBase* base_;
+	SwitchBase* base_ = NULL;
 	static const unsigned char S_HIGH = 1;
 	static const unsigned char S_LOW = 0;
 	unsigned int holdEventTicks_ = 2000;
@@ -42,12 +39,12 @@ private:
 	unsigned char click_ = 0;
 	bool holdEventFired_ = false;
 	unsigned char debounceTicks_ = 20;
-	unsigned char index_;
+	unsigned char index_ = 0;
 //functions
 public:
 	Switch() {}
-	Switch(unsigned char index, unsigned char initValue, unsigned int holdTicks, SwitchBase* base);
 	Switch(unsigned char initValue, unsigned int holdTicks);
+	Switch(unsigned char index, unsigned char initValue, unsigned int holdTicks, SwitchBase* base);
 	~Switch();
 	void setValue(unsigned char newValue){value_ = newValue;} 
 	unsigned char getValue(){return value_;} 

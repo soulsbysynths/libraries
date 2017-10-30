@@ -113,17 +113,17 @@ void AtmHardware::construct(AtmHardwareBase* base)
 	bitClear(PORTD,PIND3);
 	//initialize variables
 	unsigned char invPinB = ~PINB;
-	switchState[0] = bitRead(invPinB,PINB0);
-	switch_[0] = Switch(bitRead(invPinB,PINB0),HOLD_EVENT_TICKS);
-	if(switch_[0].getState()==HIGH)
+	switchState[FUNCTION] = bitRead(invPinB,PINB0);
+	switch_[FUNCTION] = Switch(bitRead(invPinB,PINB0),HOLD_EVENT_TICKS);
+	if(switch_[FUNCTION].getState()==HIGH)
 	{
 		midiChannelSelectMode_ = true;
 	}
-	switchState[1] = bitRead(invPinB,PINB1);
-	switch_[1] = Switch(bitRead(invPinB,PINB1),HOLD_EVENT_TICKS);
+	switchState[VALUE] = bitRead(invPinB,PINB1);
+	switch_[VALUE] = Switch(bitRead(invPinB,PINB1),HOLD_EVENT_TICKS);
 	unsigned char invPind = ~PIND;
-	switchState[2] = bitRead(invPind,PIND6);
-	switch_[2] = Switch(bitRead(invPind,PIND6),HOLD_EVENT_TICKS);
+	switchState[BANK] = bitRead(invPind,PIND6);
+	switch_[BANK] = Switch(bitRead(invPind,PIND6),HOLD_EVENT_TICKS);
 	//PCINT0 = function, PCINT1 = value, PCINT22 = bank, PCINT20 = func rotEncoder_ A, PCINT21 = func rotEncoder_ B, PCINT23 = val rotEncoder_ A, PCINT18 = val rotEncoder_ B
 	bitSet(PCMSK0,PCINT0);
 	bitSet(PCMSK0,PCINT1);
@@ -139,24 +139,21 @@ void AtmHardware::construct(AtmHardwareBase* base)
 	
 	sei();
 	
-	midiThru_ = eeprom_read_byte((uint8_t*)MIDI_CHANNEL_ADDRESS) & 0x80;
+	midiThru_ = eeprom_read_byte((uint8_t*)MIDI_CHANNEL_ADDRESS) & MIDI_THRU_ON;
+	midiProgChangeEn_ = eeprom_read_byte((uint8_t*)MIDI_CHANNEL_ADDRESS) & MIDI_PROGCHEN_ON;
 	midiChannel_ = eeprom_read_byte((uint8_t*)MIDI_CHANNEL_ADDRESS) & 0x0F;
 	
 	if(midiChannelSelectMode_==true)
 	{
 		rotEncoder_[FUNCTION].setContinuous(true);
-		if(midiThru_==MIDI_THRU_ON)
-		{
-			ledSwitch_[FUNCTION].setColour(LedRgb::RED);
-		}
-		else
-		{
-			ledSwitch_[FUNCTION].setColour(LedRgb::YELLOW);
-		}
-		ledSwitch_[VALUE].setColour(LedRgb::OFF);
-		ledSwitch_[BANK].setColour(LedRgb::OFF);
-		ledCircular_[FUNCTION].select(midiChannel_);
 		rotEncoder_[FUNCTION].setValue((char)midiChannel_);
+		ledSwitch_[FUNCTION].setColour(LedRgb::OFF);
+		
+		rotEncoder_[VALUE].setMaxValue(2);
+		rotEncoder_[VALUE].setValue(0);
+		
+		ledSwitch_[BANK].setColour(LedRgb::OFF);
+		refreshGlobal();
 	}
 }
 
@@ -289,19 +286,33 @@ void AtmHardware::pollSwitches(unsigned char ticksPassed)
 			{
 				base_->hardwareSwitchChanged(i,switch_[i].getState());
 			}
-			else if(midiChannelSelectMode_==true && i==FUNCTION && switch_[i].getState()==HIGH)
+			else if(midiChannelSelectMode_==true && i==VALUE && switch_[i].getState()==HIGH)
 			{
-				if(midiThru_==MIDI_THRU_ON)
+				switch(rotEncoder_[VALUE].getValue())
 				{
-					midiThru_ = 0;
-					ledSwitch_[FUNCTION].setColour(LedRgb::YELLOW);
-				}
-				else
-				{
-					midiThru_ = MIDI_THRU_ON;
-					ledSwitch_[FUNCTION].setColour(LedRgb::RED);
+					case GLOBAL_MIDITHRU:
+					if(midiThru_==MIDI_THRU_ON)
+					{
+						midiThru_ = 0;
+					}
+					else
+					{
+						midiThru_ = MIDI_THRU_ON;
+					}
+					break;
+					case GLOBAL_PROGCHANGE:
+					if(midiProgChangeEn_==MIDI_PROGCHEN_ON)
+					{
+						midiProgChangeEn_ = 0;
+					}
+					else
+					{
+						midiProgChangeEn_ = MIDI_PROGCHEN_ON;
+					}
+					break;
 				}
 				writeMidiSettings();
+				refreshGlobal();
 			}
 		}
 	}
@@ -319,14 +330,46 @@ void AtmHardware::pollRotEncoders(unsigned char ticksPassed)
 			{
 				base_->hardwareRotaryEncoderChanged(i,rotEncoder_[i].getValue(),rotEncoder_[i].getDirection());
 			}
-			else if(midiChannelSelectMode_==true && i==FUNCTION)
+			else if(midiChannelSelectMode_==true)
 			{
-				midiChannel_ = rotEncoder_[i].getValue();
-				base_->hardwareMidiChannelChanged(midiChannel_);
-				ledCircular_[FUNCTION].select(midiChannel_);
-				writeMidiSettings();
+				if(i==FUNCTION)
+				{
+					midiChannel_ = rotEncoder_[i].getValue();
+					base_->hardwareMidiChannelChanged(midiChannel_);
+					writeMidiSettings();
+				}
+				refreshGlobal();
 			}
 		}
+	}
+}
+
+void AtmHardware::refreshGlobal()
+{
+	ledCircular_[FUNCTION].select(midiChannel_);
+	ledCircular_[VALUE].select(rotEncoder_[VALUE].getValue());
+	switch (rotEncoder_[VALUE].getValue())
+	{
+		case GLOBAL_MIDITHRU:  //midi thru
+		if (midiThru_==MIDI_THRU_ON)
+		{
+			ledSwitch_[VALUE].setColour(LedRgb::RED);
+		}
+		else
+		{
+			ledSwitch_[VALUE].setColour(LedRgb::YELLOW);
+		}
+		break;
+		case GLOBAL_PROGCHANGE:  //prog change enable
+		if (midiProgChangeEn_==MIDI_PROGCHEN_ON)
+		{
+			ledSwitch_[VALUE].setColour(LedRgb::RED);
+		}
+		else
+		{
+			ledSwitch_[VALUE].setColour(LedRgb::YELLOW);
+		}
+		break;
 	}
 }
 
@@ -384,7 +427,7 @@ void AtmHardware::flushMidi()
 
 void AtmHardware::writeMidiSettings()
 {
-	eeprom_update_byte((uint8_t*)MIDI_CHANNEL_ADDRESS,midiChannel_ | midiThru_);
+	eeprom_update_byte((uint8_t*)MIDI_CHANNEL_ADDRESS,(midiChannel_ | midiThru_ | midiProgChangeEn_));
 }
 
 void AtmHardware::beginSpi()

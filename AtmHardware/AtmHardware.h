@@ -113,6 +113,13 @@ class AtmHardware
 		MIDIERR_PARITY,
 		MIDIERR_BUFFERFULL
 	};
+	
+	enum GlobalParameter : unsigned char
+	{
+		GLOBAL_MIDITHRU,
+		GLOBAL_PROGCHANGE
+	};
+	
 	protected:
 	private:
 	AtmHardwareBase* base_;
@@ -124,8 +131,10 @@ class AtmHardware
 	Led ledMidi_;
 	bool midiChannelSelectMode_ = false;
 	static const unsigned char MIDI_THRU_ON = 0x80;
+	static const unsigned char MIDI_PROGCHEN_ON = 0x40;
 	unsigned char midiThru_ = 0;
 	unsigned char midiChannel_ = 0;
+	unsigned char midiProgChangeEn_ = 0;
 	unsigned char ledFlashTickCnt = 0;
 	//functions
 	
@@ -150,6 +159,7 @@ class AtmHardware
 	const Led& getLedMidi() const { return ledMidi_; }
 	bool getMidiChannelSelectMode() {return midiChannelSelectMode_;}
 	unsigned char getMidiChannel(){return midiChannel_;}
+	bool getMidiProgChEn(){return (bool)midiProgChangeEn_;}
 	void refreshLeds();
 	void refreshFlash(unsigned char ticksPassed);
 	void pollAnlControls(unsigned char ticksPassed);
@@ -166,6 +176,7 @@ class AtmHardware
 	void beginSpi();
 	void writeSpi(unsigned char cData);
 	void writeMidiSettings();
+	void refreshGlobal();
 	AtmHardware() {}
 	AtmHardware(AtmHardwareBase* base);
 	~AtmHardware();

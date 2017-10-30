@@ -36,6 +36,7 @@ void Atm::initialize()
 	{
 		engine_.initialize();
 		engine_.getMidiPtr()->setChannel(hardware_.getMidiChannel());
+		engine_.getMidiPtr()->setProgChangeEnable(hardware_.getMidiProgChEn());
 		for(unsigned char i=0;i<2;++i)
 		{
 			hardware_.getLedSwitch(i).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::GREEN,true);
@@ -54,7 +55,7 @@ void Atm::poll(unsigned char ticksPassed)
 	if(hardware_.getMidiChannelSelectMode()==false)
 	{
 		engine_.poll(ticksPassed);
-		engine_.refreshSysex();		
+		engine_.refreshSysex();
 	}
 }
 
@@ -68,6 +69,23 @@ bool Atm::isFuncFill(AtmEngine::Func func) const
 {
 	unsigned char i = func>>3;
 	return (bool)bitRead(IS_FUNC_FILL[i],func-(i*8));
+}
+
+void Atm::txTestNote(bool noteOn)
+{
+	if (noteOn==true)
+	{
+		engine_.getMidiPtr()->read(Midi::NOTE_ON | hardware_.getMidiChannel());
+		engine_.getMidiPtr()->read(testNote_);
+		engine_.getMidiPtr()->read(127);
+	}
+	else
+	{
+		engine_.getMidiPtr()->read(Midi::NOTE_OFF | hardware_.getMidiChannel());
+		engine_.getMidiPtr()->read(testNote_);
+		engine_.getMidiPtr()->read(0);
+	}
+
 }
 
 //***********engine events*********************
@@ -204,13 +222,13 @@ void Atm::hardwareSwitchChanged(unsigned char sw, unsigned char newValue)
 		{
 			hardware_.getRotEncoder(AtmHardware::VALUE).setUpdateVal(false);
 			hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::GREEN);
-			engine_.midiNoteOnReceived(testNote_,127);
+			txTestNote(true);
 		}
 		else
 		{
 			hardware_.getRotEncoder(AtmHardware::VALUE).setUpdateVal(true);
 			hardware_.getLedSwitch(AtmHardware::VALUE).setColour(LedRgb::RED);
-			engine_.midiNoteOffReceived(testNote_);
+			txTestNote(false);
 		}
 	}
 	
@@ -255,7 +273,7 @@ void Atm::hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newVa
 		{
 			if(testNote_<127 && testNote_>0)
 			{
-				engine_.midiNoteOffReceived(testNote_);
+				txTestNote(false);
 				if(clockwise==true)
 				{
 					testNote_++;
@@ -264,7 +282,7 @@ void Atm::hardwareRotaryEncoderChanged(unsigned char rotary, unsigned char newVa
 				{
 					testNote_--;
 				}
-				engine_.midiNoteOnReceived(testNote_,127);
+				txTestNote(true);
 			}
 		}
 		else

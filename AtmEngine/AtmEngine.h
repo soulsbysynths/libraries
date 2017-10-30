@@ -87,16 +87,27 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	};
 	enum MidiCC : unsigned char
 	{
-		CC_PITCHLFO = 1,
+		CC_PITCHLFOMOD = 1,  
 		CC_PORTAMENTO = 5,
 		CC_FILTERENV = 16,
 		CC_DISTORTION = 17,
-		CC_FILTCUTOFF = 74,
+		CC_ARPTYPE = 18, 
+		CC_ARPCLOCKDIV = 19,  
+		CC_WAVECRUSH = 20, 
+		CC_WAVEFORM = 32, 
+		CC_FILTTYPE = 33, 
 		CC_AMPENVR = 72,
 		CC_AMPENVA = 73,
+		CC_FILTCUTOFF = 74,
 		CC_FILTRES = 71,
 		CC_AMPENVD = 75,
+		CC_PITCHLFO = 77,
+		CC_LFOSHAPE = 78,  
 		CC_LFOCLOCKDIV = 79,
+		CC_AMPENVS = 80,  
+		CC_FENVA = 81,  
+		CC_FENVDR = 82,  
+		CC_FENVS = 83,  
 		CC_PWM = 91,
 		CC_AMPLFO = 92,
 		CC_FILTLFO = 93,
@@ -183,6 +194,7 @@ class AtmEngine : public MidiBase, ArpeggiatorBase, AtmPatchBase
 	void midiSysexStopReceived(void);
 	void midiSysexWrite(unsigned char data);
 	void midiPitchBendReceived(char bend);
+	void midiProgramChangeReceived(unsigned char patchNum);
 	void refreshSysex();
 	void writeSysexPatch(unsigned char patchNum);
 	void writeSysexMemDump();
