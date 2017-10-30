@@ -23,9 +23,24 @@ AnalogueControl::AnalogueControl(unsigned char initValue)
 	valueLast_ = initValue;
 } //AnalogueControl
 
+AnalogueControl::AnalogueControl(unsigned char index, unsigned char initValue, AnalogueControlBase* base)
+{
+	base_ = base;
+	index_ = index;
+	latching_ = false;
+	latched_ = false;
+	latchVal_ = 0;
+	value_ = initValue;
+	valueLast_ = initValue;
+}
+
 // default destructor
 AnalogueControl::~AnalogueControl()
 {
+	if (base_ != NULL)
+	{
+		delete base_;
+	}
 } //~AnalogueControl
 
 bool AnalogueControl::hasChanged(unsigned char ticksPassed)
@@ -56,4 +71,34 @@ bool AnalogueControl::hasChanged(unsigned char ticksPassed)
 		}
 	}
 	return changed;
+}
+
+void AnalogueControl::poll(unsigned char ticksPassed)
+{
+
+	int diff = abs((int)value_ - valueLast_);
+	if(diff>kCtrlMoveThreshold && moving_==false)
+	{
+		moving_ = true;
+		moveTick_ = 0;
+		base_->actrlMovingChanged(index_,true);
+	}
+	else if (moving_==true)
+	{
+		moveTick_ += ticksPassed;
+		if(moveTick_>=kCtrlMoveTimeOut)
+		{
+			moving_ = false;
+			base_->actrlMovingChanged(index_,false);
+		}
+	}
+	
+	if(moving_==true)
+	{
+		if(value_!=valueLast_)
+		{
+			valueLast_ = value_;
+			base_->actrlValueChanged(index_,value_);
+		}
+	}
 }

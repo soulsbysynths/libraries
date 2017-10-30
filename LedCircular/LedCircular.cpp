@@ -19,11 +19,24 @@
 // default constructor
 LedCircular::LedCircular()
 {
+	flashCnt_ = new unsigned char [16]();
+	flashOnOffTicks_c_ = new unsigned char [16]();
+	flashTick_ = new unsigned int [16]();
 } //LedCircular
+
+LedCircular::LedCircular(unsigned char arraySize)
+{
+	flashCnt_ = new unsigned char [arraySize]();
+	flashOnOffTicks_c_ = new unsigned char [arraySize]();
+	flashTick_ = new unsigned int [arraySize]();
+}
 
 // default destructor
 LedCircular::~LedCircular()
 {
+	delete[] flashCnt_;
+	delete[] flashOnOffTicks_c_;
+	delete[] flashOnOffTicks_c_;
 } //~LedCircular
 
 void LedCircular::select(unsigned char value)

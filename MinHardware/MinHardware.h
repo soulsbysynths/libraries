@@ -54,6 +54,7 @@
 
 #define MIDI_BUFFER_SIZE 64
 #define MIDI_BUFFER_MASK 63
+#define PCB_ISSUE 3
 
 class MinHardware
 {

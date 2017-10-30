@@ -40,12 +40,13 @@ public:
 protected:
 private:
 	unsigned int led_c_ = 0;
-	unsigned char flashCnt_[16] = {0};
-	unsigned char flashOnOffTicks_c_[16] = {0};   //compresses on and off ticks into 4 bit
-	unsigned int flashTick_[16] = {0};
+	unsigned char * flashCnt_;
+	unsigned char * flashOnOffTicks_c_;   //compresses on and off ticks into 4 bit
+	unsigned int * flashTick_;
 //functions
 public:
 	LedCircular();
+	LedCircular(unsigned char arraySize);
 	~LedCircular();
 	void select(unsigned char value);
 	void fill(unsigned char value);

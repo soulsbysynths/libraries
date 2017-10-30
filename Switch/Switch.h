@@ -17,6 +17,9 @@
 #ifndef __SWITCH_H__
 #define __SWITCH_H__
 
+#include <stdlib.h>
+#include "SwitchBase.h"
+
 //#define HIGH 0x1
 //#define LOW  0x0
 
@@ -26,31 +29,39 @@ class Switch
 public:
 protected:
 private:
+	SwitchBase* base_;
 	static const unsigned char S_HIGH = 1;
 	static const unsigned char S_LOW = 0;
-	unsigned char state_ = S_LOW;
-	unsigned char ticks_ = 0;
-	unsigned char stateLast_ = S_LOW;
-	unsigned int holdTime_ = 0;
-	bool holdEventFired_ = false;
-	unsigned char debounceTicks_ = 100;
 	unsigned int holdEventTicks_ = 2000;
+	static const unsigned char dclickEventTicks_ = 100;
+	unsigned char value_ = S_LOW;
+	unsigned char valueActive_ = S_LOW;
+	unsigned char ticks_ = 0;
+	unsigned int holdTime_ = 0;
+	unsigned char dclickTime_ = 0;
+	unsigned char click_ = 0;
+	bool holdEventFired_ = false;
+	unsigned char debounceTicks_ = 20;
+	unsigned char index_;
 //functions
 public:
 	Switch() {}
+	Switch(unsigned char index, unsigned char initValue, unsigned int holdTicks, SwitchBase* base);
 	Switch(unsigned char initValue, unsigned int holdTicks);
 	~Switch();
-	void setState(unsigned char newState){state_ = newState;}
-	unsigned char getState(){return state_;}
+	void setValue(unsigned char newValue){value_ = newValue;} 
+	unsigned char getValue(){return value_;} 
+	void setState(unsigned char newState){value_ = newState;}  //deprocated
+	unsigned char getState(){return value_;}  //deprocated
 	unsigned int getHoldTime(){return holdTime_;}
 	void setDebounceTicks(unsigned char newValue){debounceTicks_ = newValue;}
-	bool hasChanged(unsigned char ticksPassed);
-	bool hasHeld(unsigned char ticksPassed);
+	bool hasChanged(unsigned char ticksPassed);  //deprocated
+	bool hasHeld(unsigned char ticksPassed);  //deprocated
+	void poll(unsigned char ticksPassed);
 protected:
 private:
 	//Switch( const Switch &c );
 	//Switch& operator=( const Switch &c );
-
 }; //Switch
 
 #endif //__SWITCH_H__
