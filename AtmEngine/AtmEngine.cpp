@@ -131,7 +131,7 @@ void AtmEngine::poll(unsigned char ticksPassed)
 	}
 	filter_.processWavetable(working_buffer_);
 	
-	#ifdef EXP_ENVELOPES==1
+	#if EXP_ENVELOPES==1
 	amplifier_.processWavetable(working_buffer_, ampEnvelope_.getExpOutput(), lfo);
 	#else
 	amplifier_.processWavetable(working_buffer_, ampEnvelope_.getOutput(), lfo);
