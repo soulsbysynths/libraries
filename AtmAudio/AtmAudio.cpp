@@ -53,7 +53,7 @@ AtmAudio::~AtmAudio()
 	#endif
 } //~AtmAudio
 
-static void AtmAudio::initialize()
+void AtmAudio::initialize()
 {
 	//use internal clock
 	bitClear(ASSR,EXCLK);    //disable external clock
