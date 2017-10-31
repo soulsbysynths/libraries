@@ -89,9 +89,9 @@ void Atm::txTestNote(bool noteOn)
 }
 
 //***********engine events*********************
-void Atm::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
+void Atm::engineFunctionChanged(unsigned char func, unsigned char val)
 {
-	bool col;
+	
 	
 	hardware_.getRotEncoder(AtmHardware::VALUE).setValue((char)val);
 	if(isFuncFill((AtmEngine::Func)func)==true)
@@ -105,6 +105,10 @@ void Atm::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
 		hardware_.getLedCircular(AtmHardware::VALUE).select(val);
 	}
 	hardware_.getLedCircular(AtmHardware::FUNCTION).select((unsigned char)func);
+}
+void Atm::engineOptionChanged(unsigned char func, bool opt)
+{
+	bool col;
 	if(func==AtmEngine::FUNC_AENVD)
 	{
 		col = engine_.getMidiPtr()->getSysexEnable();
@@ -121,7 +125,6 @@ void Atm::engineFunctionChanged(unsigned char func, unsigned char val, bool opt)
 	{
 		hardware_.getLedSwitch(AtmHardware::FUNCTION).setColour(LedRgb::RED);
 	}
-
 }
 void Atm::engineBankChanged(unsigned char bank)
 {

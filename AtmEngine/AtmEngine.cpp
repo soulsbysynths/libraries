@@ -157,7 +157,8 @@ void AtmEngine::poll(unsigned char ticksPassed)
 void AtmEngine::setFunction(AtmEngine::Func newFunc)
 {
 	function_ = newFunc;
-	base_->engineFunctionChanged((unsigned char)function_,patch_->getFunctionValue(function_),patch_->getOptionValue(function_));
+	base_->engineFunctionChanged((unsigned char)function_,patch_->getFunctionValue(function_));
+	base_->engineOptionChanged((unsigned char)function_,patch_->getOptionValue(function_));
 }
 
 void AtmEngine::setBank(unsigned char newBank)
@@ -427,6 +428,7 @@ void AtmEngine::midiClockStopReceived()
 }
 void AtmEngine::midiControlChangeReceived(unsigned char cc, unsigned char val)
 {
+	unsigned char w;
 	switch ((MidiCC)cc)
 	{
 		case CC_PITCHLFOMOD:
@@ -451,11 +453,38 @@ void AtmEngine::midiControlChangeReceived(unsigned char cc, unsigned char val)
 		patch_->setFunctionValue(FUNC_BITCRUSH,val>>3);
 		break;
 		case CC_WAVEFORM:
-		patch_->setFunctionValue(FUNC_WAVE,val>>3);
+		w = val>>2;
+		if(w>15)
+		{
+			patch_->setOptionValue(FUNC_WAVE,true);
+		}
+		else
+		{
+			patch_->setOptionValue(FUNC_WAVE,false);			
+		}
+		patch_->setFunctionValue(FUNC_WAVE,(w & 0x0F));
 		break;		
 		case CC_FILTTYPE:
 		patch_->setFunctionValue(FUNC_FILT,val>>3);
 		break;		
+		case CC_FILTNORM:
+		patch_->setOptionValue(FUNC_FILT,(bool)(val>>6));
+		break;
+		case CC_FENVINV:
+		patch_->setOptionValue(FUNC_FENVA,(bool)(val>>6));
+		break;		
+		case CC_LFOINV:
+		patch_->setOptionValue(FUNC_LFOTYPE,(bool)(val>>6));
+		break;		
+		case CC_ARPPINGPONG:
+		patch_->setOptionValue(FUNC_ARPTYPE,(bool)(val>>6));
+		break;		
+		case CC_PROPPORTA :
+		patch_->setOptionValue(FUNC_PORTA,(bool)(val>>6));
+		break;		
+		case CC_CRUSHPREFILT:
+		patch_->setOptionValue(FUNC_BITCRUSH,(bool)(val>>6));
+		break;
 		case CC_AMPENVR:
 		patch_->setFunctionValue(FUNC_AENVR,val>>3);
 		break;
@@ -629,7 +658,7 @@ void AtmEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 	}
 	if(func==function_)
 	{
-		base_->engineFunctionChanged(func,newValue,patch_->getOptionValue(func));
+		base_->engineFunctionChanged(func,newValue);
 	}
 }
 
@@ -668,6 +697,10 @@ void AtmEngine::patchOptionChanged(unsigned char func, bool newOpt)
 		case FUNC_PORTA:
 		portamento_.setProportional(newOpt);
 		break;
+	}
+	if(func==function_)
+	{
+		base_->engineOptionChanged(func,newOpt);
 	}
 }
 

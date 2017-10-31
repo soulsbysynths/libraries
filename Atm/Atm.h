@@ -49,7 +49,8 @@ public:
 	void hardwareMidiChannelChanged(unsigned char channel);
 	void hardwareMidiReceived(unsigned char data);
 	void hardwareMidiError(unsigned char errorType);
-	void engineFunctionChanged(unsigned char func, unsigned char val, bool opt);
+	void engineFunctionChanged(unsigned char func, unsigned char val);
+	void engineOptionChanged(unsigned char func, bool opt);
 	void engineBankChanged(unsigned char bank);
 	void engineMidiTransmit(unsigned char data);
 	void engineSysexComplete();
