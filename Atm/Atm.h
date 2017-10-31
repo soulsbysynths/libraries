@@ -59,6 +59,7 @@ private:
 	Atm& operator=( const Atm &c );
 	bool isFuncFill(AtmEngine::Func func) const;
 	bool isShiftHold(AtmEngine::Func func);
+	void txTestNote(bool noteOn);
 }; //Atm
 
 #endif //__ATM_H__

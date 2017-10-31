@@ -167,7 +167,52 @@ void MinHardware::refreshFlash(unsigned char ticksPassed)
 
 void MinHardware::refreshLEDs()
 {
+#if PCB_ISSUE == 3
+	if(bitRead((unsigned char)led_[LED_FUNC].getColour(),1)==1)
+	{
+		bitSet(PORTB,PINB1);
+	}
+	else
+	{
+		bitClear(PORTB,PINB1);
+	}
 
+	if(bitRead((unsigned char)led_[LED_FUNC].getColour(),2)==1)
+	{
+		bitSet(PORTB,PINB3);
+	}
+	else
+	{
+		bitClear(PORTB,PINB3);
+	}
+
+	if(bitRead((unsigned char)led_[LED_FUNC].getColour(),0)==1)
+	{
+		bitSet(PORTB,PINB2);
+	}
+	else
+	{
+		bitClear(PORTB,PINB2);
+	}
+	
+	if(bitRead((unsigned char)led_[LED_VALUE].getColour(),1)==1)
+	{
+		bitSet(PORTD,PIND5);
+	}
+	else
+	{
+		bitClear(PORTD,PIND5);
+	}
+	
+	if(bitRead((unsigned char)led_[LED_VALUE].getColour(),0)==1)
+	{
+		bitSet(PORTD,PIND6);
+	}
+	else
+	{
+		bitClear(PORTD,PIND6);
+	}
+#else
 	if(bitRead((unsigned char)led_[LED_FUNC].getColour(),0)==1)
 	{
 		bitSet(PORTB,PINB1);
@@ -212,7 +257,7 @@ void MinHardware::refreshLEDs()
 	{
 		bitClear(PORTD,PIND6);
 	}
-
+#endif
 }
 
 void MinHardware::pollAnlControls(unsigned char ticksPassed)

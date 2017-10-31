@@ -17,10 +17,10 @@
 #include "Midi.h"
 
 // default constructor
-Midi::Midi(MidiBase* base, unsigned char sysex_prod_id)
+Midi::Midi(MidiBase* base, unsigned char sysexProdId)
 {
 	base_ = base;
-	sysexProductId_ = sysex_prod_id;
+	sysexProductId_ = sysexProdId;
 } //Midi
 
 // default destructor
@@ -34,17 +34,6 @@ unsigned char Midi::getClockTicksPassed()
 	clockTicksLast_ = clockTicks_;
 	return ticksPassed;
 }
-void Midi::setChannel(unsigned char new_channel)
-{
-	if(new_channel>15)
-	{
-		channel_ = 0;
-	}
-	else
-	{
-		channel_ = new_channel;
-	}
-}
 void Midi::reset()
 {
 	for(unsigned char i=0;i<128;++i)
@@ -53,18 +42,18 @@ void Midi::reset()
 	}
 }
 
-void Midi::read(unsigned char in_byte)
+void Midi::read(unsigned char inByte)
 {
-	static unsigned char note_byte=0;
-	static unsigned char vel_byte=0;
-	static unsigned char status_buffer=0;
-	static bool first_byte;
-	static unsigned char sysex_rx_mnftr = 255;
-	static unsigned char sysex_rx_prodid = 255;
+	static unsigned char noteByte=0;
+	static unsigned char velByte=0;
+	static unsigned char statusBuffer=0;
+	static bool firstByte;
+	static unsigned char sysexRxMnftr = 255;
+	static unsigned char sysexRxProdid = 255;
 
-	if (in_byte>=CLOCK)
+	if (inByte>=CLOCK)
 	{
-		switch (in_byte)
+		switch (inByte)
 		{
 			case CLOCK:
 			clockTicks_++;
@@ -82,22 +71,22 @@ void Midi::read(unsigned char in_byte)
 			break;
 		}
 	}
-	else if (in_byte>=SYSEX_START)
+	else if (inByte>=SYSEX_START)
 	{
-		status_buffer = 0;
-		if (in_byte==SYSEX_START)
+		statusBuffer = 0;
+		if (inByte==SYSEX_START)
 		{
 			sysexRx_ = true;
 			sysexIndex_ = 0;
-			sysex_rx_mnftr = 255;
-			sysex_rx_prodid = 255;
+			sysexRxMnftr = 255;
+			sysexRxProdid = 255;
 			if(sysexEnable_==true)
 			{
 				base_->midiSysexStartReceived();
 			}
 			
 		}
-		if (in_byte==SYSEX_STOP && sysexRx_==true)
+		if (inByte==SYSEX_STOP && sysexRx_==true)
 		{
 			sysexRx_ = false;
 			if(sysexEnable_==true)
@@ -106,12 +95,12 @@ void Midi::read(unsigned char in_byte)
 			}
 		}
 	}
-	else if (in_byte>=NOTE_OFF)
+	else if (inByte>=NOTE_OFF)
 	{
-		status_buffer = in_byte;
-		first_byte = true;
-		note_byte = 0;
-		vel_byte = 0;
+		statusBuffer = inByte;
+		firstByte = true;
+		noteByte = 0;
+		velByte = 0;
 		sysexRx_ = false;
 	}
 	else if (sysexRx_==true)
@@ -119,82 +108,87 @@ void Midi::read(unsigned char in_byte)
 		sysexIndex_++;
 		if(sysexIndex_==1)
 		{
-			sysex_rx_mnftr = in_byte;
+			sysexRxMnftr = inByte;
 		}
 		else if(sysexIndex_==2)
 		{
-			sysex_rx_prodid = in_byte;
+			sysexRxProdid = inByte;
 		}
-		else if (sysex_rx_mnftr==SYSEX_MANUFACTURER && sysex_rx_prodid==sysexProductId_)
+		else if (sysexRxMnftr==SYSEX_MANUFACTURER && sysexRxProdid==sysexProductId_)
 		{
 			if(sysexEnable_==true)
 			{
-				base_->midiSysexDataReceived(sysexIndex_-3,in_byte);
+				base_->midiSysexDataReceived(sysexIndex_-3,inByte);
 			}
 		}
 	}
-	else if (status_buffer!=0)
+	else if (statusBuffer!=0)
 	{
-		if (first_byte == true)
+		if (firstByte == true)
 		{
-			note_byte = in_byte;
-			first_byte = false;
+			noteByte = inByte;
+			firstByte = false;
+			if (progChangeEnable_==true && statusBuffer==(PROGRAM_CHANGE | channel_))
+			{
+				base_->midiProgramChangeReceived(noteByte);
+			}
 		}
 		else
 		{
-			vel_byte = in_byte;
-			if (status_buffer == (NOTE_ON | channel_) && vel_byte > 0)
+			velByte = inByte;
+			if (statusBuffer == (NOTE_ON | channel_) && velByte > 0)
 			{
-				if(noteOn_[note_byte]==false)
+				if(noteOn_[noteByte]==false)
 				{
-					noteOn_[note_byte] = true;
+					noteOn_[noteByte] = true;
 					totNotesOn_++;
-					base_->midiNoteOnReceived(note_byte,vel_byte);
+					base_->midiNoteOnReceived(noteByte,velByte);
 				}
 
 			}
-			else if (status_buffer == (NOTE_OFF | channel_) || (status_buffer == (NOTE_ON | channel_) && vel_byte == 0))
+			else if (statusBuffer == (NOTE_OFF | channel_) || (statusBuffer == (NOTE_ON | channel_) && velByte == 0))
 			{
-				if(noteOn_[note_byte]==true)
+				if(noteOn_[noteByte]==true)
 				{
-					noteOn_[note_byte] = false;
+					noteOn_[noteByte] = false;
 					totNotesOn_--;
-					base_->midiNoteOffReceived(note_byte);
+					base_->midiNoteOffReceived(noteByte);
 				}
 			}
-			else if (status_buffer == (PITCH_BEND | channel_))
+			else if (statusBuffer == (CONTROL_CHANGE | channel_))
 			{
-				if(vel_byte==0)
+				base_->midiControlChangeReceived(noteByte,velByte);
+			}
+			else if (statusBuffer == (PITCH_BEND | channel_))
+			{
+				if(velByte==0)
 				{
 					base_->midiPitchBendReceived(-127);
 				}
-				else if (vel_byte==127)
+				else if (velByte==127)
 				{
 					base_->midiPitchBendReceived(127);
 				}
 				else
 				{
-					base_->midiPitchBendReceived((vel_byte-64)<<1);
+					base_->midiPitchBendReceived((velByte-64)<<1);
 				}
 			}
-			else if (status_buffer == (CONTROL_CHANGE | channel_))
-			{
-				base_->midiControlChangeReceived(note_byte,vel_byte);
-			}
-			note_byte = 0;
-			vel_byte = 0;
-			first_byte = true;
+
+			noteByte = 0;
+			velByte = 0;
+			firstByte = true;
 		}
 	}
 }
-void Midi::writeSysex(unsigned char* sys_mess, unsigned int size)
+void Midi::writeSysex(unsigned char* sysMess, unsigned int size)
 {
 	base_->midiSysexWrite(SYSEX_START);
 	base_->midiSysexWrite(SYSEX_MANUFACTURER);
 	base_->midiSysexWrite(sysexProductId_);
 	for(unsigned int i=0;i<size;++i)
 	{
-		base_->midiSysexWrite(sys_mess[i]);
-	}	
+		base_->midiSysexWrite(sysMess[i]);
+	}
 	base_->midiSysexWrite(SYSEX_STOP);
 }

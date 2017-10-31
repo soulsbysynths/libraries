@@ -19,20 +19,33 @@
 // default constructor
 Switch::Switch(unsigned char initValue, unsigned int holdTicks)
 {
-	state_ = initValue;
-	stateLast_ = initValue;
+	value_ = initValue;
+	valueActive_ = initValue;
+	holdEventTicks_ = holdTicks;
+} //Switch
+
+Switch::Switch(unsigned char index, unsigned char initValue, unsigned int holdTicks, SwitchBase* base)
+{
+	base_ = base;
+	index_ = index;
+	value_ = initValue;
+	valueActive_ = initValue;
 	holdEventTicks_ = holdTicks;
 } //Switch
 
 // default destructor
 Switch::~Switch()
 {
+	if (base_ != NULL)
+	{
+		delete base_;
+	}
 } //~Switch
 
 bool Switch::hasHeld(unsigned char ticksPassed)
 {
 	bool held = false;
-	if(state_==S_HIGH)
+	if(value_==S_HIGH)
 	{
 		holdTime_ += ticksPassed;
 		if(holdTime_>=holdEventTicks_ && holdEventFired_==false)
@@ -41,7 +54,7 @@ bool Switch::hasHeld(unsigned char ticksPassed)
 			holdEventFired_ = true;
 		}
 		
-	}	
+	}
 	return held;
 }
 bool Switch::hasChanged(unsigned char ticksPassed)
@@ -54,21 +67,88 @@ bool Switch::hasChanged(unsigned char ticksPassed)
 	}
 	if(ticks_>=debounceTicks_)
 	{
-		if(state_!=stateLast_)
+		if(value_!=valueActive_)
 		{
-			if(state_==S_HIGH && stateLast_==S_LOW)
+			if(value_==S_HIGH && valueActive_==S_LOW)
 			{
 				holdTime_ = 0;
 				holdEventFired_ = false;
 				changed = true;
 			}
-			else if(state_==S_LOW && stateLast_==S_HIGH)
+			else if(value_==S_LOW && valueActive_==S_HIGH)
 			{
 				changed = true;
 			}
-			stateLast_ = state_;
+			valueActive_ = value_;
 			ticks_ = 0;
 		}
 	}
 	return changed;
+}
+
+void Switch::poll(unsigned char ticksPassed)
+{
+	if(ticks_<debounceTicks_)
+	{
+		ticks_ += ticksPassed;
+	}
+	else
+	{
+		if(value_!=valueActive_)
+		{
+			if(value_==S_HIGH && valueActive_==S_LOW)
+			{
+				holdTime_ = 0;
+				holdEventFired_ = false;
+				if(click_==0)
+				{
+					click_ = 1;
+				}
+				else if(dclickTime_<dclickEventTicks_)
+				{
+					click_ = 2;
+				}
+				base_->swValueChanged(index_,value_);
+			}
+			else if(value_==S_LOW && valueActive_==S_HIGH)
+			{
+				if(click_==1)
+				{
+					dclickTime_ = 0;
+				}
+				else if(click_==2)
+				{
+					if(holdEventFired_==false)
+					{
+						base_->swDoubleClicked(index_);
+					}
+					click_ = 0;
+				}
+				base_->swValueChanged(index_,value_);
+			}
+			valueActive_ = value_;
+			ticks_ = 0;
+		}
+	}
+	if(valueActive_==S_HIGH)
+	{
+		holdTime_ += ticksPassed;
+		if(holdTime_>=holdEventTicks_ && holdEventFired_==false)
+		{
+			base_->swHeld(index_);
+			holdEventFired_ = true;
+		}
+	}
+	if(dclickTime_<dclickEventTicks_)
+	{
+		dclickTime_ += ticksPassed;
+	}
+	else if (click_==1 && valueActive_==S_LOW)
+	{
+		if(holdEventFired_==false)
+		{
+			base_->swClicked(index_);
+		}
+		click_ = 0;
+	}
 }

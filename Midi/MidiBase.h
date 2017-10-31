@@ -31,6 +31,7 @@ class MidiBase
 	virtual void midiSysexWrite(unsigned char data) = 0;
 	virtual void midiControlChangeReceived(unsigned char cc, unsigned char val) = 0;
 	virtual void midiPitchBendReceived(char bend) = 0;
+	virtual void midiProgramChangeReceived(unsigned char patchNum) = 0;
 };
 
 #endif /* MIDI_BASE_H_ */

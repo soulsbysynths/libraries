@@ -17,6 +17,7 @@
 #ifndef __ANALOGUECONTROL_H__
 #define __ANALOGUECONTROL_H__
 
+#include "AnalogueControlBase.h"
 #include <stdlib.h>
 
 class AnalogueControl
@@ -25,21 +26,32 @@ class AnalogueControl
 public:
 protected:
 private:
+	AnalogueControlBase* base_ = NULL;
 	static const unsigned char kCtrlMoveThreshold = 4;
 	static const unsigned int kCtrlMoveTimeOut = 2000;
 	bool moving_ = false;
 	unsigned char valueLast_ = 0;
 	unsigned int moveTick_ = 0;
 	unsigned char value_ = 0;
+	bool latching_ = false;
+	bool latched_ = false;
+	unsigned char latchVal_ = 0;
+	unsigned char index_ = 0;
 //functions
 public:
 	AnalogueControl() {}
+	AnalogueControl(unsigned char index, unsigned char initValue, AnalogueControlBase* base);
 	AnalogueControl(unsigned char initValue);
 	~AnalogueControl();
 	void setValue(unsigned char newValue){value_ = newValue;}
 	unsigned char getValue(){return value_;}
 	bool getMoving(){return moving_;}
-	bool hasChanged(unsigned char ticksPassed);
+	void setLatching(bool newValue){latching_ = newValue;}
+	bool getLatching(){return latching_;}
+	void setLatched(bool newValue){latched_ = newValue;}
+	bool getLatched(){return latched_;}
+	bool hasChanged(unsigned char ticksPassed);  //deprocated
+	void poll(unsigned char ticksPassed);
 protected:
 private:
 	

@@ -3,6 +3,7 @@ Adafruit_MCP23017_Arduino_Library/*
 Adafruit-MCP23017-Arduino-Library-master.rar
 Adafruit-MCP23017-Arduino-Library-master.zip
 Adafruit-MCP23017-Arduino-Library-master/*
+Ade32/*
 Ade33/*
 Ade33EventsEngine/*
 Ade33Hardware/*
@@ -21,6 +22,7 @@ CD4051/*
 DA8568C-master pre-modify.zip
 DA8568C-master.zip
 DA8568C-master/*
+DebouncedButton/*
 FastRunningMedian/*
 FM24C64B/*
 JamHardware/*
