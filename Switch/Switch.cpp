@@ -88,67 +88,137 @@ bool Switch::hasChanged(unsigned char ticksPassed)
 
 void Switch::poll(unsigned char ticksPassed)
 {
-	if(ticks_<debounceTicks_)
+	if (ticks_ < debounceTicks_)
 	{
 		ticks_ += ticksPassed;
+		if (value_ != valueActive_)
+		{
+			//listBox1.Items.Insert(0, totalTicks_.ToString() + ":DEBOUNCE");
+		}
 	}
 	else
 	{
-		if(value_!=valueActive_)
+		if (value_ != valueActive_)
 		{
-			if(value_==S_HIGH && valueActive_==S_LOW)
+			if (value_ == true && valueActive_ == false)
 			{
-				holdTime_ = 0;
-				holdEventFired_ = false;
-				if(click_==0)
+				if (click_ == 0)
 				{
 					click_ = 1;
-				}
-				else if(dclickTime_<dclickEventTicks_)
-				{
-					click_ = 2;
-				}
-				base_->swValueChanged(index_,value_);
-			}
-			else if(value_==S_LOW && valueActive_==S_HIGH)
-			{
-				if(click_==1)
-				{
+					holdTime_ = 0;
+					holdEventFired_ = false;
 					dclickTime_ = 0;
 				}
-				else if(click_==2)
+				else if (dclickTime_ < dclickEventTicks_)
 				{
-					if(holdEventFired_==false)
-					{
-						base_->swDoubleClicked(index_);
-					}
 					click_ = 0;
+					//listBox1.Items.Insert(0, totalTicks_.ToString() + ":DOUBLE");
+					base_->swDoubleClicked(index_);
 				}
+				//listBox1.Items.Insert(0, totalTicks_.ToString() + ":DOWN");
+				base_->swValueChanged(index_,value_);
+			}
+			else if (value_ == false && valueActive_ == true)
+			{
+				//listBox1.Items.Insert(0, totalTicks_.ToString() + ":UP");
 				base_->swValueChanged(index_,value_);
 			}
 			valueActive_ = value_;
 			ticks_ = 0;
 		}
 	}
-	if(valueActive_==S_HIGH)
+	if (valueActive_ == true)
 	{
-		holdTime_ += ticksPassed;
-		if(holdTime_>=holdEventTicks_ && holdEventFired_==false)
+		if(holdTime_ < holdEventTicks_)
 		{
+			holdTime_ += ticksPassed;
+		}
+		else if(holdEventFired_==false)
+		{
+			//listBox1.Items.Insert(0, totalTicks_.ToString() + ":HELD");
 			base_->swHeld(index_);
 			holdEventFired_ = true;
 		}
 	}
-	if(dclickTime_<dclickEventTicks_)
+	if (dclickTime_ < dclickEventTicks_)
 	{
 		dclickTime_ += ticksPassed;
 	}
-	else if (click_==1 && valueActive_==S_LOW)
+	else if (click_ == 1 && valueActive_ == false)
 	{
-		if(holdEventFired_==false)
+		if (holdEventFired_ == false)
 		{
+			//listBox1.Items.Insert(0,totalTicks_.ToString() + ":CLICK");
 			base_->swClicked(index_);
 		}
 		click_ = 0;
 	}
+	
 }
+
+//void Switch::poll(unsigned char ticksPassed)
+//{
+	//if(ticks_<debounceTicks_)
+	//{
+		//ticks_ += ticksPassed;
+	//}
+	//else
+	//{
+		//if(value_!=valueActive_)
+		//{
+			//if(value_==S_HIGH && valueActive_==S_LOW)
+			//{
+				//holdTime_ = 0;
+				//holdEventFired_ = false;
+				//if(click_==0)
+				//{
+					//click_ = 1;
+				//}
+				//else if(dclickTime_<dclickEventTicks_)
+				//{
+					//click_ = 2;
+				//}
+				//base_->swValueChanged(index_,value_);
+			//}
+			//else if(value_==S_LOW && valueActive_==S_HIGH)
+			//{
+				//if(click_==1)
+				//{
+					//dclickTime_ = 0;
+				//}
+				//else if(click_==2)
+				//{
+					//if(holdEventFired_==false)
+					//{
+						//base_->swDoubleClicked(index_);
+					//}
+					//click_ = 0;
+				//}
+				//base_->swValueChanged(index_,value_);
+			//}
+			//valueActive_ = value_;
+			//ticks_ = 0;
+		//}
+	//}
+	//if(valueActive_==S_HIGH)
+	//{
+		//holdTime_ += ticksPassed;
+		//if(holdTime_>=holdEventTicks_ && holdEventFired_==false)
+		//{
+			//base_->swHeld(index_);
+			//holdEventFired_ = true;
+		//}
+	//}
+	//if(dclickTime_<dclickEventTicks_)
+	//{
+		//dclickTime_ += ticksPassed;
+	//}
+	//else if (click_==1 && valueActive_==S_LOW)
+	//{
+		//if(holdEventFired_==false)
+		//{
+			//base_->swClicked(index_);
+		//}
+		//click_ = 0;
+	//}
+//}

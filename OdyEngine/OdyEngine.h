@@ -41,8 +41,8 @@
 
 class OdyEngine : public MidiBase, OdyPatchBase
 {
-//variables
-public:
+	//variables
+	public:
 	static OdyEngine& getInstance()
 	{
 		static OdyEngine instance; // Guaranteed to be destroyed.
@@ -85,19 +85,43 @@ public:
 	{
 		CC_MODWHEEL = 1,
 		CC_PORTAMENTO = 5,
+		CC_FILTFMB = 16,
+		CC_FILTFMBSOURCE = 17,
+		CC_OSC1FMA = 20,
+		CC_OSC1FMB = 21,
+		CC_OSC2FMA = 22,
+		CC_OSC2FMB = 23,
+		CC_MIXFX = 24,
+		CC_MIXOSC1 = 25,
+		CC_MIXOSC2 = 26,
+		CC_WAVEFX = 30,
+		CC_WAVEOSC1 = 31,
+		CC_WAVEOSC2 = 32,
+		CC_FILTTYPE = 33,
+		CC_OSC1FMASOURCE = 34,
+		CC_OSC1FMBSOURCE = 35,
+		CC_OSC2FMASOURCE = 36,
+		CC_OSC2FMBSOURCE = 37,
+		CC_SYNC = 38,
+		CC_PWMSOURCE = 39,
+		CC_KBRDTRACKING = 40,
+		CC_DCASOURCE = 41,
 		CC_FILTRES = 71,
-		CC_ENVR = 72,
-		CC_ENVA = 73,
+		CC_AMPENVR = 72,
+		CC_AMPENVA = 73,
 		CC_FILTCUTOFF = 74,
-		CC_ENVD = 75,
-		CC_LFOSPEED = 76,
-		CC_FILTLFO = 77,
-		CC_FILTENV = 78,
-		CC_OSC1PITCH = 79,
-		CC_OSC2PITCH = 80,
-		CC_HPF = 81,
-		CC_OSC1FMB = 82,
-		CC_OSC2FMB = 83,
+		CC_AMPENVD = 75,
+		CC_FILTFMA = 77,
+		CC_FILTFMASOURCE = 78,
+		CC_LFOSPEED = 79,
+		CC_AMPENVS = 80,
+		CC_FENVA = 81,
+		CC_FENVDR = 82,
+		CC_PULSEWIDTH = 91,
+		CC_PWM = 92,
+		CC_OSC1PITCH = 93,
+		CC_OSC2PITCH = 94,
+		CC_HPF = 95,
 		CC_ALLNOTESOFF = 123
 	};
 	enum FxSource : unsigned char
@@ -106,8 +130,8 @@ public:
 		FX_RINGMOD
 	};
 	static const unsigned int WAVE_LENGTH = 256;//64;
-protected:
-private:
+	protected:
+	private:
 	static const unsigned char SYSEX_PROD_ID = 0;
 	static const unsigned int MIDI_TICKSPERCYCLE = 1536;
 	
@@ -172,6 +196,7 @@ private:
 	void midiSysexWrite(unsigned char data){}
 	void midiChannelChanged(unsigned char channel);
 	void midiPitchBendReceived(char bend);
+	void midiProgramChangeReceived(unsigned char patchNum);
 	protected:
 	private:
 	OdyEngine(OdyEngineBase* base);

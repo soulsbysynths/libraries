@@ -315,6 +315,9 @@ void MinEngine::midiControlChangeReceived(unsigned char ctrl, unsigned char val)
 		case CC_FX:
 		patch_->setFunctionValue(FUNC_CRUSHPORTA, val>>3);
 		break;
+		case CC_VOLUME:
+		patch_->setCtrlValue(LOW,CTRL_VOLUME,val<<1);
+		break;
 		case CC_FILTERENV:
 		patch_->setCtrlValue(LOW,CTRL_ENV,val<<1);
 		break;

@@ -76,6 +76,7 @@ class MinEngine : public MidiBase, StepSequencerBase, AtmPatchBase
 	{
 		CC_PITCHLFOMOD = 1,
 		CC_FX = 5,
+		CC_VOLUME = 7,
 		CC_FILTERENV = 16,
 		CC_DISTORTION = 17,
 		CC_WAVEFORM = 32,
@@ -173,6 +174,7 @@ class MinEngine : public MidiBase, StepSequencerBase, AtmPatchBase
 	void midiSysexWrite(unsigned char data){}
 	void midiChannelChanged(unsigned char channel){}
 	void midiPitchBendReceived(char bend);
+	void midiProgramChangeReceived(unsigned char patchNum){}
 	void stepseqNoteEvent(unsigned char lastStep, unsigned char newStep);
 	protected:
 	private:

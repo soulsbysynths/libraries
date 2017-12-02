@@ -74,6 +74,7 @@ public:
 	{
 		CC_PITCHLFOMOD = 1,
 		CC_PORTAMENTO = 5,
+		CC_VOLUME = 7,
 		CC_FILTERENV = 16,
 		CC_OSC1FREQ = 17,
 		CC_WAVEFORM = 32,
@@ -177,6 +178,7 @@ private:
 	void midiSysexWrite(unsigned char data){}
 	void midiChannelChanged(unsigned char channel){}
 	void midiPitchBendReceived(char bend);
+	void midiProgramChangeReceived(unsigned char patchNum){}
 	void stepseqNoteEvent(unsigned char lastStep, unsigned char newStep);
 	protected:
 	private:

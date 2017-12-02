@@ -149,6 +149,7 @@ void Ody::initialize()
 	{
 		engine_.initialize();
 		engine_.getMidiPtr()->setChannel(hardware_.getMidiChannel());
+		engine_.getMidiPtr()->setProgChangeEnable(hardware_.getMidiProgChEn());
 		for(unsigned char i=0;i<2;++i)
 		{
 			hardware_.getLedSwitch(i).flash(4,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::YELLOW,LedRgb::RED,true);

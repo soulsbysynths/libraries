@@ -293,6 +293,9 @@ void MinOdyEngine::midiControlChangeReceived(unsigned char ctrl, unsigned char v
 		case CC_PORTAMENTO:
 		patch_->setFunctionValue(FUNC_CRUSHPORTA, val>>3);
 		break;
+		case CC_VOLUME:
+		patch_->setCtrlValue(LOW,CTRL_VOLUME,val<<1);
+		break;
 		case CC_FILTERENV:
 		patch_->setCtrlValue(LOW,CTRL_ENV,val<<1);
 		break;

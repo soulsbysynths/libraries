@@ -30,7 +30,7 @@ private:
 	static const unsigned char S_HIGH = 1;
 	static const unsigned char S_LOW = 0;
 	unsigned int holdEventTicks_ = 2000;
-	static const unsigned char dclickEventTicks_ = 100;
+	static const unsigned char dclickEventTicks_ = 200;
 	unsigned char value_ = S_LOW;
 	unsigned char valueActive_ = S_LOW;
 	unsigned char ticks_ = 0;

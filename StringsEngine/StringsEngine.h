@@ -48,8 +48,8 @@
 
 class StringsEngine : public MidiBase, AtmPatchBase, ArpeggiatorBase
 {
-//variables
-public:
+	//variables
+	public:
 	static StringsEngine& getInstance()
 	{
 		static StringsEngine instance; // Guaranteed to be destroyed.
@@ -66,7 +66,7 @@ public:
 		CTRL_PHASERSOURCE,
 	};
 	enum Func : unsigned char
-	{	
+	{
 		FUNC_WAVEA,
 		FUNC_WAVEB,
 		FUNC_WAVEC,
@@ -81,16 +81,16 @@ public:
 		FUNC_ARPPATTERN,
 		FUNC_ARPSPEED,
 		FUNC_PHASELFOWAVE,
-		FUNC_PHASELFOSPEED,		
+		FUNC_PHASELFOSPEED,
 		FUNC_MEM
 	};
-protected:
-private:
+	protected:
+	private:
 	static const unsigned char SYSEX_PROD_ID = 0;
 	static const unsigned int MIDI_TICKSPERCYCLE = 1536;
 	const float MAX_PITCH = 0.1155245298177;  //ln 12root2 , -1. *2
-	const unsigned char MULT_PITCH = 228;  
-	//const unsigned char BS_PITCH = 7;  
+	const unsigned char MULT_PITCH = 228;
+	//const unsigned char BS_PITCH = 7;
 	Func function_ = FUNC_WAVEA;
 	Midi* midi_;
 	AtmPatch* patch_;
@@ -102,8 +102,8 @@ private:
 	MasterClock masterClock_;
 	Arpeggiator* arpeggiator_;
 	unsigned int freqBase_[OSCS]={0};
-	float pitchLfoAmt_ = 0;  
-	float pitchEnvAmt_ = 0;  
+	float pitchLfoAmt_ = 0;
+	float pitchEnvAmt_ = 0;
 	char pitchBend_ = 0;
 	unsigned char phaserSource_ = 0;
 	unsigned char oscNotes_[OSCS];
@@ -115,8 +115,8 @@ private:
 	bool trig_ = false;  //MIDItrig 1=note ON
 	unsigned char totNotesOnLast_ = 0;
 
-//functions
-public:
+	//functions
+	public:
 	void construct(StringsEngineBase* base);
 	const AtmPatch* getPatchPtr() const { return  patch_; }
 	AtmPatch* getPatchPtr() { return patch_; }
@@ -141,9 +141,10 @@ public:
 	void midiSysexStopReceived(void){}
 	void midiSysexWrite(unsigned char data){}
 	void midiPitchBendReceived(char bend);
+	void midiProgramChangeReceived(unsigned char patchNum);
 	void arpeggiatorNoteEvent(unsigned char lastNote, unsigned char newNote);
-protected:
-private:
+	protected:
+	private:
 	StringsEngine(StringsEngineBase* base);
 	StringsEngine(){}
 	StringsEngine( const StringsEngine &c );
