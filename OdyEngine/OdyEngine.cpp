@@ -265,29 +265,107 @@ void OdyEngine::midiControlChangeReceived(unsigned char anlControl_, unsigned ch
 		case CC_PORTAMENTO:
 		patch_->setFunctionValue(FUNC_PORTAMENTO,val>>3);
 		break;
+		case CC_FILTFMB:
+		patch_->setFunctionValue(FUNC_FILTFMB,val>>3);
+		break;
+		case CC_FILTFMBSOURCE:
+		patch_->setOptionValue(FUNC_FILTFMB,(bool)val>>6);
+		break;
+		case CC_OSC1FMA:
+		patch_->setFunctionValue(FUNC_OSC0FMA,val>>3);
+		break;
+		case CC_OSC1FMB:
+		patch_->setFunctionValue(FUNC_OSC0FMB,val>>3);
+		break;		
+		case CC_OSC2FMA:
+		patch_->setFunctionValue(FUNC_OSC1FMA,val>>3);
+		break;
+		case CC_OSC2FMB:
+		patch_->setFunctionValue(FUNC_OSC1FMB,val>>3);
+		break;		
+		case CC_MIXFX:
+		patch_->setFunctionValue(FUNC_OSCLEVELFX,val>>3);
+		break;
+		case CC_MIXOSC1:
+		patch_->setFunctionValue(FUNC_OSCLEVEL0,val>>3);
+		break;
+		case CC_MIXOSC2:
+		patch_->setFunctionValue(FUNC_OSCLEVEL1,val>>3);
+		break;
+		case CC_WAVEFX:
+		patch_->setOptionValue(FUNC_OSCLEVELFX,(bool)val>>6);
+		break;
+		case CC_WAVEOSC1:
+		patch_->setOptionValue(FUNC_OSCLEVEL0,(bool)val>>6);
+		break;
+		case CC_WAVEOSC2:
+		patch_->setOptionValue(FUNC_OSCLEVEL1,(bool)val>>6);
+		break;		
+		case CC_FILTTYPE:
+		patch_->setFunctionValue(FUNC_FILTTYPE, val/43);
+		break;
+		case CC_OSC1FMASOURCE:
+		patch_->setOptionValue(FUNC_OSC0FMA,(bool)val>>6);
+		break;
+		case CC_OSC1FMBSOURCE:
+		patch_->setOptionValue(FUNC_OSC0FMB,(bool)val>>6);
+		break;
+		case CC_OSC2FMASOURCE:
+		patch_->setOptionValue(FUNC_OSC1FMA,(bool)val>>6);
+		break;
+		case CC_OSC2FMBSOURCE:
+		patch_->setOptionValue(FUNC_OSC1FMB,(bool)val>>6);
+		break;	
+		case CC_SYNC:
+		patch_->setOptionValue(FUNC_OSC1PW,(bool)val>>6);
+		break;
+		case CC_PWMSOURCE:
+		patch_->setOptionValue(FUNC_OSC1PWM,(bool)val>>6);
+		break;	
+		case CC_KBRDTRACKING:
+		patch_->setOptionValue(FUNC_ENVS,(bool)val>>6);
+		break;
+		case CC_DCASOURCE:
+		patch_->setOptionValue(FUNC_ENVD,(bool)val>>6);
+		break;		
 		case CC_FILTRES:
 		patch_->setCtrlValue(CTRL_Q,val<<1);
 		break;
-		case CC_ENVR:
+		case CC_AMPENVR:
 		patch_->setFunctionValue(FUNC_ENVR,val>>3);
 		break;
-		case CC_ENVA:
+		case CC_AMPENVA:
 		patch_->setFunctionValue(FUNC_ENVA,val>>3);
 		break;
 		case CC_FILTCUTOFF:
 		patch_->setCtrlValue(CTRL_FC,val<<1);
 		break;
-		case CC_ENVD:
+		case CC_AMPENVD:
 		patch_->setFunctionValue(FUNC_ENVD,val>>3);
 		break;
+		case CC_FILTFMA:
+		patch_->setFunctionValue(FUNC_FILTFMA,val>>3);
+		break;
+		case CC_FILTFMASOURCE:
+		patch_->setOptionValue(FUNC_FILTFMA,(bool)val>>6);
+		break;		
 		case CC_LFOSPEED:
 		patch_->setCtrlValue(CTRL_LFO,val<<1);
 		break;
-		case CC_FILTLFO:
-		patch_->setFunctionValue(FUNC_FILTFMA,val>>3);
+		case CC_AMPENVS:
+		patch_->setFunctionValue(FUNC_ENVS,val>>3);
 		break;
-		case CC_FILTENV:
-		patch_->setFunctionValue(FUNC_FILTFMB,val>>3);
+		case CC_FENVA:
+		patch_->setFunctionValue(FUNC_ENVA2,val>>3);
+		break;
+		case CC_FENVDR:
+		patch_->setFunctionValue(FUNC_ENVR2,val>>3);
+		break;
+		case CC_PULSEWIDTH:
+		patch_->setFunctionValue(FUNC_OSC1PW,val>>3);
+		break;
+		case CC_PWM:
+		patch_->setFunctionValue(FUNC_OSC1PWM,val>>3);
 		break;
 		case CC_OSC1PITCH:
 		patch_->setCtrlValue(CTRL_VCO1,val<<1);
@@ -297,12 +375,6 @@ void OdyEngine::midiControlChangeReceived(unsigned char anlControl_, unsigned ch
 		break;
 		case CC_HPF:
 		patch_->setCtrlValue(CTRL_HPF,val<<1);
-		break;
-		case CC_OSC1FMB:
-		patch_->setFunctionValue(FUNC_OSC0FMB,val<<1);
-		break;
-		case CC_OSC2FMB:
-		patch_->setFunctionValue(FUNC_OSC1FMB,val<<1);
 		break;
 		case CC_ALLNOTESOFF:
 		midi_->reset();
@@ -318,7 +390,13 @@ void OdyEngine::midiPitchBendReceived(char bend)
 {
 	pitchBend_ = bend;
 }
-
+void OdyEngine::midiProgramChangeReceived(unsigned char patchNum)
+{
+	if (patchNum<16)
+	{
+		patch_->readPatch(patchNum);
+	}
+}
 //****************************************patch events********************************************
 void OdyEngine::patchValueChanged(unsigned char func, unsigned char newValue)
 {

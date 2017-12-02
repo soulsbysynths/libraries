@@ -36,6 +36,7 @@ void Strings::initialize()
 	{
 		engine_.initialize();
 		engine_.getMidiPtr()->setChannel(hardware_.getMidiChannel());
+		engine_.getMidiPtr()->setProgChangeEnable(hardware_.getMidiProgChEn());
 		engine_.setFunction(StringsEngine::FUNC_WAVEA);
 		hardware_.getLedSwitch(AtmHardware::BANK).setColour(LedRgb::RED);  //mono off
 		hardware_.getLedSwitch(AtmHardware::FUNCTION).flash(5,LED_FLASH_TICKS,LED_FLASH_TICKS,LedRgb::RED,LedRgb::GREEN,true);  //5 because default patch is green

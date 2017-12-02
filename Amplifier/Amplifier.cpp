@@ -34,7 +34,7 @@ void Amplifier::processWavetable(Wavetable& sourceWavetable, char envLevel, char
 	for(unsigned char i=0;i<sourceWavetable.getWaveLength();++i)
 	{
 		sample = sourceWavetable.getSample(i);
-		sample = (int)(255-lfoOffset) * sample >> 8;   //and back again here, otherwise you'll get silence whenever lfo is off
+		sample = (int)(255-lfoOffset) * sample >> 8;   //and invert back again here, otherwise you'll get silence whenever lfo is off
 		sample = (int)envOffset * sample >> 8;
 		sourceWavetable.setSample(i,(char)sample);
 	}	

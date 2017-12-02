@@ -617,23 +617,50 @@ void StringsEngine::midiControlChangeReceived(unsigned char cc, unsigned char va
 		case Midi::CC_MODWHEEL:
 		patch_->setCtrlValue(LOW,CTRL_PITCHLFODEPTH,val<<1);
 		break;
-		case Midi::CC_DETUNE:
-		patch_->setCtrlValue(LOW,CTRL_DETUNE,val<<1);
-		break;
-		case Midi::CC_PHASER:
-		patch_->setCtrlValue(LOW,CTRL_PHASERDEPTH,val<<1);
-		break;
 		case Midi::CC_GP1:
-		patch_->setFunctionValue(FUNC_WAVEA,val>>3);
-		break;
-		case Midi::CC_GP2:
-		patch_->setFunctionValue(FUNC_WAVEB,val>>3);
+		patch_->setFunctionValue(FUNC_PHASELFOWAVE,val>>3);
 		break;
 		case Midi::CC_GP3:
-		patch_->setFunctionValue(FUNC_WAVEC,val>>3);
+		patch_->setFunctionValue(FUNC_ARPPATTERN,val>>3);
 		break;
 		case Midi::CC_GP4:
+		patch_->setFunctionValue(FUNC_ARPSPEED,val>>3);
+		break;		
+		case 20:
+		patch_->setFunctionValue(FUNC_WAVEA,val>>3);
+		break;
+		case 21:
+		patch_->setFunctionValue(FUNC_WAVEB,val>>3);
+		break;
+		case 22:
+		patch_->setFunctionValue(FUNC_WAVEC,val>>3);
+		break;
+		case 23:
 		patch_->setFunctionValue(FUNC_WAVED,val>>3);
+		break;
+		case 24:
+		patch_->setCtrlValue(LOW,CTRL_PITCHENVDEPTH,val<<1);
+		break;
+		case 25:
+		patch_->setCtrlValue(LOW,CTRL_PHASERSOURCE,val<<1);
+		break;
+		case Midi::CC_DATAENTRYLSB:
+		patch_->setOptionValue(FUNC_ATTACK,(bool)val>>6);
+		break;
+		case Midi::CC_VOLUMELSB:
+		patch_->setOptionValue(FUNC_PITCHLFOWAVE,(bool)val>>6);
+		break;
+		case Midi::CC_BALANCELSB:
+		patch_->setOptionValue(FUNC_ARPPATTERN,(bool)val>>6);
+		break;
+		case 41:
+		patch_->setOptionValue(FUNC_PHASELFOWAVE,(bool)val>>6);
+		break;
+		case 42:
+		patch_->setOptionValue(FUNC_WAVEA,(bool)val>>6);
+		break;
+		case 43:
+		patch_->setOptionValue(FUNC_CYCLER,(bool)val>>6);
 		break;
 		case Midi::CC_ATTACK:
 		patch_->setFunctionValue(FUNC_ATTACK,val>>3);
@@ -641,23 +668,32 @@ void StringsEngine::midiControlChangeReceived(unsigned char cc, unsigned char va
 		case Midi::CC_DECAY:
 		patch_->setFunctionValue(FUNC_DECAY,val>>3);
 		break;
-		case Midi::CC_SUSTAIN:
-		patch_->setFunctionValue(FUNC_SUSTAIN,val>>3);
-		break;
 		case Midi::CC_RELEASE:
 		patch_->setFunctionValue(FUNC_RELEASE,val>>3);
+		break;
+		case Midi::CC_VIBDELAY:
+		patch_->setFunctionValue(FUNC_PITCHLFOWAVE,val>>3);
 		break;
 		case 79:
 		patch_->setFunctionValue(FUNC_PITCHLFOSPEED,val>>3);
 		break;
 		case Midi::CC_GP5:
-		patch_->setFunctionValue(FUNC_CYCLER,val>>3);
+		patch_->setFunctionValue(FUNC_SUSTAIN,val>>3);
 		break;
 		case Midi::CC_GP6:
 		patch_->setFunctionValue(FUNC_PHASELFOSPEED,val>>3);
 		break;
 		case Midi::CC_GP7:
 		patch_->setCtrlValue(LOW,CTRL_PHASESPEED,val<<1);
+		break;
+		case Midi::CC_GP8:
+		patch_->setFunctionValue(FUNC_CYCLER,val>>3);
+		break;
+		case Midi::CC_DETUNE:
+		patch_->setCtrlValue(LOW,CTRL_DETUNE,val<<1);
+		break;
+		case Midi::CC_PHASER:
+		patch_->setCtrlValue(LOW,CTRL_PHASERDEPTH,val<<1);
 		break;
 		case Midi::CC_ALLNOTESOFF:
 		midi_->reset();
@@ -669,6 +705,15 @@ void StringsEngine::midiPitchBendReceived(char bend)
 {
 	pitchBend_ = bend;
 }
+
+void StringsEngine::midiProgramChangeReceived(unsigned char patchNum)
+{
+	if (patchNum<16)
+	{
+		patch_->readPatch(patchNum);
+	}
+}
+
 
 //****************************************patch events********************************************
 void StringsEngine::patchValueChanged(unsigned char func, unsigned char newValue)
